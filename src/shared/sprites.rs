@@ -85,8 +85,8 @@ pub struct Sprite {
   collider_distance: u8,
   half_dead: bool,
   skeleton: parts::ParticleSystem,
-  legs_animation: anims::Animation,
-  body_animation: anims::Animation,
+  legs_animation: Box<anims::Animation>,
+  body_animation: Box<anims::Animation>,
   control: Control,
 }
 
@@ -166,12 +166,12 @@ impl Sprite {
       collider_distance: 255,
       half_dead: false,
       skeleton: gostek,
-      legs_animation: state.anims.stand,
-      body_animation: state.anims.stand,
+      legs_animation: state.anims.stand.clone(),
+      body_animation: state.anims.stand.clone(),
       control: control,
     }
   }
-  pub fn legs_apply_animation(&mut self, anim: Animation, curr: i32) {
+  pub fn legs_apply_animation(&mut self, anim: Box<Animation>, curr: i32) {
     /*
     if (LegsAnimation.ID = Prone.ID) or
      (LegsAnimation.ID = ProneMove.ID) then
@@ -184,7 +184,7 @@ impl Sprite {
       self.legs_animation.curr_frame = curr;
     }
   }
-  pub fn body_apply_animation(&mut self, anim: Animation, curr: i32) {
+  pub fn body_apply_animation(&mut self, anim: Box<Animation>, curr: i32) {
     if anim.id != self.body_animation.id {
       self.body_animation = anim;
       self.body_animation.curr_frame = curr;
@@ -295,8 +295,8 @@ impl Sprite {
           || ((self.direction == 1) && self.control.left) || player_pressed_left_right))
         || ((self.legs_animation.id == state.anims.roll_back.id) && self.control.up))
     {
-      self.body_apply_animation(state.anims.roll_back, 1);
-      self.legs_apply_animation(state.anims.roll_back, 1);
+      self.body_apply_animation(state.anims.roll_back.clone(), 1);
+      self.legs_apply_animation(state.anims.roll_back.clone(), 1);
     } else {
       if self.control.jets && (self.jets_count > 0) {
         if self.on_ground {
@@ -332,7 +332,7 @@ impl Sprite {
           && (self.body_animation.id != state.anims.roll.id)
           && (self.body_animation.id != state.anims.roll_back.id)
         {
-          self.legs_apply_animation(state.anims.fall, 1);
+          self.legs_apply_animation(state.anims.fall.clone(), 1);
         }
 
         self.jets_count -= 1;
@@ -352,7 +352,7 @@ impl Sprite {
     }
 
     if self.body_animation.id == state.anims.melee.id && self.body_animation.curr_frame > 20 {
-      self.body_apply_animation(state.anims.stand, 1);
+      self.body_apply_animation(state.anims.stand.clone(), 1);
     }
 
     // Prone
@@ -361,12 +361,12 @@ impl Sprite {
         && (self.legs_animation.id != state.anims.prone.id)
         && (self.legs_animation.id != state.anims.prone_move.id)
       {
-        self.legs_apply_animation(state.anims.prone, 1);
+        self.legs_apply_animation(state.anims.prone.clone(), 1);
         if (self.body_animation.id != state.anims.reload.id)
           && (self.body_animation.id != state.anims.change.id)
           && (self.body_animation.id != state.anims.throw_weapon.id)
         {
-          self.body_apply_animation(state.anims.prone, 1);
+          self.body_apply_animation(state.anims.prone.clone(), 1);
         }
         self.old_direction = self.direction;
         self.control.prone = false;
@@ -381,7 +381,7 @@ impl Sprite {
           || (self.legs_animation.id == state.anims.prone_move.id)
         {
           if self.legs_animation.id != state.anims.get_up.id {
-            self.legs_animation = state.anims.get_up;
+            self.legs_animation = state.anims.get_up.clone();
             self.legs_animation.curr_frame = 9;
             self.control.prone = false;
           }
@@ -389,7 +389,7 @@ impl Sprite {
             && (self.body_animation.id != state.anims.change.id)
             && (self.body_animation.id != state.anims.throw_weapon.id)
           {
-            self.body_apply_animation(state.anims.get_up, 9);
+            self.body_apply_animation(state.anims.get_up.clone(), 9);
           }
         }
       }
@@ -404,7 +404,7 @@ impl Sprite {
     {
       // Set sidejump frame 1 to 4 depending on which unprone frame we're in
       let id = self.legs_animation.curr_frame - (23 - (4 - 1));
-      self.legs_apply_animation(state.anims.jump_side, id);
+      self.legs_apply_animation(state.anims.jump_side.clone(), id);
       unprone = true;
     } else if (self.legs_animation.id == state.anims.get_up.id)
       && (self.legs_animation.curr_frame > 23 - (4 - 1)) && self.on_ground
@@ -412,21 +412,21 @@ impl Sprite {
     {
       // Set jump frame 6 to 9 depending on which unprone frame we're in
       let id = self.legs_animation.curr_frame - (23 - (9 - 1));
-      self.legs_apply_animation(state.anims.jump, id);
+      self.legs_apply_animation(state.anims.jump.clone(), id);
       unprone = true;
     } else if (self.legs_animation.id == state.anims.get_up.id)
       && (self.legs_animation.curr_frame > 23)
     {
       if self.control.right || self.control.left {
         if (self.direction == 1) ^ self.control.left {
-          self.legs_apply_animation(state.anims.run, 1);
+          self.legs_apply_animation(state.anims.run.clone(), 1);
         } else {
-          self.legs_apply_animation(state.anims.run_back, 1);
+          self.legs_apply_animation(state.anims.run_back.clone(), 1);
         }
       } else if !self.on_ground && self.control.up {
-        self.legs_apply_animation(state.anims.run, 1);
+        self.legs_apply_animation(state.anims.run.clone(), 1);
       } else {
-        self.legs_apply_animation(state.anims.stand, 1);
+        self.legs_apply_animation(state.anims.stand.clone(), 1);
       }
       unprone = true;
     }
@@ -438,7 +438,7 @@ impl Sprite {
         && (self.body_animation.id != state.anims.change.id)
         && (self.body_animation.id != state.anims.throw_weapon.id)
       {
-        self.body_apply_animation(state.anims.stand, 1);
+        self.body_apply_animation(state.anims.stand.clone(), 1);
       }
     }
 
@@ -457,7 +457,7 @@ impl Sprite {
 
       if self.idle_random == 0 {
         if self.idle_time == 0 {
-          self.body_apply_animation(state.anims.smoke, 1);
+          self.body_apply_animation(state.anims.smoke.clone(), 1);
           self.idle_time = DEFAULT_IDLETIME;
         }
 
@@ -573,19 +573,19 @@ impl Sprite {
               }
 
               if self.direction == 1 {
-                self.body_apply_animation(state.anims.roll, 1);
-                self.legs_animation = state.anims.roll;
+                self.body_apply_animation(state.anims.roll.clone(), 1);
+                self.legs_animation = state.anims.roll.clone();
                 self.legs_animation.curr_frame = 1;
               } else {
-                self.body_apply_animation(state.anims.roll_back, 1);
-                self.legs_animation = state.anims.roll_back;
+                self.body_apply_animation(state.anims.roll_back.clone(), 1);
+                self.legs_animation = state.anims.roll_back.clone();
                 self.legs_animation.curr_frame = 1;
               }
             } else {
               if self.direction == 1 {
-                self.legs_apply_animation(state.anims.crouch_run, 1);
+                self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
               } else {
-                self.legs_apply_animation(state.anims.crouch_run_back, 1);
+                self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
               }
             }
 
@@ -619,19 +619,19 @@ impl Sprite {
               }
 
               if self.direction == 1 {
-                self.body_apply_animation(state.anims.roll_back, 1);
-                self.legs_animation = state.anims.roll_back;
+                self.body_apply_animation(state.anims.roll_back.clone(), 1);
+                self.legs_animation = state.anims.roll_back.clone();
                 self.legs_animation.curr_frame = 1;
               } else {
-                self.body_apply_animation(state.anims.roll, 1);
-                self.legs_animation = state.anims.roll;
+                self.body_apply_animation(state.anims.roll.clone(), 1);
+                self.legs_animation = state.anims.roll.clone();
                 self.legs_animation.curr_frame = 1;
               }
             } else {
               if self.direction == 1 {
-                self.legs_apply_animation(state.anims.crouch_run_back, 1);
+                self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
               } else {
-                self.legs_apply_animation(state.anims.crouch_run, 1);
+                self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
               }
             }
 
@@ -664,7 +664,7 @@ impl Sprite {
                   }
                 }
 
-                self.legs_apply_animation(state.anims.prone_move, 1);
+                self.legs_apply_animation(state.anims.prone_move.clone(), 1);
 
                 if (self.body_animation.id != state.anims.clip_in.id)
                   && (self.body_animation.id != state.anims.clip_out.id)
@@ -674,15 +674,15 @@ impl Sprite {
                   && (self.body_animation.id != state.anims.throw.id)
                   && (self.body_animation.id != state.anims.throw_weapon.id)
                 {
-                  self.body_apply_animation(state.anims.prone_move, 1);
+                  self.body_apply_animation(state.anims.prone_move.clone(), 1);
                 }
 
                 if self.legs_animation.id != state.anims.prone_move.id {
-                  self.legs_animation = state.anims.prone_move;
+                  self.legs_animation = state.anims.prone_move.clone();
                 }
               } else {
                 if self.legs_animation.id != state.anims.prone.id {
-                  self.legs_animation = state.anims.prone;
+                  self.legs_animation = state.anims.prone.clone();
                 }
                 self.legs_animation.curr_frame = 26;
               }
@@ -697,24 +697,24 @@ impl Sprite {
               || (self.legs_animation.id == state.anims.crouch_run.id)
               || (self.legs_animation.id == state.anims.crouch_run_back.id)
             {
-              self.legs_apply_animation(state.anims.jump_side, 1);
+              self.legs_apply_animation(state.anims.jump_side.clone(), 1);
             }
 
             if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-              self.legs_apply_animation(state.anims.run, 1);
+              self.legs_apply_animation(state.anims.run.clone(), 1);
             }
           } else if (self.legs_animation.id == state.anims.roll.id)
             || (self.legs_animation.id == state.anims.roll_back.id)
           {
             if self.direction == 1 {
-              self.legs_apply_animation(state.anims.run, 1);
+              self.legs_apply_animation(state.anims.run.clone(), 1);
             } else {
-              self.legs_apply_animation(state.anims.run_back, 1);
+              self.legs_apply_animation(state.anims.run_back.clone(), 1);
             }
           }
           if self.legs_animation.id == state.anims.jump.id {
             if self.legs_animation.curr_frame < 10 {
-              self.legs_apply_animation(state.anims.jump_side, 1);
+              self.legs_apply_animation(state.anims.jump_side.clone(), 1);
             }
           }
 
@@ -733,25 +733,25 @@ impl Sprite {
               || (self.legs_animation.id == state.anims.crouch_run.id)
               || (self.legs_animation.id == state.anims.crouch_run_back.id)
             {
-              self.legs_apply_animation(state.anims.jump_side, 1);
+              self.legs_apply_animation(state.anims.jump_side.clone(), 1);
             }
 
             if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-              self.legs_apply_animation(state.anims.run, 1);
+              self.legs_apply_animation(state.anims.run.clone(), 1);
             }
           } else if (self.legs_animation.id == state.anims.roll.id)
             || (self.legs_animation.id == state.anims.roll_back.id)
           {
             if self.direction == -1 {
-              self.legs_apply_animation(state.anims.run, 1);
+              self.legs_apply_animation(state.anims.run.clone(), 1);
             } else {
-              self.legs_apply_animation(state.anims.run_back, 1);
+              self.legs_apply_animation(state.anims.run_back.clone(), 1);
             }
           }
 
           if self.legs_animation.id == state.anims.jump.id {
             if self.legs_animation.curr_frame < 10 {
-              self.legs_apply_animation(state.anims.jump_side, 1);
+              self.legs_apply_animation(state.anims.jump_side.clone(), 1);
             }
           }
 
@@ -764,10 +764,10 @@ impl Sprite {
         } else if self.control.up {
           if self.on_ground {
             if self.legs_animation.id != state.anims.jump.id {
-              self.legs_apply_animation(state.anims.jump, 1);
+              self.legs_apply_animation(state.anims.jump.clone(), 1);
             }
             if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-              self.legs_apply_animation(state.anims.stand, 1);
+              self.legs_apply_animation(state.anims.stand.clone(), 1);
             }
           }
           if self.legs_animation.id == state.anims.jump.id {
@@ -775,20 +775,20 @@ impl Sprite {
               state.sprite_parts.forces[self.num].y = -JUMPSPEED;
             }
             if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-              self.legs_apply_animation(state.anims.fall, 1);
+              self.legs_apply_animation(state.anims.fall.clone(), 1);
             }
           }
         } else if self.control.down {
           if self.on_ground {
-            self.legs_apply_animation(state.anims.crouch, 1);
+            self.legs_apply_animation(state.anims.crouch.clone(), 1);
           }
         } else if self.control.right {
           if true {
             // if self.para = 0
             if self.direction == 1 {
-              self.legs_apply_animation(state.anims.run, 1);
+              self.legs_apply_animation(state.anims.run.clone(), 1);
             } else {
-              self.legs_apply_animation(state.anims.run_back, 1);
+              self.legs_apply_animation(state.anims.run_back.clone(), 1);
             }
           }
 
@@ -802,9 +802,9 @@ impl Sprite {
           if true {
             // if self.para = 0
             if self.direction == -1 {
-              self.legs_apply_animation(state.anims.run, 1);
+              self.legs_apply_animation(state.anims.run.clone(), 1);
             } else {
-              self.legs_apply_animation(state.anims.run_back, 1);
+              self.legs_apply_animation(state.anims.run_back.clone(), 1);
             }
           }
 
@@ -816,9 +816,9 @@ impl Sprite {
           }
         } else {
           if self.on_ground {
-            self.legs_apply_animation(state.anims.stand, 1);
+            self.legs_apply_animation(state.anims.stand.clone(), 1);
           } else {
-            self.legs_apply_animation(state.anims.fall, 1);
+            self.legs_apply_animation(state.anims.fall.clone(), 1);
           }
         }
       }
@@ -827,22 +827,22 @@ impl Sprite {
       if (self.legs_animation.id == state.anims.roll.id)
         && (self.body_animation.id != state.anims.roll.id)
       {
-        self.body_apply_animation(state.anims.roll, 1)
+        self.body_apply_animation(state.anims.roll.clone(), 1)
       }
       if (self.body_animation.id == state.anims.roll.id)
         && (self.legs_animation.id != state.anims.roll.id)
       {
-        self.legs_apply_animation(state.anims.roll, 1)
+        self.legs_apply_animation(state.anims.roll.clone(), 1)
       }
       if (self.legs_animation.id == state.anims.roll_back.id)
         && (self.body_animation.id != state.anims.roll_back.id)
       {
-        self.body_apply_animation(state.anims.roll_back, 1)
+        self.body_apply_animation(state.anims.roll_back.clone(), 1)
       }
       if (self.body_animation.id == state.anims.roll_back.id)
         && (self.legs_animation.id != state.anims.roll_back.id)
       {
-        self.legs_apply_animation(state.anims.roll_back, 1)
+        self.legs_apply_animation(state.anims.roll_back.clone(), 1)
       }
 
       if (self.body_animation.id == state.anims.roll.id)
@@ -867,12 +867,12 @@ impl Sprite {
           if self.control.down {
             if self.control.left || self.control.right {
               if self.body_animation.id == state.anims.roll.id {
-                self.legs_apply_animation(state.anims.crouch_run, 1);
+                self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
               } else {
-                self.legs_apply_animation(state.anims.crouch_run_back, 1);
+                self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
               }
             } else {
-              self.legs_apply_animation(state.anims.crouch, 15);
+              self.legs_apply_animation(state.anims.crouch.clone(), 15);
             }
           }
         // Was probably a backflip
@@ -880,26 +880,26 @@ impl Sprite {
           if self.control.left || self.control.right {
             // Run back or forward depending on facing direction and direction key pressed
             if (self.direction == 1) ^ (self.control.left) {
-              self.legs_apply_animation(state.anims.run, 1);
+              self.legs_apply_animation(state.anims.run.clone(), 1);
             } else {
-              self.legs_apply_animation(state.anims.run_back, 1);
+              self.legs_apply_animation(state.anims.run_back.clone(), 1);
             }
           } else {
-            self.legs_apply_animation(state.anims.fall, 1);
+            self.legs_apply_animation(state.anims.fall.clone(), 1);
           }
         // Was probably a roll (that ended mid-air)
         } else if self.control.down {
           if self.control.left || self.control.right {
             if self.body_animation.id == state.anims.roll.id {
-              self.legs_apply_animation(state.anims.crouch_run, 1);
+              self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
             } else {
-              self.legs_apply_animation(state.anims.crouch_run_back, 1);
+              self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
             }
           } else {
-            self.legs_apply_animation(state.anims.crouch, 15);
+            self.legs_apply_animation(state.anims.crouch.clone(), 15);
           }
         }
-        self.body_apply_animation(state.anims.stand, 1);
+        self.body_apply_animation(state.anims.stand.clone(), 1);
       }
 
       if (!self.control.grenade && (self.body_animation.id != state.anims.recoil.id)
@@ -936,26 +936,26 @@ impl Sprite {
       {
         if self.position != POS_PRONE {
           if self.position == POS_STAND {
-            self.body_apply_animation(state.anims.stand, 1);
+            self.body_apply_animation(state.anims.stand.clone(), 1);
           }
 
           if self.position == POS_CROUCH {
             if self.collider_distance < 255 {
               if self.body_animation.id == state.anims.hands_up_recoil.id {
-                self.body_apply_animation(state.anims.hands_up_aim, 11);
+                self.body_apply_animation(state.anims.hands_up_aim.clone(), 11);
               } else {
-                self.body_apply_animation(state.anims.hands_up_aim, 1);
+                self.body_apply_animation(state.anims.hands_up_aim.clone(), 1);
               }
             } else {
               if self.body_animation.id == state.anims.aim_recoil.id {
-                self.body_apply_animation(state.anims.aim, 6);
+                self.body_apply_animation(state.anims.aim.clone(), 6);
               } else {
-                self.body_apply_animation(state.anims.aim, 1);
+                self.body_apply_animation(state.anims.aim.clone(), 1);
               }
             }
           }
         } else {
-          self.body_apply_animation(state.anims.prone, 26);
+          self.body_apply_animation(state.anims.prone.clone(), 26);
         }
       }
 
@@ -1189,12 +1189,12 @@ impl Sprite {
         state.sprite_parts.pos[self.num].y,
       );
 
-      self.check_map_collision(state, position.x - 3.5, position.y - 12.0, 1);
+      self.check_map_collision(state, position.x - 3.5, position.y - 12.0.clone(), 1);
       let mut position = Vector2::new(
         state.sprite_parts.pos[self.num].x,
         state.sprite_parts.pos[self.num].y,
       );
-      self.check_map_collision(state, position.x + 3.5, position.y - 12.0, 1);
+      self.check_map_collision(state, position.x + 3.5, position.y - 12.0.clone(), 1);
 
       body_y = 0.0;
       arm_s = 0.0;

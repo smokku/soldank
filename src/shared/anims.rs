@@ -45,7 +45,7 @@ impl Animation {
     }
   }
 
-  pub fn load_from_file(file_name: &str, id: i32, speed: i32, looped: bool) -> Animation {
+  pub fn load_from_file(file_name: &str, id: i32, speed: i32, looped: bool) -> Box<Animation> {
     let mut path = PathBuf::new();
     path.push("assets/anims/");
     path.push(file_name);
@@ -95,7 +95,7 @@ impl Animation {
       }
     }
 
-    Animation {
+    Box::new(Animation {
       id: id,
       num_frames: num_frames,
       speed: speed,
@@ -103,6 +103,6 @@ impl Animation {
       curr_frame: 1,
       looped: looped,
       frame: new_frame,
-    }
+    })
   }
 }
