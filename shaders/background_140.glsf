@@ -1,0 +1,6 @@
+#version 140
+in vec4 color_s;
+out vec4 Target0;
+void main() {
+    Target0 = color_s;
+}
