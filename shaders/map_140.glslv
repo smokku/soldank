@@ -1,15 +1,14 @@
-#version 140
-in vec3 position;
-in vec2 tex_coords;
-in vec4 color;
-uniform Transform {
-    mat4 matrix;
-};
+#version 120
+attribute vec3 position;
+attribute vec2 tex_coords;
+attribute vec4 color;
+uniform mat3 matrix;
 
-out vec2 v_tex_coords;
-out vec4 color_s;
+varying vec2 v_tex_coords;
+varying vec4 color_s;
 void main() {
     color_s = vec4(color.rgb * color.a, color.a);
     v_tex_coords = tex_coords;
-    gl_Position = matrix * vec4(position, 1.0);
+    gl_Position.xyw = matrix * position;
+    gl_Position.z = 0.0;
 }

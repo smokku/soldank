@@ -1,14 +1,15 @@
 pub mod renderer {
     use shared::state::*;
     use shared::sprites::*;
-    use na::{Matrix4, Vector2};
+    use na::{Vector2};
     use gfx;
     use gfx::traits::FactoryExt;
     use gfx::Device;
     use gfx_window_glutin as gfx_glutin;
     use glutin::GlContext;
     pub type ColorFormat = gfx::format::Srgba8;
-    pub type DepthFormat = gfx::format::DepthStencil;
+
+    pub type DepthFormat = gfx::format::Depth;
     use gfx::texture::Mipmap;
     use gfx::state::ColorMask;
     use gfx::Factory;
@@ -17,6 +18,7 @@ pub mod renderer {
     use glutin;
     use std::{thread, time};
     use std::path::PathBuf;
+    use shared::mapfile::MapColor;
 
     const BLACK: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
 
@@ -27,50 +29,42 @@ pub mod renderer {
             color: [f32; 4] = "color",
         }
 
-        constant Transform {
-            transform: [[f32; 4];4] = "matrix",
-        }
-
         pipeline pipe {
             vbuf: gfx::VertexBuffer<Vertex> = (),
-            transform: gfx::ConstantBuffer<Transform> = "Transform",
+            transform: gfx::Global<[[f32; 3];3]> = "matrix",
             tex: gfx::TextureSampler<[f32; 4]> = "tex",
             out: gfx::BlendTarget<ColorFormat> = ("Target0", ColorMask::all(), gfx::preset::blend::ALPHA),
         }
         pipeline pipe_bg {
             vbuf: gfx::VertexBuffer<Vertex> = (),
-            transform: gfx::ConstantBuffer<Transform> = "Transform",
+            transform: gfx::Global<[[f32; 3];3]> = "matrix",
             out: gfx::BlendTarget<ColorFormat> = ("Target0", ColorMask::all(), gfx::preset::blend::ALPHA),
         }
     }
-    fn mat3ortho(l: f32, r: f32, t: f32, b: f32) -> Matrix4<f32> {
+    fn mat3ortho(l: f32, r: f32, t: f32, b: f32) -> [[f32; 3]; 3] {
         let w: f32 = r - l;
         let h: f32 = t - b;
-        Matrix4::new(
-            2.0 / w,
-            0.0,
-            0.0,
-            -(r + l) / w,
-            0.0,
-            2.0 / h,
-            0.0,
-            -(t + b) / h,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.00,
-            1.0f32,
-        )
+        [
+            [2.0 / w, 0.0, 0.0],
+            [0.0, 2.0 / h, 0.0],
+            [-(r + l) / w, -(t + b) / h, 1.00],
+        ]
+    }
+
+    fn convert_color(color: MapColor) -> [f32; 4] {
+        [
+            f32::from(color.r) / 255.0,
+            f32::from(color.g) / 255.0,
+            f32::from(color.b) / 255.0,
+            f32::from(color.a) / 255.0,
+        ]
     }
 
     pub fn render(state: &mut MainState, sprite: &mut Sprite) {
         let mut events_loop = glutin::EventsLoop::new();
         let windowbuilder = glutin::WindowBuilder::new()
             .with_title("Soldank".to_string())
-            .with_dimensions(1920, 1200);
+            .with_dimensions(1280, 720);
         let contextbuilder = glutin::ContextBuilder::new().with_vsync(true);
         let (window, mut device, mut factory, color_view, mut _depth_view) =
             gfx_glutin::init::<ColorFormat, DepthFormat>(
@@ -88,7 +82,7 @@ pub mod renderer {
         let vs = include_bytes!("../../shaders/map_140.glslv");
         let ps = include_bytes!("../../shaders/map_140.glslf");
         let shader_set = factory.create_shader_set(vs, ps).unwrap();
-        let pso = factory
+        let pso_map = factory
             .create_pipeline_state(
                 &shader_set,
                 gfx::Primitive::TriangleList,
@@ -111,17 +105,12 @@ pub mod renderer {
                 map_polygon.push(Vertex {
                     pos: [vertex.x, vertex.y, 1.0],
                     tex_coords: [vertex.u, vertex.v],
-                    color: [
-                        f32::from(vertex.color.r) / 255.0,
-                        f32::from(vertex.color.g) / 255.0,
-                        f32::from(vertex.color.b) / 255.0,
-                        f32::from(vertex.color.a) / 255.0,
-                    ],
+                    color: convert_color(vertex.color),
                 });
             }
         }
 
-        let (vertex_buffer, slice) = factory.create_vertex_buffer_with_slice(&map_polygon, ());
+        let (vertex_buffer_map, slice_map) = factory.create_vertex_buffer_with_slice(&map_polygon, ());
         let w = 768.0;
         let h = 480.0;
 
@@ -129,56 +118,33 @@ pub mod renderer {
         let dy = 0.0 - h / 2.0;
         let mut map_background: Vec<Vertex> = Vec::new();
 
+        let d = 25.0 * state.map.sectors_division.max((0.5 * state.game_height as f32 / 25.0).ceil() as i32) as f32;
+
         map_background.push(Vertex {
-            pos: [-1450.0, 1450.0, 1.0],
+            pos: [0.0, -d, 1.0],
             tex_coords: [0.0, 0.0],
-            color: [
-                f32::from(state.map.bg_color_top.r) / 255.0,
-                f32::from(state.map.bg_color_top.g) / 255.0,
-                f32::from(state.map.bg_color_top.b) / 255.0,
-                f32::from(state.map.bg_color_top.a) / 255.0,
-            ],
+            color: convert_color(state.map.bg_color_top),
         });
         map_background.push(Vertex {
-            pos: [1450.0, 1450.0, 1.0],
+            pos: [1.0, -d, 1.0],
             tex_coords: [0.0, 0.0],
-            color: [
-                f32::from(state.map.bg_color_top.r) / 255.0,
-                f32::from(state.map.bg_color_top.g) / 255.0,
-                f32::from(state.map.bg_color_top.b) / 255.0,
-                f32::from(state.map.bg_color_top.a) / 255.0,
-            ],
+            color: convert_color(state.map.bg_color_top),
         });
         map_background.push(Vertex {
-            pos: [1450.0, -1450.0, 1.0],
+            pos: [1.0, d, 1.0],
             tex_coords: [0.0, 0.0],
-            color: [
-                f32::from(state.map.bg_color_bottom.r) / 255.0,
-                f32::from(state.map.bg_color_bottom.g) / 255.0,
-                f32::from(state.map.bg_color_bottom.b) / 255.0,
-                f32::from(state.map.bg_color_bottom.a) / 255.0,
-            ],
+            color: convert_color(state.map.bg_color_bottom),
         });
         map_background.push(Vertex {
-            pos: [-1450.0, -1450.0, 1.0],
+            pos: [0.0, d, 1.0],
             tex_coords: [0.0, 0.0],
-            color: [
-                f32::from(state.map.bg_color_bottom.r) / 255.0,
-                f32::from(state.map.bg_color_bottom.g) / 255.0,
-                f32::from(state.map.bg_color_bottom.b) / 255.0,
-                f32::from(state.map.bg_color_bottom.a) / 255.0,
-            ],
+            color: convert_color(state.map.bg_color_bottom),
         });
-        let transform_bg = Transform {
-            transform: Matrix4::new_orthographic(dy, w + dy, dx, h + dx, -2.0, 1.0).into(),
-        };
+
+        let transform_bg = mat3ortho(0.00, 1.00, dy, h + dy);
         let indice: [u16; 6] = [0, 1, 2, 2, 3, 0];
         let (vertex_buffer_bg, slice_bg) =
             factory.create_vertex_buffer_with_slice(&map_background, &indice[..]);
-
-        let transform_buffer = factory.create_constant_buffer(1);
-        let transform_buffer_bg = factory.create_constant_buffer(1);
-        let transform_buffer_sprite = factory.create_constant_buffer(1);
 
         fn gfx_load_texture<F, R>(
             factory: &mut F,
@@ -188,33 +154,35 @@ pub mod renderer {
             F: gfx::Factory<R>,
             R: gfx::Resources,
         {
-            use gfx::format::Rgba8;
             println!("Loading texture: {}", file_name.display());
             let img = image::open(file_name).unwrap().to_rgba();
             let (width, height) = img.dimensions();
             let kind =
                 gfx::texture::Kind::D2(width as u16, height as u16, gfx::texture::AaMode::Single);
             let (_, view) = factory
-                .create_texture_immutable_u8::<Rgba8>(kind, Mipmap::Provided, &[&img])
+                .create_texture_immutable_u8::<ColorFormat>(kind, Mipmap::Provided, &[&img])
                 .unwrap();
             view
         }
         let sampler =
-            factory.create_sampler(SamplerInfo::new(FilterMethod::Scale, WrapMode::Mirror));
+            factory.create_sampler(SamplerInfo::new(FilterMethod::Trilinear, WrapMode::Tile));
 
         let mut texture_file = PathBuf::new();
         texture_file.push("assets/textures");
         texture_file.push(state.map.texture_name.replace("bmp", "png"));
+        if !texture_file.exists() {
+            texture_file.set_extension("bmp");
+        }
         let texture = gfx_load_texture(&mut factory, &texture_file);
-        let data = pipe::Data {
-            vbuf: vertex_buffer,
-            transform: transform_buffer,
+        let mut data_map = pipe::Data {
+            vbuf: vertex_buffer_map,
+            transform: transform_bg,
             tex: (texture, sampler),
             out: color_view.clone(),
         };
-        let data_bg = pipe_bg::Data {
+        let mut data_bg = pipe_bg::Data {
             vbuf: vertex_buffer_bg,
-            transform: transform_buffer_bg,
+            transform: transform_bg,
             out: color_view.clone(),
         };
 
@@ -235,7 +203,7 @@ pub mod renderer {
 
             m.x = (state.mouse.x - state.game_width as f32 / 2.0) / 7.0
                 * ((2.0 * 640.0 / state.game_width as f32 - 1.0)
-                    + (state.game_width as f32 - 640.0) / state.game_width as f32 * (7.0 - 7.0)
+                    + (state.game_width as f32 - 640.0) / state.game_width as f32 * 0.0
                         / 6.8);
             m.y = (state.mouse.y - state.game_width as f32 / 2.0) / 7.0;
 
@@ -251,7 +219,7 @@ pub mod renderer {
             let dx = state.camera.x - 768.00 / 2.0;
             let dy = state.camera.y - 480.00 / 2.0;
 
-            let transformex = mat3ortho(dx, w + dx, dy, h + dy);
+            let transform_map = mat3ortho(dx, w + dx, dy, h + dy);
 
             let pos = Vector2::new(state.sprite_parts.pos[1].x, state.sprite_parts.pos[1].y);
 
@@ -263,70 +231,41 @@ pub mod renderer {
                 Vertex {
                     pos: [left, top, 1.0],
                     tex_coords: [0.0, 0.0],
-                    color: [
-                        f32::from(state.map.bg_color_bottom.r) / 255.0,
-                        f32::from(state.map.bg_color_bottom.g) / 255.0,
-                        f32::from(state.map.bg_color_bottom.b) / 255.0,
-                        f32::from(state.map.bg_color_bottom.a) / 255.0,
-                    ],
+                    color: convert_color(state.map.bg_color_bottom),
                 },
                 Vertex {
                     pos: [right, top, 1.0],
                     tex_coords: [0.0, 0.0],
-                    color: [
-                        f32::from(state.map.bg_color_bottom.r) / 255.0,
-                        f32::from(state.map.bg_color_bottom.g) / 255.0,
-                        f32::from(state.map.bg_color_bottom.b) / 255.0,
-                        f32::from(state.map.bg_color_bottom.a) / 255.0,
-                    ],
+                    color: convert_color(state.map.bg_color_bottom),
                 },
                 Vertex {
                     pos: [left, bottom, 1.0],
                     tex_coords: [0.0, 0.0],
-                    color: [
-                        f32::from(state.map.bg_color_bottom.r) / 255.0,
-                        f32::from(state.map.bg_color_bottom.g) / 255.0,
-                        f32::from(state.map.bg_color_bottom.b) / 255.0,
-                        f32::from(state.map.bg_color_bottom.a) / 255.0,
-                    ],
+                    color: convert_color(state.map.bg_color_bottom),
                 },
                 Vertex {
                     pos: [right, bottom, 1.0],
                     tex_coords: [0.0, 0.0],
-                    color: [
-                        f32::from(state.map.bg_color_bottom.r) / 255.0,
-                        f32::from(state.map.bg_color_bottom.g) / 255.0,
-                        f32::from(state.map.bg_color_bottom.b) / 255.0,
-                        f32::from(state.map.bg_color_bottom.a) / 255.0,
-                    ],
+                    color: convert_color(state.map.bg_color_bottom),
                 },
             ];
             let indice_sprite: [u16; 6] = [0, 1, 2, 1, 3, 2];
             let (vertex_buffer_sprite, slice_sprite) =
                 factory.create_vertex_buffer_with_slice(&sprite_quad, &indice_sprite[..]);
-            let data_sprite = pipe_bg::Data {
+            let mut data_sprite = pipe_bg::Data {
                 vbuf: vertex_buffer_sprite,
-                transform: transform_buffer_sprite.clone(),
+                transform: transform_map,
                 out: color_view.clone(),
             };
 
             encoder.clear(&color_view, BLACK);
-            let transform_map = Transform {
-                transform: transformex.into(),
-            };
 
-            encoder
-                .update_buffer(&data_bg.transform, &[transform_bg], 0)
-                .unwrap();
+            data_map.transform = transform_map;
+            data_bg.transform = transform_bg;
+            data_sprite.transform = transform_map;
+
             encoder.draw(&slice_bg, &pso_bg, &data_bg);
-
-            encoder
-                .update_buffer(&data.transform, &[transform_map], 0)
-                .unwrap();
-            encoder.draw(&slice, &pso, &data);
-            encoder
-                .update_buffer(&data_sprite.transform, &[transform_map], 0)
-                .unwrap();
+            encoder.draw(&slice_map, &pso_map, &data_map);
             encoder.draw(&slice_sprite, &pso_bg, &data_sprite);
             encoder.flush(&mut device);
             window.swap_buffers().unwrap();

@@ -1,6 +1,13 @@
-#version 140
-in vec4 color_s;
-out vec4 Target0;
+#version 120
+varying vec4 color_s;
+
+vec3 gamma(vec3 col) {
+    vec3 low = col / 12.92;
+    vec3 high = pow((col + 0.055) / 1.055, vec3(2.4));
+    return mix(low, high, step(vec3(0.04045), col));
+}
+
 void main() {
-    Target0 = color_s;
+    vec3 col = gamma(vec3(color_s));
+    gl_FragColor = vec4(col, 1);
 }
