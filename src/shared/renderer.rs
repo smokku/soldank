@@ -381,6 +381,13 @@ pub mod renderer {
 
             encoder.draw(&slice_map, &pso_map, &data_map);
 
+            for i in 0..data_sceneries.len() {
+                if state.map.props[i].level == 2 {
+                    data_sceneries[i].transform = transform_map;
+                    encoder.draw(&slices_sceneries[i], &pso_map, &data_sceneries[i]);
+                }
+            }
+
             encoder.flush(&mut device);
             window.swap_buffers().unwrap();
             device.cleanup();
