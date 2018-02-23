@@ -1,7 +1,7 @@
 pub mod renderer {
     use shared::state::*;
     use shared::sprites::*;
-    use na::{Vector2};
+    use na::Vector2;
     use gfx;
     use gfx::traits::FactoryExt;
     use gfx::Device;
@@ -49,6 +49,31 @@ pub mod renderer {
             [0.0, 2.0 / h, 0.0],
             [-(r + l) / w, -(t + b) / h, 1.00],
         ]
+    }
+
+    fn mat3transform(
+        tx: f32,
+        ty: f32,
+        sx: f32,
+        sy: f32,
+        cx: f32,
+        cy: f32,
+        r: f32,
+    ) -> [[f32; 3]; 3] {
+        let c = r.cos();
+        let s = r.sin();
+        [
+            [c * sx, s * sx, 0.0],
+            [-s * sy, c * sy, 0.0],
+            [tx + cy * s - c * cx + cx, ty - cx * s - c * cy + cy, 1.0],
+        ]
+    }
+
+    fn mat3mul(m: [[f32; 3]; 3], x: f32, y: f32) -> Vector2<f32> {
+        Vector2::new(
+            m[0][0] * x + m[1][0] * y + m[2][0],
+            m[0][1] * x + m[1][1] * y + m[2][1],
+        )
     }
 
     fn convert_color(color: MapColor) -> [f32; 4] {
@@ -110,7 +135,8 @@ pub mod renderer {
             }
         }
 
-        let (vertex_buffer_map, slice_map) = factory.create_vertex_buffer_with_slice(&map_polygon, ());
+        let (vertex_buffer_map, slice_map) =
+            factory.create_vertex_buffer_with_slice(&map_polygon, ());
         let w = 768.0;
         let h = 480.0;
 
@@ -118,7 +144,11 @@ pub mod renderer {
         let dy = 0.0 - h / 2.0;
         let mut map_background: Vec<Vertex> = Vec::new();
 
-        let d = 25.0 * state.map.sectors_division.max((0.5 * state.game_height as f32 / 25.0).ceil() as i32) as f32;
+        let d = 25.0
+            * state
+                .map
+                .sectors_division
+                .max((0.5 * state.game_height as f32 / 25.0).ceil() as i32) as f32;
 
         map_background.push(Vertex {
             pos: [0.0, -d, 1.0],
@@ -177,7 +207,7 @@ pub mod renderer {
         let mut data_map = pipe::Data {
             vbuf: vertex_buffer_map,
             transform: transform_bg,
-            tex: (texture, sampler),
+            tex: (texture, sampler.clone()),
             out: color_view.clone(),
         };
         let mut data_bg = pipe_bg::Data {
@@ -185,6 +215,77 @@ pub mod renderer {
             transform: transform_bg,
             out: color_view.clone(),
         };
+
+        let mut sceneries = Vec::new();
+
+        for scenery in state.map.scenery.iter() {
+            let mut scenery_file = PathBuf::new();
+            scenery_file.push("assets/scenery-gfx");
+            scenery_file.push(scenery.filename.replace("bmp", "png"));
+            if !scenery_file.exists() {
+                scenery_file.set_extension("bmp");
+            }
+            sceneries.push(gfx_load_texture(&mut factory, &scenery_file));
+        }
+
+        let mut map_scenery: Vec<Vertex> = Vec::new();
+
+        let indices_scenery: [u16; 6] = [0, 1, 2, 2, 3, 0];
+
+        let mut data_sceneries = Vec::new();
+        let mut slices_sceneries = Vec::new();
+        for (_i, prop) in &mut state.map.props.iter().enumerate() {
+            let m = mat3transform(
+                prop.x,
+                prop.y,
+                prop.scale_x,
+                prop.scale_y,
+                0.0,
+                1.0,
+                -prop.rotation,
+            );
+
+            let p = mat3mul(m, 0.0, 0.0);
+
+            map_scenery.push(Vertex {
+                pos: [p.x, p.y, 1.0],
+                tex_coords: [0.0, 0.0],
+                color: convert_color(prop.color),
+            });
+            let p = mat3mul(m, prop.width as f32, 0.0);
+
+            map_scenery.push(Vertex {
+                pos: [p.x, p.y, 1.0],
+                tex_coords: [1.0, 0.0],
+                color: convert_color(prop.color),
+            });
+            let p = mat3mul(m, prop.width as f32, prop.height as f32);
+
+            map_scenery.push(Vertex {
+                pos: [p.x, p.y, 1.0],
+                tex_coords: [1.0, 1.0],
+                color: convert_color(prop.color),
+            });
+            let p = mat3mul(m, 0.0, prop.height as f32);
+
+            map_scenery.push(Vertex {
+                pos: [p.x, p.y, 1.0],
+                tex_coords: [0.0, 1.0],
+                color: convert_color(prop.color),
+            });
+
+            let (vertex_buffer_scenery, slice_scenery) =
+                factory.create_vertex_buffer_with_slice(&map_scenery, &indices_scenery[..]);
+            slices_sceneries.push(slice_scenery.clone());
+
+            map_scenery.clear();
+            data_sceneries.push(pipe::Data {
+                vbuf: vertex_buffer_scenery.clone(),
+                transform: transform_bg,
+                tex: (sceneries[prop.style as usize - 1].clone(), sampler.clone()),
+                out: color_view.clone(),
+            });
+        }
 
         let mut closed = false;
 
@@ -203,8 +304,7 @@ pub mod renderer {
 
             m.x = (state.mouse.x - state.game_width as f32 / 2.0) / 7.0
                 * ((2.0 * 640.0 / state.game_width as f32 - 1.0)
-                    + (state.game_width as f32 - 640.0) / state.game_width as f32 * 0.0
-                        / 6.8);
+                    + (state.game_width as f32 - 640.0) / state.game_width as f32 * 0.0 / 6.8);
             m.y = (state.mouse.y - state.game_width as f32 / 2.0) / 7.0;
 
             let mut cam_v = Vector2::new(state.camera.x, state.camera.y);
@@ -265,11 +365,26 @@ pub mod renderer {
             data_sprite.transform = transform_map;
 
             encoder.draw(&slice_bg, &pso_bg, &data_bg);
-            encoder.draw(&slice_map, &pso_map, &data_map);
+            for i in 0..data_sceneries.len() {
+                if state.map.props[i].level == 0 {
+                    data_sceneries[i].transform = transform_map;
+                    encoder.draw(&slices_sceneries[i], &pso_map, &data_sceneries[i]);
+                }
+            }
             encoder.draw(&slice_sprite, &pso_bg, &data_sprite);
+            for i in 0..data_sceneries.len() {
+                if state.map.props[i].level == 1 {
+                    data_sceneries[i].transform = transform_map;
+                    encoder.draw(&slices_sceneries[i], &pso_map, &data_sceneries[i]);
+                }
+            }
+
+            encoder.draw(&slice_map, &pso_map, &data_map);
+
             encoder.flush(&mut device);
             window.swap_buffers().unwrap();
             device.cleanup();
+
             let mut mouse_inputs = Vec::new();
             events_loop.poll_events(|event| match event {
                 glutin::Event::WindowEvent { event, .. } => match event {

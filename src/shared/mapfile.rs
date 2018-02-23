@@ -50,22 +50,22 @@ pub struct MapSector {
 
 #[derive(Debug)]
 pub struct MapProp {
-  active: bool,
-  style: u16,
-  width: i32,
-  height: i32,
-  x: f32,
-  y: f32,
-  rotation: f32,
-  scale_x: f32,
-  scale_y: f32,
-  alpha: u8,
-  color: MapColor,
-  level: u8,
+  pub active: bool,
+  pub style: u16,
+  pub width: i32,
+  pub height: i32,
+  pub x: f32,
+  pub y: f32,
+  pub rotation: f32,
+  pub scale_x: f32,
+  pub scale_y: f32,
+  pub alpha: u8,
+  pub color: MapColor,
+  pub level: u8,
 }
 #[derive(Debug)]
 pub struct MapScenery {
-  filename: String,
+  pub filename: String,
   date: i32,
 }
 #[derive(Debug)]
@@ -100,7 +100,7 @@ pub struct MapFile {
   pub sectors_division: i32,
   pub sectors_num: i32,
   sectors: Vec<MapSector>,
-  props: Vec<MapProp>,
+  pub props: Vec<MapProp>,
   pub scenery: Vec<MapScenery>,
   colliders: Vec<MapCollider>,
   pub spawnpoints: Vec<MapSpawnpoint>,
