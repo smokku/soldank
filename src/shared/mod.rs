@@ -6,3 +6,4 @@ pub mod state;
 pub mod calc;
 pub mod renderer;
 pub mod update;
+pub mod control;
