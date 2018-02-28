@@ -7,6 +7,7 @@ use shared::anims::Animation;
 use shared::parts::ParticleSystem;
 use shared::calc;
 use shared::control::Control;
+use shared::mapfile::PolyType;
 use glutin;
 use std::process;
 
@@ -24,6 +25,7 @@ const POS_CROUCH: u8 = 2;
 const POS_PRONE: u8 = 3;
 
 const MAX_VELOCITY: f32 = 11.0;
+const SPRITE_COL_RADIUS: f32 = 3.0;
 
 #[allow(dead_code)]
 pub struct Sprite {
@@ -156,6 +158,22 @@ impl Sprite {
     if anim.id != self.body_animation.id {
       self.body_animation = anim;
       self.body_animation.curr_frame = curr;
+    }
+  }
+
+  pub fn handle_special_polytypes(
+    &mut self,
+    state: &mut MainState,
+    polytype: PolyType,
+    _pos: Vector2<f32>,
+  ) {
+    if polytype == PolyType::Deadly || polytype == PolyType::BloodyDeadly
+      || polytype == PolyType::Explosive
+    {
+      state.sprite_parts.pos[self.num] = Vector2::new(
+        state.map.spawnpoints[0].x as f32,
+        state.map.spawnpoints[0].y as f32,
+      );
     }
   }
 
@@ -362,6 +380,19 @@ impl Sprite {
       self.skeleton.pos[i].y = p.y;
     }
 
+    for i in 1..20 {
+      if self.dead_meat || self.half_dead {
+        if (i != 17) && (i != 18) && (i != 19) && (i != 20) && (i != 8) && (i != 7) && (i != 21) {
+          let mut position = Vector2::new(
+            state.sprite_parts.pos[self.num].x,
+            state.sprite_parts.pos[self.num].y,
+          );
+          self.on_ground = self.check_skeleton_map_collision(state, i, position.x, position.y);
+          println!("ok");
+        }
+      }
+    }
+
     if !self.dead_meat {
       self.body_animation.do_animation();
       self.legs_animation.do_animation();
@@ -429,6 +460,10 @@ impl Sprite {
         state.sprite_parts.pos[self.num].y,
       );
       let grounded = self.on_ground;
+      self.on_ground_for_law =
+        self.check_radius_map_collision(state, position.x, position.y, grounded);
+
+      let grounded = self.on_ground || self.on_ground_for_law;
       self.on_ground =
         self.check_map_vertices_collision(state, position.x, position.y, 3.00, grounded)
           || self.on_ground;
@@ -488,104 +523,114 @@ impl Sprite {
       && (ry < state.map.sectors_num + 25)
     {
       for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+        let polytype = state.map.polygons[w].polytype;
 
-        let mut polygons = state.map.polygons[w as usize];
-        if state.map.point_in_poly(pos, &mut polygons) {
-          let mut d = 0.0;
+        if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
+          let mut polygons = state.map.polygons[w as usize];
+          if state.map.point_in_poly(pos, &mut polygons) {
+            self.handle_special_polytypes(state, polytype, pos);
+            let mut d = 0.0;
 
-          let mut k = 0;
+            let mut k = 0;
 
-          let mut perp = state
-            .map
-            .closest_perpendicular(w as i32, pos, &mut d, &mut k);
+            let mut perp = state
+              .map
+              .closest_perpendicular(w as i32, pos, &mut d, &mut k);
 
-          let step = perp;
+            let step = perp;
 
-          perp = calc::vec2normalize(perp, perp);
-
-          perp *= d;
-
-          d = calc::vec2length(state.sprite_parts.velocity[self.num]);
-
-          if calc::vec2length(perp) > d {
             perp = calc::vec2normalize(perp, perp);
+
             perp *= d;
-          }
-          if (area == 0)
-            || ((area == 1)
-              && ((state.sprite_parts.velocity[self.num].y < 0.0)
-                || (state.sprite_parts.velocity[self.num].x > SLIDELIMIT)
-                || (state.sprite_parts.velocity[self.num].x < -SLIDELIMIT)))
-          {
-            state.sprite_parts.old_pos[self.num] = state.sprite_parts.pos[self.num];
-            state.sprite_parts.pos[self.num] -= perp;
-            state.sprite_parts.velocity[self.num] -= perp;
-          }
 
-          if area == 0 {
-            if (self.legs_animation.id == state.anims.stand.id)
-              || (self.legs_animation.id == state.anims.crouch.id)
-              || (self.legs_animation.id == state.anims.prone.id)
-              || (self.legs_animation.id == state.anims.prone_move.id)
-              || (self.legs_animation.id == state.anims.get_up.id)
-              || (self.legs_animation.id == state.anims.fall.id)
-              || (self.legs_animation.id == state.anims.mercy.id)
-              || (self.legs_animation.id == state.anims.mercy2.id)
-              || (self.legs_animation.id == state.anims.own.id)
+            d = calc::vec2length(state.sprite_parts.velocity[self.num]);
+
+            if calc::vec2length(perp) > d {
+              perp = calc::vec2normalize(perp, perp);
+              perp *= d;
+            }
+            if (area == 0)
+              || ((area == 1)
+                && ((state.sprite_parts.velocity[self.num].y < 0.0)
+                  || (state.sprite_parts.velocity[self.num].x > SLIDELIMIT)
+                  || (state.sprite_parts.velocity[self.num].x < -SLIDELIMIT)))
             {
-              if (state.sprite_parts.velocity[self.num].x < SLIDELIMIT)
-                && (state.sprite_parts.velocity[self.num].x > -SLIDELIMIT)
-                && (step.y > SLIDELIMIT)
-              {
-                state.sprite_parts.pos[self.num] = state.sprite_parts.old_pos[self.num];
-                state.sprite_parts.forces[self.num].y -= GRAV;
+              state.sprite_parts.old_pos[self.num] = state.sprite_parts.pos[self.num];
+              state.sprite_parts.pos[self.num] -= perp;
+              if state.map.polygons[w as usize].polytype == PolyType::Bouncy {
+                perp = calc::vec2normalize(perp, perp);
+                perp *= state.map.polygons[w as usize].bounciness * d;
               }
+              state.sprite_parts.velocity[self.num] -= perp;
+            }
 
-              /* (PolyType <> POLY_TYPE_ICE) and (PolyType <> POLY_TYPE_BOUNCY) */
-              if step.y > SLIDELIMIT {
-                if (self.legs_animation.id == state.anims.stand.id)
-                  || (self.legs_animation.id == state.anims.fall.id)
-                  || (self.legs_animation.id == state.anims.crouch.id)
+            if area == 0 {
+              if (self.legs_animation.id == state.anims.stand.id)
+                || (self.legs_animation.id == state.anims.crouch.id)
+                || (self.legs_animation.id == state.anims.prone.id)
+                || (self.legs_animation.id == state.anims.prone_move.id)
+                || (self.legs_animation.id == state.anims.get_up.id)
+                || (self.legs_animation.id == state.anims.fall.id)
+                || (self.legs_animation.id == state.anims.mercy.id)
+                || (self.legs_animation.id == state.anims.mercy2.id)
+                || (self.legs_animation.id == state.anims.own.id)
+              {
+                if (state.sprite_parts.velocity[self.num].x < SLIDELIMIT)
+                  && (state.sprite_parts.velocity[self.num].x > -SLIDELIMIT)
+                  && (step.y > SLIDELIMIT)
                 {
-                  state.sprite_parts.velocity[self.num].x *= STANDSURFACECOEFX;
-                  state.sprite_parts.velocity[self.num].y *= STANDSURFACECOEFY;
+                  state.sprite_parts.pos[self.num] = state.sprite_parts.old_pos[self.num];
+                  state.sprite_parts.forces[self.num].y -= GRAV;
+                }
 
-                  state.sprite_parts.forces[self.num].x -= state.sprite_parts.velocity[self.num].x;
-                } else if self.legs_animation.id == state.anims.prone.id {
-                  if self.legs_animation.curr_frame > 24 {
-                    if !(self.control.down && (self.control.left || self.control.right)) {
-                      state.sprite_parts.velocity[self.num].x *= STANDSURFACECOEFX;
-                      state.sprite_parts.velocity[self.num].y *= STANDSURFACECOEFY;
+                if (step.y > SLIDELIMIT) && (polytype != PolyType::Ice)
+                  && (polytype != PolyType::Bouncy)
+                {
+                  if (self.legs_animation.id == state.anims.stand.id)
+                    || (self.legs_animation.id == state.anims.fall.id)
+                    || (self.legs_animation.id == state.anims.crouch.id)
+                  {
+                    state.sprite_parts.velocity[self.num].x *= STANDSURFACECOEFX;
+                    state.sprite_parts.velocity[self.num].y *= STANDSURFACECOEFY;
 
-                      state.sprite_parts.forces[self.num].x -=
-                        state.sprite_parts.velocity[self.num].x;
+                    state.sprite_parts.forces[self.num].x -=
+                      state.sprite_parts.velocity[self.num].x;
+                  } else if self.legs_animation.id == state.anims.prone.id {
+                    if self.legs_animation.curr_frame > 24 {
+                      if !(self.control.down && (self.control.left || self.control.right)) {
+                        state.sprite_parts.velocity[self.num].x *= STANDSURFACECOEFX;
+                        state.sprite_parts.velocity[self.num].y *= STANDSURFACECOEFY;
+
+                        state.sprite_parts.forces[self.num].x -=
+                          state.sprite_parts.velocity[self.num].x;
+                      }
+                    } else {
+                      state.sprite_parts.velocity[self.num].x *= SURFACECOEFX;
+                      state.sprite_parts.velocity[self.num].y *= SURFACECOEFY;
                     }
-                  } else {
+                  } else if self.legs_animation.id == state.anims.get_up.id {
                     state.sprite_parts.velocity[self.num].x *= SURFACECOEFX;
                     state.sprite_parts.velocity[self.num].y *= SURFACECOEFY;
+                  } else if self.legs_animation.id == state.anims.prone_move.id {
+                    state.sprite_parts.velocity[self.num].x *= STANDSURFACECOEFX;
+                    state.sprite_parts.velocity[self.num].y *= STANDSURFACECOEFY;
                   }
-                } else if self.legs_animation.id == state.anims.get_up.id {
+                }
+              } else {
+                if (self.legs_animation.id == state.anims.crouch_run.id)
+                  || (self.legs_animation.id == state.anims.crouch_run_back.id)
+                {
+                  state.sprite_parts.velocity[self.num].x *= CROUCHMOVESURFACECOEFX;
+                  state.sprite_parts.velocity[self.num].y *= CROUCHMOVESURFACECOEFY;
+                } else {
                   state.sprite_parts.velocity[self.num].x *= SURFACECOEFX;
                   state.sprite_parts.velocity[self.num].y *= SURFACECOEFY;
-                } else if self.legs_animation.id == state.anims.prone_move.id {
-                  state.sprite_parts.velocity[self.num].x *= STANDSURFACECOEFX;
-                  state.sprite_parts.velocity[self.num].y *= STANDSURFACECOEFY;
                 }
               }
-            } else {
-              if (self.legs_animation.id == state.anims.crouch_run.id)
-                || (self.legs_animation.id == state.anims.crouch_run_back.id)
-              {
-                state.sprite_parts.velocity[self.num].x *= CROUCHMOVESURFACECOEFX;
-                state.sprite_parts.velocity[self.num].y *= CROUCHMOVESURFACECOEFY;
-              } else {
-                state.sprite_parts.velocity[self.num].x *= SURFACECOEFX;
-                state.sprite_parts.velocity[self.num].y *= SURFACECOEFY;
-              }
             }
+            return true;
           }
-          return true;
         }
       }
     }
@@ -613,30 +658,192 @@ impl Sprite {
       && (ry < state.map.sectors_num + 25)
     {
       for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+        let polytype = state.map.polygons[w].polytype;
 
-        for i in 0..3 {
-          let vert = Vector2::new(
-            state.map.polygons[w as usize].vertices[i].x,
-            state.map.polygons[w as usize].vertices[i].y,
-          );
+        if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
+          for i in 0..3 {
+            let vert = Vector2::new(
+              state.map.polygons[w].vertices[i].x,
+              state.map.polygons[w].vertices[i].y,
+            );
 
-          if !has_collided {
-            // handle_special_polytypes(polytype, pos);
-          }
-
-          let d = calc::distance(vert, pos);
-          if d < r {
-            let mut dir = pos - vert;
-            dir = calc::vec2normalize(dir, dir);
-            state.sprite_parts.pos[self.num] += dir;
-            return true;
+            let d = calc::distance(vert, pos);
+            if d < r {
+              if !has_collided {
+                self.handle_special_polytypes(state, polytype, pos);
+              }
+              let mut dir = pos - vert;
+              dir = calc::vec2normalize(dir, dir);
+              state.sprite_parts.pos[self.num] += dir;
+              return true;
+            }
           }
         }
       }
     }
-    // for i in 1..
-    //}
     false
+  }
+  pub fn check_radius_map_collision(
+    &mut self,
+    state: &mut MainState,
+    x: f32,
+    y: f32,
+    has_collided: bool,
+  ) -> bool {
+    let mut s_pos = Vector2::new(x, y - 3.0);
+
+    let mut det_acc = calc::vec2length(state.sprite_parts.velocity[self.num]).trunc() as i32;
+    if det_acc == 0 {
+      det_acc = 1;
+    }
+
+    let step = state.sprite_parts.velocity[self.num] * (1 / det_acc) as f32;
+
+    for _z in 0..det_acc {
+      s_pos.x += step.x;
+      s_pos.y += step.y;
+
+      let rx = ((s_pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
+      let ry = ((s_pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
+
+      if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
+        && (ry < state.map.sectors_num + 25)
+      {
+        for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
+          let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+          let polytype = state.map.polygons[w].polytype;
+
+          if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
+            for k in 0..2 {
+              let mut norm = state.map.perps[w as usize][k];
+              norm *= -SPRITE_COL_RADIUS;
+
+              let mut pos = s_pos + norm;
+
+              if state.map.point_in_poly_edges(pos.x, pos.y, w as i32) {
+                if !has_collided {
+                  self.handle_special_polytypes(state, polytype, pos);
+                }
+                let mut d = 0.0;
+                let mut b = 0;
+                let mut perp = state
+                  .map
+                  .closest_perpendicular(w as i32, pos, &mut d, &mut b);
+
+                let mut p1 = Vector2::new(0.0, 0.0);
+                let mut p2 = Vector2::new(0.0, 0.0);
+                match b {
+                  1 => {
+                    p1 = Vector2::new(
+                      state.map.polygons[w].vertices[0].x,
+                      state.map.polygons[w].vertices[0].y,
+                    );
+                    p2 = Vector2::new(
+                      state.map.polygons[w].vertices[1].x,
+                      state.map.polygons[w].vertices[1].y,
+                    );
+                  }
+                  2 => {
+                    p1 = Vector2::new(
+                      state.map.polygons[w].vertices[1].x,
+                      state.map.polygons[w].vertices[1].y,
+                    );
+                    p2 = Vector2::new(
+                      state.map.polygons[w].vertices[2].x,
+                      state.map.polygons[w].vertices[2].y,
+                    );
+                  }
+                  3 => {
+                    p1 = Vector2::new(
+                      state.map.polygons[w].vertices[2].x,
+                      state.map.polygons[w].vertices[2].y,
+                    );
+                    p2 = Vector2::new(
+                      state.map.polygons[w].vertices[0].x,
+                      state.map.polygons[w].vertices[0].y,
+                    );
+                  }
+                  _ => {}
+                }
+
+                let p3 = pos;
+                let d = calc::point_line_distance(p1, p2, p3);
+                perp *= d;
+
+                state.sprite_parts.pos[self.num] = state.sprite_parts.old_pos[self.num];
+                state.sprite_parts.velocity[self.num] = state.sprite_parts.forces[self.num] - perp;
+
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+  pub fn check_skeleton_map_collision(
+    &mut self,
+    state: &mut MainState,
+    i: i32,
+    x: f32,
+    y: f32,
+  ) -> bool {
+    let mut result = false;
+    let pos = Vector2::new(x - 1.0, y + 4.0);
+    let rx = ((pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
+    let ry = ((pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
+
+    if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
+      && (ry < state.map.sectors_num + 25)
+    {
+      for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
+        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+
+        if state.map.point_in_poly_edges(pos.x, pos.y, w as i32) {
+          let mut d = 0.0;
+          let mut b = 0;
+          let mut perp = state
+            .map
+            .closest_perpendicular(w as i32, pos, &mut d, &mut b);
+          perp = calc::vec2normalize(perp, perp);
+          perp *= d;
+
+          self.skeleton.pos[i as usize] = self.skeleton.old_pos[i as usize];
+          self.skeleton.pos[i as usize] -= perp;
+          result = true;
+        }
+      }
+    }
+
+    if result {
+      let pos = Vector2::new(x, y + 1.0);
+      let rx = ((pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
+      let ry = ((pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
+
+      if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
+        && (ry < state.map.sectors_num + 25)
+      {
+        for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
+          let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+          //if (Map.PolyType[w] <> POLY_TYPE_DOESNT) and (Map.PolyType[w] <> POLY_TYPE_ONLY_BULLETS) then
+          if state.map.point_in_poly_edges(pos.x, pos.y, w as i32) {
+            let mut d = 0.0;
+            let mut b = 0;
+            let mut perp = state
+              .map
+              .closest_perpendicular(w as i32, pos, &mut d, &mut b);
+            perp = calc::vec2normalize(perp, perp);
+            perp = perp * d;
+
+            self.skeleton.pos[i as usize] = self.skeleton.old_pos[i as usize];
+            self.skeleton.pos[i as usize] -= perp;
+            result = true;
+          }
+        }
+      }
+    }
+    return result;
   }
 }

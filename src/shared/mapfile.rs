@@ -20,6 +20,37 @@ const MAX_PROPS: i32 = 500;
 //const MAX_SPAWNPOINTS: i32 = 255;
 //const MAX_COLLIDERS: i32 = 128;
 
+#[allow(dead_code)]
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum PolyType {
+  Normal,
+  OnlyBulletsCollide,
+  OnlyPlayersCollide,
+  NoCollide,
+  Ice,
+  Deadly,
+  BloodyDeadly,
+  Hurts,
+  Regenerates,
+  Lava,
+  AlphaBullets,
+  AlphaPlayers,
+  BlueBullets,
+  BluePlayers,
+  CharlieBullets,
+  CharliePlayers,
+  DeltaBullets,
+  DeltaPlayers,
+  Bouncy,
+  Explosive,
+  HurtsFlaggers,
+  OnlyFlaggers,
+  NotFlaggers,
+  NonFlaggersCollide,
+  Background,
+  BackgroundTransistion,
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct MapColor {
   pub r: u8,
@@ -41,7 +72,8 @@ pub struct MapVertex {
 pub struct MapPolygon {
   pub vertices: [MapVertex; 3],
   normals: [Vector3<f32>; 3],
-  polytype: u8,
+  pub polytype: PolyType,
+  pub bounciness: f32,
 }
 #[derive(Debug, Clone, Default)]
 pub struct MapSector {
@@ -155,10 +187,45 @@ impl MapFile {
       ];
       let polytype = buf.read_u8().unwrap();
 
+      fn poly_to_enum(id: u8) -> PolyType {
+        match id {
+          0 => PolyType::Normal,
+          1 => PolyType::OnlyBulletsCollide,
+          2 => PolyType::OnlyPlayersCollide,
+          3 => PolyType::NoCollide,
+          4 => PolyType::Ice,
+          5 => PolyType::Deadly,
+          6 => PolyType::BloodyDeadly,
+          7 => PolyType::Hurts,
+          8 => PolyType::Regenerates,
+          9 => PolyType::Lava,
+          10 => PolyType::AlphaBullets,
+          11 => PolyType::AlphaPlayers,
+          12 => PolyType::BlueBullets,
+          13 => PolyType::BluePlayers,
+          14 => PolyType::CharlieBullets,
+          15 => PolyType::CharliePlayers,
+          16 => PolyType::DeltaBullets,
+          17 => PolyType::DeltaPlayers,
+          18 => PolyType::Bouncy,
+          19 => PolyType::Explosive,
+          20 => PolyType::HurtsFlaggers,
+          21 => PolyType::OnlyFlaggers,
+          22 => PolyType::NotFlaggers,
+          23 => PolyType::NonFlaggersCollide,
+          24 => PolyType::Background,
+          25 => PolyType::BackgroundTransistion,
+          _ => PolyType::Normal
+        }
+      }
+
+      let bounciness = (normals[2].x.powi(2) + normals[2].y.powi(2)).sqrt();
+
       polygons.push(MapPolygon {
         vertices: vertices,
         normals: normals,
-        polytype: polytype,
+        polytype: poly_to_enum(polytype),
+        bounciness: bounciness
       });
 
       let mut perp: [Vector2<f32>; 3] = [
@@ -331,6 +398,30 @@ impl MapFile {
     }
 
     true
+  }
+  pub fn point_in_poly_edges(&mut self, x: f32, y: f32, i: i32) -> bool {
+    let u_x = x - self.polygons[i as usize].vertices[0].x;
+    let u_y = y - self.polygons[i as usize].vertices[0].y;
+    let d = self.perps[i as usize][0].x * u_x + self.perps[i as usize][0].y * u_y;
+    if d < 0.0 {
+      return false;
+    }
+
+    let u_x = x - self.polygons[i as usize].vertices[1].x;
+    let u_y = y - self.polygons[i as usize].vertices[1].y;
+    let d = self.perps[i as usize][1].x * u_x + self.perps[i as usize][1].y * u_y;
+    if d < 0.0 {
+      return false;
+    }
+
+    let u_x = x - self.polygons[i as usize].vertices[2].x;
+    let u_y = y - self.polygons[i as usize].vertices[2].y;
+    let d = self.perps[i as usize][2].x * u_x + self.perps[i as usize][2].y * u_y;
+    if d < 0.0 {
+      return false;
+    }
+
+    return true;
   }
   pub fn closest_perpendicular(
     &mut self,
