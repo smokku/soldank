@@ -1,6 +1,6 @@
 pub mod renderer {
     use shared::state::*;
-    use shared::sprites::*;
+    use shared::soldier::*;
     use na::Vector2;
     use gfx;
     use gfx::traits::FactoryExt;
@@ -85,7 +85,7 @@ pub mod renderer {
         ]
     }
 
-    pub fn render(state: &mut MainState, sprite: &mut Sprite) {
+    pub fn render(state: &mut MainState, soldier: &mut Soldier) {
         let mut events_loop = glutin::EventsLoop::new();
         let windowbuilder = glutin::WindowBuilder::new()
             .with_title("Soldank".to_string())
@@ -293,8 +293,8 @@ pub mod renderer {
             let ten_millis = time::Duration::from_millis(10);
 
             thread::sleep(ten_millis);
-            state.sprite_parts.do_eurler_timestep_for(1);
-            sprite.update(state);
+            state.soldier_parts.do_eurler_timestep_for(1);
+            soldier.update(state);
 
             state.camera_prev = state.camera;
 
@@ -309,7 +309,7 @@ pub mod renderer {
 
             let mut cam_v = Vector2::new(state.camera.x, state.camera.y);
 
-            let p = Vector2::new(state.sprite_parts.pos[1].x, state.sprite_parts.pos[1].y);
+            let p = Vector2::new(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
             let norm = p - cam_v;
             let s = norm * 0.14;
             cam_v += s;
@@ -321,7 +321,7 @@ pub mod renderer {
 
             let transform_map = mat3ortho(dx, w + dx, dy, h + dy);
 
-            let pos = Vector2::new(state.sprite_parts.pos[1].x, state.sprite_parts.pos[1].y);
+            let pos = Vector2::new(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
 
             let left = pos.x - 5.00;
             let right = pos.x + 5.00;
@@ -396,7 +396,7 @@ pub mod renderer {
             events_loop.poll_events(|event| match event {
                 glutin::Event::WindowEvent { event, .. } => match event {
                     glutin::WindowEvent::KeyboardInput { input, .. } => {
-                        sprite.update_keys(&input);
+                        soldier.update_keys(&input);
                     }
                     glutin::WindowEvent::MouseInput { state, button, .. } => {
                         mouse_inputs.push((state, button));
@@ -418,7 +418,7 @@ pub mod renderer {
             });
 
             for mouse_input in &mouse_inputs {
-                sprite.update_mouse_button(mouse_input);
+                soldier.update_mouse_button(mouse_input);
             }
         }
     }

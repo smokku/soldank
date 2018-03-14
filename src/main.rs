@@ -1,3 +1,4 @@
+extern crate gfx2d;
 extern crate byteorder;
 #[macro_use]
 extern crate gfx;
@@ -10,7 +11,7 @@ use shared::anims::Animation;
 use shared::parts::ParticleSystem;
 use shared::mapfile::MapFile;
 use shared::state::*;
-use shared::sprites::*;
+use shared::soldier::*;
 
 mod shared;
 use na::Vector2;
@@ -71,18 +72,18 @@ fn main() {
     gostek.gravity = 1.06 * GRAV;
     gostek.v_damping = 0.9945;
 
-    let mut sprite_parts = ParticleSystem::new();
+    let mut soldier_parts = ParticleSystem::new();
 
-    sprite_parts.timestep = 1.0;
-    sprite_parts.gravity = GRAV;
-    sprite_parts.e_damping = 0.99;
+    soldier_parts.timestep = 1.0;
+    soldier_parts.gravity = GRAV;
+    soldier_parts.e_damping = 0.99;
 
     let map = MapFile::load_map_file(&String::from("ctf_Ash.pms"));
 
     let mut state = MainState {
         map: map,
         anims: anims,
-        sprite_parts: sprite_parts,
+        soldier_parts: soldier_parts,
         gostek_skeleton: gostek,
         game_width: 768,
         game_height: 480,
@@ -93,7 +94,7 @@ fn main() {
         gravity: GRAV,
     };
 
-    let mut sprite = Sprite::new(&mut state);
+    let mut soldier = Soldier::new(&mut state);
     // setup rendering & gameloop
-    renderer::render(&mut state, &mut sprite);
+    renderer::render(&mut state, &mut soldier);
 }

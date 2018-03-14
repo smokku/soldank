@@ -53,7 +53,7 @@ pub struct AnimsList {
 pub struct MainState {
     pub map: MapFile,
     pub anims: AnimsList,
-    pub sprite_parts: ParticleSystem,
+    pub soldier_parts: ParticleSystem,
     pub gostek_skeleton: ParticleSystem,
     pub camera: Vector2<f32>,
     pub camera_prev: Vector2<f32>,
