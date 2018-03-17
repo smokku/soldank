@@ -1,6 +1,5 @@
 #![crate_type = "lib"]
 #![crate_name = "gfx2d"]
-#![feature(use_nested_groups)]
 
 #[macro_use]
 extern crate gfx;
@@ -26,8 +25,8 @@ pub use context::Gfx2dContext;
 pub use context::vertex;
 pub use context::Vertex;
 pub use texture::Texture;
-pub use batch::Batch;
-pub use batch::BatchSlice;
+pub use batch::DrawBatch;
+pub use batch::DrawSlice;
 pub use spritesheet::Sprite;
 pub use spritesheet::SpriteInfo;
 pub use spritesheet::Spritesheet;
@@ -43,4 +42,5 @@ pub use gfx::texture::WrapMode;
 
 pub mod gfx2d_extra {
     pub use super::texture::premultiply_image;
+    pub use super::texture::remove_color_key;
 }

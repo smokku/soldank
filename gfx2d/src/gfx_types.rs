@@ -13,8 +13,10 @@ use {
             Usage::Dynamic,
         },
         format::{
+            Unorm,
             U8Norm as U8N,
-            Rgba8 as ColorFormat,
+            R8_G8_B8_A8,
+            Srgba8 as ColorFormat,
             DepthStencil,
         },
         texture::{

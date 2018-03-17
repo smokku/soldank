@@ -1,6 +1,7 @@
 use super::*;
 use binpack::pack_rects;
 use image::{self, GenericImage, RgbaImage as Image};
+use std::path::PathBuf;
 
 type Rect = binpack::Rect<(usize, usize)>;
 
@@ -14,14 +15,15 @@ pub struct Sprite {
 }
 
 #[derive(Debug)]
-pub struct SpriteInfo<'a> {
-    pub filename: &'a str,
+pub struct SpriteInfo {
+    pub filename: PathBuf,
     pub pixel_ratio: Vec2,
+    pub color_key: Option<Color>,
 }
 
-impl<'a> SpriteInfo<'a> {
-    pub fn new(filename: &'a str, pixel_ratio: Vec2) -> SpriteInfo<'a> {
-        SpriteInfo{filename, pixel_ratio}
+impl SpriteInfo {
+    pub fn new(filename: PathBuf, pixel_ratio: Vec2, color_key: Option<Color>) -> SpriteInfo {
+        SpriteInfo{filename, pixel_ratio, color_key}
     }
 }
 
@@ -71,7 +73,15 @@ impl Spritesheet {
         let mut rects: Vec<Rect> = Vec::with_capacity(info.len());
 
         for (index, ref sprite_info) in info.iter().enumerate() {
-            let mut img = image::open(sprite_info.filename).unwrap().to_rgba();
+            let mut img = match sprite_info.filename.exists() {
+                true => image::open(&sprite_info.filename).unwrap().to_rgba(),
+                false => Image::from_pixel(1, 1, image::Rgba([0u8; 4])),
+            };
+
+            if let Some(color) = sprite_info.color_key {
+                gfx2d_extra::remove_color_key(&mut img, color);
+            }
+
             gfx2d_extra::premultiply_image(&mut img);
 
             sprites.push(Sprite {
@@ -116,13 +126,12 @@ impl Spritesheet {
         }).collect();
 
         for rc in &rects {
-            let rect = &rects[rc.data.0];
             let sprite = &mut sprites[rc.data.0];
             let texture = &textures[rc.data.1];
 
             let (w, h) = texture.dimensions();
-            let (x0, x1) = (rect.left() as f32, rect.right() as f32);
-            let (y0, y1) = (rect.top() as f32, rect.bottom() as f32);
+            let (x0, x1) = (rc.left() as f32, rc.right() as f32);
+            let (y0, y1) = (rc.top() as f32, rc.bottom() as f32);
 
             sprite.texture = Some(texture.clone());
             sprite.texcoords_x = (x0 / w as f32, x1 / w as f32);

@@ -4,6 +4,6 @@ pub mod mapfile;
 pub mod soldier;
 pub mod state;
 pub mod calc;
-pub mod renderer;
+pub mod render;
 pub mod update;
 pub mod control;

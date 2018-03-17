@@ -23,7 +23,7 @@ enum BatchUsage {
 }
 
 #[derive(Debug, Clone)]
-pub struct Batch {
+pub struct DrawBatch {
 	vbuf: Option<VertexBuffer>,
 	buf: Vec<Vertex>,
     cmds: Vec<BatchCommand>,
@@ -33,12 +33,12 @@ pub struct Batch {
 }
 
 #[derive(Debug)]
-pub struct BatchSlice<'a> {
-    pub batch: &'a mut Batch,
+pub struct DrawSlice<'a> {
+    pub batch: &'a mut DrawBatch,
     pub cmd_range: Range<usize>,
 }
 
-impl<'a> BatchSlice<'a> {
+impl<'a> DrawSlice<'a> {
     pub fn buffer(&self) -> VertexBuffer {
         self.batch.buffer()
     }
@@ -48,17 +48,17 @@ impl<'a> BatchSlice<'a> {
     }
 }
 
-impl Batch {
-    pub fn new() -> Batch {
+impl DrawBatch {
+    pub fn new() -> DrawBatch {
         Self::with_usage(BatchUsage::Dynamic)
     }
 
-    pub fn new_static() -> Batch {
+    pub fn new_static() -> DrawBatch {
         Self::with_usage(BatchUsage::Static)
     }
 
-    fn with_usage(usage: BatchUsage) -> Batch {
-        Batch {
+    fn with_usage(usage: BatchUsage) -> DrawBatch {
+        DrawBatch {
             vbuf: None,
             buf: Vec::new(),
             cmds: Vec::new(),
@@ -143,34 +143,34 @@ impl Batch {
     }
 
     pub fn split(&mut self) -> Range<usize> {
-        let range = self.split_start..self.buf.len();
+        let range = self.split_start..self.cmds.len();
         self.split_start = range.end;
         range
     }
 
-    pub fn all(&mut self) -> BatchSlice {
+    pub fn all(&mut self) -> DrawSlice {
         let len = self.cmds.len();
-        BatchSlice { batch: self, cmd_range: 0..len }
+        DrawSlice { batch: self, cmd_range: 0..len }
     }
 
-    pub fn slice(&mut self, cmd_range: Range<usize>) -> BatchSlice {
-        BatchSlice { batch: self, cmd_range }
+    pub fn slice(&mut self, cmd_range: Range<usize>) -> DrawSlice {
+        DrawSlice { batch: self, cmd_range }
     }
 
-    pub fn update(&mut self, fct: &mut GlFactory, enc: &mut GlEncoder) {
+    pub fn update(&mut self, context: &mut Gfx2dContext) {
         if !self.updated {
             match self.usage {
                 BatchUsage::Dynamic => {
                     if self.vbuf.is_none() || self.vbuf.as_ref().unwrap().len() < self.buf.len() {
                         let n = self.buf.len().next_power_of_two();
-                        self.vbuf = Some(fct.create_buffer(n, VertexRole, Dynamic, Bind::empty()).unwrap());
+                        self.vbuf = Some(context.fct.create_buffer(n, VertexRole, Dynamic, Bind::empty()).unwrap());
                     }
 
-                    enc.update_buffer(self.vbuf.as_ref().unwrap(), &self.buf, 0).unwrap();
+                    context.enc.update_buffer(self.vbuf.as_ref().unwrap(), &self.buf, 0).unwrap();
                     self.updated = true;
                 },
                 BatchUsage::Static => {
-                    self.vbuf = Some(fct.create_vertex_buffer(&self.buf));
+                    self.vbuf = Some(context.fct.create_vertex_buffer(&self.buf));
                     self.updated = true;
                 }
             };

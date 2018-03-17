@@ -53,14 +53,14 @@ impl Soldier {
       self.body_animation.speed = 1;
     }
 
-    println!(
-      "curr_frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
-      self.legs_animation.curr_frame,
-      self.legs_animation.id,
-      self.body_animation.id,
-      self.legs_animation.num_frames,
-      self.direction
-    );
+    // println!(
+    //   "curr_frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
+    //   self.legs_animation.curr_frame,
+    //   self.legs_animation.id,
+    //   self.body_animation.id,
+    //   self.legs_animation.num_frames,
+    //   self.direction
+    // );
 
     self.control.mouse_aim_x =
       (state.mouse.x - state.game_width as f32 / 2.0 + state.camera.x).round() as i32;

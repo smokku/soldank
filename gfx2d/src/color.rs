@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Color([U8N; 4]);
 
 pub fn rgb(r: u8, g: u8, b: u8) -> Color {

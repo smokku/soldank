@@ -9,7 +9,6 @@ use shared::calc;
 use shared::control::Control;
 use shared::mapfile::PolyType;
 use glutin;
-use std::process;
 
 const SLIDELIMIT: f32 = 0.2;
 const GRAV: f32 = 0.06;
@@ -68,7 +67,6 @@ impl Soldier {
         Some(glutin::VirtualKeyCode::Q) => self.control.change = true,
         Some(glutin::VirtualKeyCode::E) => self.control.throw = true,
         Some(glutin::VirtualKeyCode::X) => self.control.prone = true,
-        Some(glutin::VirtualKeyCode::Escape) => process::exit(0x0100),
         _ => {}
       },
       glutin::ElementState::Released => match input.virtual_keycode {

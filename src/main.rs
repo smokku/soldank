@@ -1,21 +1,21 @@
+extern crate glutin;
 extern crate gfx2d;
 extern crate byteorder;
-#[macro_use]
-extern crate gfx;
-extern crate gfx_window_glutin;
-extern crate glutin;
-extern crate image;
 extern crate nalgebra as na;
+
+use std::time::{Instant, Duration};
+use na::Vector2;
+use glutin::*;
+use gfx2d::*;
 
 use shared::anims::Animation;
 use shared::parts::ParticleSystem;
 use shared::mapfile::MapFile;
 use shared::state::*;
 use shared::soldier::*;
+use shared::render::*;
 
 mod shared;
-use na::Vector2;
-use shared::renderer::*;
 
 const GRAV: f32 = 0.06;
 
@@ -95,6 +95,100 @@ fn main() {
     };
 
     let mut soldier = Soldier::new(&mut state);
-    // setup rendering & gameloop
-    renderer::render(&mut state, &mut soldier);
+
+    // setup window, renderer & main loop
+
+    let mut context = gfx2d::Gfx2dContext::initialize("Soldank", 1280, 720);
+    // context.wnd.window().set_cursor(glutin::MouseCursor::NoneCursor);
+    context.wnd.window().set_cursor_state(glutin::CursorState::Grab).unwrap();
+    context.clear(rgb(0, 0, 0));
+    context.present();
+
+    let mut graphics = GameGraphics::new(&mut context);
+    graphics.load_map(&mut context, &state.map);
+
+    let clock = Instant::now();
+
+    let current_time = || {
+        let d = clock.elapsed();
+        d.as_secs() as f64 + d.subsec_nanos() as f64 * 1e-9
+    };
+
+    let mut timecur: f64 = 0.0;
+    let mut timeprv: f64 = 0.0;
+    let mut timeacc: f64 = 0.0;
+    let mut running = true;
+
+    while running {
+        let wndpos = context.wnd.window().get_position().unwrap();
+        let wndsize = context.wnd.window().get_outer_size().unwrap();
+
+        context.evt.poll_events(|event| match event {
+            Event::WindowEvent{event, ..} => match event {
+                WindowEvent::Closed => running = false,
+                WindowEvent::KeyboardInput{input, ..} => match input {
+                    KeyboardInput{virtual_keycode: Some(VirtualKeyCode::Escape), ..} => running = false,
+                    _ => soldier.update_keys(&input),
+                },
+                WindowEvent::MouseInput{state, button, ..} => {
+                    soldier.update_mouse_button(&(state, button));
+                },
+                WindowEvent::CursorMoved{position: (x, y), ..} => {
+                    let center = vec2(wndsize.0 as f32 / 2.0, wndsize.1 as f32 / 2.0);
+                    state.mouse.x = x as f32 - center.x;
+                    state.mouse.y = y as f32 - center.y;
+                },
+                _ => (),
+            },
+
+            Event::DeviceEvent{event, ..} => match event {
+                DeviceEvent::MouseMotion{delta: (x, y)} => {
+                    // let (x, y) = (x as f32, y as f32);
+                    // let (w, h) = (state.game_width as f32, state.game_height as f32);
+                    // state.mouse.x = f32::max(-w, f32::min(w, state.mouse.x + x));
+                    // state.mouse.y = f32::max(-w, f32::min(h, state.mouse.y + y));
+                },
+                _ => (),
+            },
+
+            _ => (),
+        });
+
+        let dt = 1.0/60.0;
+
+        timecur = current_time();
+        timeacc += timecur - timeprv;
+        timeprv = timecur;
+
+        while timeacc >= dt {
+            timeacc -= dt;
+
+            state.soldier_parts.do_eurler_timestep_for(1);
+            soldier.update(&mut state);
+
+            state.camera_prev = state.camera;
+            state.mouse_prev = state.mouse;
+
+            state.camera = {
+                let (mx, my) = (state.mouse.x, state.mouse.y);
+                let (w, h) = (state.game_width as f32, state.game_height as f32);
+                let pos = vec2(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
+                let aim = vec2((mx - w/2.0)/7.0*(2.0*640.0/w - 1.0), (my - h/2.0)/7.0);
+                let cam = vec2(state.camera.x, state.camera.y);
+                let cam = cam + aim + (pos - cam) * 0.14;
+                let cam = pos + vec2(mx * 768.0/1280.0, my * 480.0/720.0);
+                Vector2::new(cam.x, cam.y)
+            };
+
+            timecur = current_time();
+            timeacc += timecur - timeprv;
+            timeprv = timecur;
+        }
+
+        let p = f64::min(1.0, f64::max(0.0, timeacc/dt));
+        graphics.render_frame(&mut context, &state, &soldier, ((timecur - dt + p*dt) as f32, p as f32));
+        context.present();
+
+        std::thread::sleep(Duration::from_millis(1));
+    }
 }

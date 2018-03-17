@@ -23,8 +23,15 @@ pub const FRAG_SOURCE: &[u8] = b"
     varying vec4 color;
     uniform sampler2D sampler;
 
+    vec3 linearize_color(vec3 col) {
+        vec3 low = col / 12.92;
+        vec3 high = pow((col + 0.055) / 1.055, vec3(2.4));
+        return mix(low, high, step(vec3(0.04045), col));
+    }
+
     void main() {
-        gl_FragColor = texture2D(sampler, texcoords) * color;
+        vec4 result = texture2D(sampler, texcoords) * color;
+        gl_FragColor = vec4(linearize_color(result.rgb), result.a);
     }
 ";
 

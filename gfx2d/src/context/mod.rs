@@ -67,17 +67,17 @@ impl Gfx2dContext {
         ]);
     }
 
-    pub fn draw(&mut self, batch_slice: BatchSlice, transform: &Mat2d) {
-        batch_slice.batch.update(&mut self.fct, &mut self.enc);
+    pub fn draw(&mut self, slice: DrawSlice, transform: &Mat2d) {
+        slice.batch.update(self);
 
         let mut data = pipe::Data {
-            vbuf: batch_slice.buffer(),
+            vbuf: slice.buffer(),
             transform: transform.to_3x3(),
             sampler: self.white.handle(),
             out: self.rtv.clone(),
         };
 
-        for cmd in batch_slice.commands() {
+        for cmd in slice.commands() {
             let slice = gfx::Slice {
                 start: cmd.vertex_range.start as u32,
                 end: cmd.vertex_range.end as u32,
