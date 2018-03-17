@@ -83,7 +83,7 @@ impl MapGraphics {
         let texture_file = filename_override("assets/textures", &map.texture_name);
 
         let texture = match texture_file.exists() {
-            true => Texture::load(context, &texture_file, FilterMethod::Bilinear, WrapMode::Tile, None),
+            true => Texture::load(context, &texture_file, FilterMethod::Trilinear, WrapMode::Tile, None),
             false => Texture::new(context, (1, 1), &[255u8; 4], FilterMethod::Scale, WrapMode::Clamp),
         };
 
@@ -114,7 +114,7 @@ impl MapGraphics {
                     SpriteInfo::new(fname, vec2(1.0, 1.0), Some(rgb(0, 255, 0)))
                 }).collect();
 
-            Spritesheet::new(context, 8, FilterMethod::Bilinear, &scenery_info).sprites
+            Spritesheet::new(context, 8, FilterMethod::Trilinear, &scenery_info).sprites
         };
 
         let props = {

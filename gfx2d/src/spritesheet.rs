@@ -130,8 +130,8 @@ impl Spritesheet {
             let texture = &textures[rc.data.1];
 
             let (w, h) = texture.dimensions();
-            let (x0, x1) = (rc.left() as f32, rc.right() as f32);
-            let (y0, y1) = (rc.top() as f32, rc.bottom() as f32);
+            let (x0, x1) = (rc.left() as f32, (rc.right() - padding) as f32);
+            let (y0, y1) = (rc.top() as f32, (rc.bottom() - padding) as f32);
 
             sprite.texture = Some(texture.clone());
             sprite.texcoords_x = (x0 / w as f32, x1 / w as f32);

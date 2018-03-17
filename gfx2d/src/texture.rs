@@ -50,7 +50,7 @@ pub fn create_texture(fct: &mut GlFactory, enc: &mut GlEncoder, (w, h): (u16, u1
     data: &[u8], filter: FilterMethod, wrap: WrapMode) -> Texture
 {
     let k = D2(w, h as u16, AaMode::Single);
-    let (t, v) = fct.create_texture_immutable_u8::<(R8_G8_B8_A8, Unorm)>(k, Mipmap::Allocated, &[data]).unwrap();
+    let (t, v) = fct.create_texture_immutable_u8::<Rgba8>(k, Mipmap::Allocated, &[data]).unwrap();
     let s = fct.create_sampler(SamplerInfo::new(filter, wrap));
     enc.generate_mipmap(&v);
     Texture(t, v, s)

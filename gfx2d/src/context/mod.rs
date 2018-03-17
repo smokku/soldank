@@ -1,10 +1,11 @@
 use super::*;
 use glutin::GlContext;
 use gfx::Device;
+use gfx::traits::Factory;
 use gfx::traits::FactoryExt;
 
 mod pipeline;
-use self::pipeline::{VERT_SOURCE, FRAG_SOURCE};
+use self::pipeline::{post, VERT_SOURCE, FRAG_SOURCE};
 pub use self::pipeline::{Vertex, pipe};
 
 pub fn vertex(pos: Vec2, texcoords: Vec2, color: Color) -> Vertex {
@@ -12,6 +13,12 @@ pub fn vertex(pos: Vec2, texcoords: Vec2, color: Color) -> Vertex {
         pos: [pos.x, pos.y],
         texcoords: [texcoords.x, texcoords.y],
         color: color.into()
+    }
+}
+
+impl ::std::default::Default for Vertex {
+    fn default() -> Vertex {
+        Vertex { pos: [0.0; 2], texcoords: [0.0; 2], color: [U8N(0); 4] }
     }
 }
 
@@ -23,8 +30,9 @@ pub struct Gfx2dContext {
     pub(crate) fct: GlFactory,
     pub(crate) enc: GlEncoder,
     dvc: GlDevice,
-    rtv: RenderTargetView,
+    rtv: Rgba8Target,
     pso: PipelineState,
+    bundle: Bundle<R, post::pipe::Data<R>>,
     white: Texture,
 }
 
@@ -43,11 +51,30 @@ impl Gfx2dContext {
                 opengles_version: (2, 0)
             });
 
-        let (wnd, dvc, mut fct, rtv, _) =
-            ::gfx_window_glutin::init::<ColorFormat, DepthStencil>(wnd_b, ctx_b, &evt);
+        let (wnd, dvc, mut fct, rtv_post, _) =
+            ::gfx_window_glutin::init::<Srgba8, DepthStencil>(wnd_b, ctx_b, &evt);
 
-        let pso = fct.create_pipeline_simple(VERT_SOURCE, FRAG_SOURCE, pipe::new()).unwrap();
+        let quad = [
+            post::Vertex{pos:[-1.0, -1.0], texcoords:[0.0, 0.0]},
+            post::Vertex{pos:[-1.0,  1.0], texcoords:[0.0, 1.0]},
+            post::Vertex{pos:[ 1.0,  1.0], texcoords:[1.0, 1.0]},
+            post::Vertex{pos:[ 1.0,  1.0], texcoords:[1.0, 1.0]},
+            post::Vertex{pos:[ 1.0, -1.0], texcoords:[1.0, 0.0]},
+            post::Vertex{pos:[-1.0, -1.0], texcoords:[0.0, 0.0]},
+        ];
+
         let mut enc = GlEncoder::from(fct.create_command_buffer());
+        let pso = fct.create_pipeline_simple(VERT_SOURCE, FRAG_SOURCE, pipe::new()).unwrap();
+        let pso_post = fct.create_pipeline_simple(post::VERT_SOURCE, post::FRAG_SOURCE, post::pipe::new()).unwrap();
+        let (_, v, rtv) = fct.create_render_target::<Rgba8>(w as u16, h as u16).unwrap();
+        let (vbuf, slice) = fct.create_vertex_buffer_with_slice(&quad, ());
+
+        let bundle = Bundle::new(slice, pso_post, post::pipe::Data {
+            vbuf,
+            sampler: (v, fct.create_sampler(SamplerInfo::new(FilterMethod::Scale, WrapMode::Clamp))),
+            out: rtv_post,
+        });
+
         let white = texture::create_texture(&mut fct, &mut enc, (16, 16), &[255u8; 4*16*16],
             FilterMethod::Scale, WrapMode::Clamp);
 
@@ -55,7 +82,7 @@ impl Gfx2dContext {
         wnd.set_cursor_state(glutin::CursorState::Hide).unwrap();
         wnd.set_cursor_state(glutin::CursorState::Normal).unwrap();
 
-        Gfx2dContext {wnd, evt, fct, enc, dvc, rtv, pso, white}
+        Gfx2dContext {wnd, evt, fct, enc, dvc, rtv, pso, bundle, white}
     }
 
     pub fn clear(&mut self, color: Color) {
@@ -96,6 +123,7 @@ impl Gfx2dContext {
     }
 
     pub fn present(&mut self) {
+        self.bundle.encode(&mut self.enc);
         self.enc.flush(&mut self.dvc);
         self.wnd.swap_buffers().unwrap();
         self.dvc.cleanup();

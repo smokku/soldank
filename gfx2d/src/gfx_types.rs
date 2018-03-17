@@ -7,17 +7,18 @@ use {
         EventsLoop,
     },
     gfx::{
+        pso::bundle::Bundle,
         buffer::Role::Vertex as VertexRole,
         memory::{
             Bind,
             Usage::Dynamic,
         },
         format::{
-            Unorm,
-            U8Norm as U8N,
+            Rgba8,
+            Srgba8,
             R8_G8_B8_A8,
-            Srgba8 as ColorFormat,
             DepthStencil,
+            U8Norm as U8N,
         },
         texture::{
             AaMode,
@@ -44,10 +45,10 @@ use {
 
 // type aliases
 
-type RenderTargetView = gfx::handle::RenderTargetView<R, ColorFormat>;
+type Rgba8Target = gfx::handle::RenderTargetView<R, Rgba8>;
 type GlEncoder = gfx::Encoder<R, GlCommandBuffer>;
 type PipelineState = gfx::PipelineState<R, context::pipe::Meta>;
 type ShaderResourceView = gfx::handle::ShaderResourceView<R, [f32; 4]>;
-type TextureHandle = gfx::handle::Texture<R, gfx::format::R8_G8_B8_A8>;
+type TextureHandle = gfx::handle::Texture<R, R8_G8_B8_A8>;
 type Sampler = gfx::handle::Sampler<R>;
 type VertexBuffer = gfx::handle::Buffer<R, Vertex>;
