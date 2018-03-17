@@ -113,8 +113,8 @@ fn main() {
     let time_start = time::precise_time_s();
     let current_time = || {time::precise_time_s() - time_start};
 
-    let mut timecur: f64 = 0.0;
-    let mut timeprv: f64 = 0.0;
+    let mut timecur: f64 = current_time();
+    let mut timeprv: f64 = timecur;
     let mut timeacc: f64 = 0.0;
     let mut running = true;
 
@@ -195,7 +195,7 @@ fn main() {
         }
 
         let p = f64::min(1.0, f64::max(0.0, timeacc/dt));
-        graphics.render_frame(&mut context, &state, &soldier, (timecur - dt*(1.0 - p)), p as f32);
+        graphics.render_frame(&mut context, &state, &soldier, timecur - dt*(1.0 - p), p as f32);
         context.present();
 
         // only sleep if no vsync (or if vsync doesn't wait), also needs timeBeginPeriod(1)

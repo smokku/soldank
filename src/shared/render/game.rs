@@ -30,7 +30,7 @@ impl GameGraphics {
     }
 
     pub fn render_frame(&mut self, context: &mut Gfx2dContext, state: &MainState, soldier: &Soldier,
-        elapsed: f64, frame_percent: f32)
+        _elapsed: f64, frame_percent: f32)
     {
         let (w, h) = (state.game_width, state.game_height);
         let dx = state.camera.x - w/2.0;
