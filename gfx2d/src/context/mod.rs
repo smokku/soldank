@@ -78,10 +78,6 @@ impl Gfx2dContext {
         let white = texture::create_texture(&mut fct, &mut enc, (16, 16), &[255u8; 4*16*16],
             FilterMethod::Scale, WrapMode::Clamp);
 
-        // loading cursor fix
-        wnd.set_cursor_state(glutin::CursorState::Hide).unwrap();
-        wnd.set_cursor_state(glutin::CursorState::Normal).unwrap();
-
         Gfx2dContext {wnd, evt, fct, enc, dvc, rtv, pso, bundle, white}
     }
 

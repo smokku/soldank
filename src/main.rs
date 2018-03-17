@@ -1,9 +1,9 @@
 extern crate glutin;
 extern crate gfx2d;
 extern crate byteorder;
+extern crate time;
 extern crate nalgebra as na;
 
-use std::time::{Instant, Duration};
 use na::Vector2;
 use glutin::*;
 use gfx2d::*;
@@ -80,13 +80,16 @@ fn main() {
 
     let map = MapFile::load_map_file(&String::from("ctf_Ash.pms"));
 
+    const W: u32 = 1280;
+    const H: u32 = 720;
+
     let mut state = MainState {
         map: map,
         anims: anims,
         soldier_parts: soldier_parts,
         gostek_skeleton: gostek,
-        game_width: 768,
-        game_height: 480,
+        game_width: W as f32 * (480.0 / H as f32),
+        game_height: 480.0,
         camera: Vector2::new(0.0f32, 0.0f32),
         camera_prev: Vector2::new(0.0f32, 0.0f32),
         mouse: Vector2::new(0.0f32, 0.0f32),
@@ -98,8 +101,8 @@ fn main() {
 
     // setup window, renderer & main loop
 
-    let mut context = gfx2d::Gfx2dContext::initialize("Soldank", 1280, 720);
-    // context.wnd.window().set_cursor(glutin::MouseCursor::NoneCursor);
+    let mut context = gfx2d::Gfx2dContext::initialize("Soldank", W, H);
+    context.wnd.window().set_cursor(glutin::MouseCursor::NoneCursor);
     context.wnd.window().set_cursor_state(glutin::CursorState::Grab).unwrap();
     context.clear(rgb(0, 0, 0));
     context.present();
@@ -107,12 +110,8 @@ fn main() {
     let mut graphics = GameGraphics::new(&mut context);
     graphics.load_map(&mut context, &state.map);
 
-    let clock = Instant::now();
-
-    let current_time = || {
-        let d = clock.elapsed();
-        d.as_secs() as f64 + d.subsec_nanos() as f64 * 1e-9
-    };
+    let time_start = time::precise_time_s();
+    let current_time = || {time::precise_time_s() - time_start};
 
     let mut timecur: f64 = 0.0;
     let mut timeprv: f64 = 0.0;
@@ -120,8 +119,8 @@ fn main() {
     let mut running = true;
 
     while running {
-        let wndpos = context.wnd.window().get_position().unwrap();
-        let wndsize = context.wnd.window().get_outer_size().unwrap();
+        // let wndpos = context.wnd.window().get_position().unwrap();
+        // let wndsize = context.wnd.window().get_outer_size().unwrap();
 
         context.evt.poll_events(|event| match event {
             Event::WindowEvent{event, ..} => match event {
@@ -133,20 +132,20 @@ fn main() {
                 WindowEvent::MouseInput{state, button, ..} => {
                     soldier.update_mouse_button(&(state, button));
                 },
-                WindowEvent::CursorMoved{position: (x, y), ..} => {
-                    let center = vec2(wndsize.0 as f32 / 2.0, wndsize.1 as f32 / 2.0);
-                    state.mouse.x = x as f32 - center.x;
-                    state.mouse.y = y as f32 - center.y;
-                },
+                // WindowEvent::CursorMoved{position: (x, y), ..} => {
+                //     let center = vec2(wndsize.0 as f32 / 2.0, wndsize.1 as f32 / 2.0);
+                //     state.mouse.x = x as f32 - center.x;
+                //     state.mouse.y = y as f32 - center.y;
+                // },
                 _ => (),
             },
 
             Event::DeviceEvent{event, ..} => match event {
                 DeviceEvent::MouseMotion{delta: (x, y)} => {
-                    // let (x, y) = (x as f32, y as f32);
-                    // let (w, h) = (state.game_width as f32, state.game_height as f32);
-                    // state.mouse.x = f32::max(-w, f32::min(w, state.mouse.x + x));
-                    // state.mouse.y = f32::max(-w, f32::min(h, state.mouse.y + y));
+                    let (x, y) = (x as f32, y as f32);
+                    let (w, h) = (state.game_width, state.game_height);
+                    state.mouse.x = f32::max(0.0, f32::min(w, state.mouse.x + x));
+                    state.mouse.y = f32::max(0.0, f32::min(h, state.mouse.y + y));
                 },
                 _ => (),
             },
@@ -166,18 +165,28 @@ fn main() {
             state.soldier_parts.do_eurler_timestep_for(1);
             soldier.update(&mut state);
 
+            state.soldier_parts.old_pos[2] = state.soldier_parts.pos[2];
+            state.soldier_parts.pos[2].x += 50.0 * dt as f32;
+
             state.camera_prev = state.camera;
             state.mouse_prev = state.mouse;
 
             state.camera = {
-                let (mx, my) = (state.mouse.x, state.mouse.y);
-                let (w, h) = (state.game_width as f32, state.game_height as f32);
-                let pos = vec2(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
-                let aim = vec2((mx - w/2.0)/7.0*(2.0*640.0/w - 1.0), (my - h/2.0)/7.0);
-                let cam = vec2(state.camera.x, state.camera.y);
-                let cam = cam + aim + (pos - cam) * 0.14;
-                let cam = pos + vec2(mx * 768.0/1280.0, my * 480.0/720.0);
-                Vector2::new(cam.x, cam.y)
+                let mut m = Vec2::zeros();
+
+                m.x = (state.mouse.x - state.game_width / 2.0) / 7.0
+                    * ((2.0 * 640.0 / state.game_width - 1.0)
+                        + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
+                m.y = (state.mouse.y - state.game_width / 2.0) / 7.0;
+
+                let mut cam_v = state.camera;
+
+                let p = vec2(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
+                let norm = p - cam_v;
+                let s = norm * 0.14;
+                cam_v += s;
+                cam_v += m;
+                cam_v
             };
 
             timecur = current_time();
@@ -186,9 +195,10 @@ fn main() {
         }
 
         let p = f64::min(1.0, f64::max(0.0, timeacc/dt));
-        graphics.render_frame(&mut context, &state, &soldier, ((timecur - dt + p*dt) as f32, p as f32));
+        graphics.render_frame(&mut context, &state, &soldier, (timecur - dt*(1.0 - p)), p as f32);
         context.present();
 
-        std::thread::sleep(Duration::from_millis(1));
+        // only sleep if no vsync (or if vsync doesn't wait), also needs timeBeginPeriod(1)
+        // std::thread::sleep(std::time::Duration::from_millis(1));
     }
 }

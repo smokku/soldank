@@ -59,7 +59,7 @@ pub struct MainState {
     pub camera_prev: Vector2<f32>,
     pub mouse: Vector2<f32>,
     pub mouse_prev: Vector2<f32>,
-    pub game_width: i32,
-    pub game_height: i32,
+    pub game_width: f32,
+    pub game_height: f32,
     pub gravity: f32,
 }

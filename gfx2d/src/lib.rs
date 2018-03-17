@@ -8,6 +8,7 @@ extern crate gfx_device_gl;
 extern crate gfx_window_glutin;
 extern crate glutin;
 extern crate image;
+extern crate nalgebra;
 
 include!("gfx_types.rs");
 
@@ -16,7 +17,6 @@ mod texture;
 mod batch;
 mod transform;
 mod spritesheet;
-mod vec2;
 mod matrix;
 mod color;
 
@@ -30,8 +30,6 @@ pub use batch::DrawSlice;
 pub use spritesheet::Sprite;
 pub use spritesheet::SpriteInfo;
 pub use spritesheet::Spritesheet;
-pub use vec2::vec2;
-pub use vec2::Vec2;
 pub use matrix::Mat2d;
 pub use transform::Transform;
 pub use color::Color;
@@ -39,6 +37,9 @@ pub use color::rgb;
 pub use color::rgba;
 pub use gfx::texture::FilterMethod;
 pub use gfx::texture::WrapMode;
+
+pub type Vec2 = nalgebra::Vector2<f32>;
+pub fn vec2(x: f32, y: f32) -> Vec2 {Vec2::new(x,y)}
 
 pub mod gfx2d_extra {
     pub use super::texture::premultiply_image;

@@ -29,39 +29,47 @@ impl GameGraphics {
         self.map = MapGraphics::new(context, map);
     }
 
-    pub fn render_frame(&mut self, context: &mut Gfx2dContext, state: &MainState, soldier: &Soldier, (t, p): (f32, f32)) {
-        let (w, h) = (state.game_width as f32, state.game_height as f32);
-        let (w, h) = (1280.0 * (480.0 / 720.0), 720.0 * (480.0 / 720.0));
-
-        let campos = {
-            let a = vec2(state.camera_prev.x, state.camera_prev.y);
-            let b = vec2(state.camera.x, state.camera.y);
-            // a + (b - a) * p
-            vec2(state.camera.x, state.camera.y)
-        };
-
-        let delta = campos - vec2(w, h)/2.0;
-        let transform = Transform::ortho(delta.x, delta.x + w, delta.y, delta.y + h).matrix();
-
-        let pos = vec2(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
-        let cam = pos + vec2(state.mouse.x, state.mouse.y);
-        let transform = Transform::ortho(cam.x - w/2.0, cam.x + w/2.0, cam.y - h/2.0, cam.y + h/2.0).matrix();
+    pub fn render_frame(&mut self, context: &mut Gfx2dContext, state: &MainState, soldier: &Soldier,
+        elapsed: f64, frame_percent: f32)
+    {
+        let (w, h) = (state.game_width, state.game_height);
+        let dx = state.camera.x - w/2.0;
+        let dy = state.camera.y - h/2.0;
+        let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
 
         self.batch.clear();
         self.batch.add_tinted_sprite(&self.soldier, rgba(255, 255, 0, 128), Transform::WithPivot {
             pivot: vec2(5.0, 10.0),
-            pos: pos,
+            pos: vec2(soldier.skeleton.pos[1].x, soldier.skeleton.pos[1].y),
             scale: vec2(1.0, 1.0),
             rot: 0.0,
         });
 
         context.clear(rgb(0, 0, 0));
-        context.draw(self.map.background(), &Transform::ortho(0.0, 1.0, delta.y, delta.y + h).matrix());
+        context.draw(self.map.background(), &Transform::ortho(0.0, 1.0, dy, dy + h).matrix());
         context.draw(self.map.polys_back(), &transform);
         context.draw(self.map.scenery_back(), &transform);
         context.draw(self.batch.all(), &transform);
         context.draw(self.map.scenery_mid(), &transform);
         context.draw(self.map.polys_front(), &transform);
         context.draw(self.map.scenery_front(), &transform);
+
+        // time precision test
+        {
+            let screen = Transform::ortho(0.0, 1280.0, 0.0, 720.0);
+            let a = state.soldier_parts.old_pos[2].x;
+            let b = state.soldier_parts.pos[2].x;
+            let x = (a + (b - a) * frame_percent) % 1280.0;
+
+            self.batch.clear();
+            self.batch.add_quads(None, &[[
+                vertex(vec2(x + 0.0,   0.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
+                vertex(vec2(x + 1.0,   0.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
+                vertex(vec2(x + 1.0, 720.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
+                vertex(vec2(x + 0.0, 720.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
+            ]]);
+
+            context.draw(self.batch.all(), &screen.matrix());
+        }
     }
 }

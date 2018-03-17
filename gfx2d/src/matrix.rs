@@ -1,4 +1,4 @@
-use super::Vec2;
+use super::{Vec2, vec2};
 
 // Indexed by row. Works like a 3x3 matrix where last row is always [0, 0, 1]
 #[derive(Debug, Copy, Clone)]
@@ -49,10 +49,8 @@ impl ::std::ops::Mul<Vec2> for Mat2d {
     type Output = Vec2;
 
     fn mul(self, rhs: Vec2) -> Vec2 {
-        Vec2 {
-            x: (rhs.x*(self.0).0 + rhs.y*(self.0).1 + (self.0).2),
-            y: (rhs.x*(self.1).0 + rhs.y*(self.1).1 + (self.1).2)
-        }
+        vec2(rhs.x*(self.0).0 + rhs.y*(self.0).1 + (self.0).2,
+            rhs.x*(self.1).0 + rhs.y*(self.1).1 + (self.1).2)
     }
 }
 
