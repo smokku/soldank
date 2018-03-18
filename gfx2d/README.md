@@ -5,8 +5,8 @@
 ::rgb(r, g, b) -> Color     // rgb & rgba take u8 params
 ::vec2(x, y) -> Vec2        // Vec2 is an alias to nalgebra::Vector2<f32>
 ::vertex(pos: Vec2, texcoords: Vec2, color: Color) -> Vertex
-::gfx2d_extra::premultiply_image(&mut Image::RgbaImage)
-::gfx2d_extra::remove_color_key(&mut Image::RgbaImage, Color)
+::gfx2d_extra::premultiply_image(&mut image::RgbaImage)
+::gfx2d_extra::remove_color_key(&mut image::RgbaImage, Color)
 
 Gfx2dContext
     ::initialize(title: &str, width: u32, height: u32) -> Gfx2dContext
