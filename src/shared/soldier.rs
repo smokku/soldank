@@ -239,18 +239,16 @@ impl Soldier {
             || (i == 18)
           {
             // legs
-            self.skeleton.pos[i].x = state.soldier_parts.pos[i].x
-              + f32::from(self.direction)
-                * self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].x;
-            self.skeleton.pos[i].y = state.soldier_parts.pos[i].y
-              + f32::from(self.direction)
-                * self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].y;
+            self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x + self.direction as f32 *
+              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].x;
+            self.skeleton.pos[i].y = state.soldier_parts.pos[self.num].y +
+              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].y;
           }
         }
         if (i == 7) || (i == 8) || (i == 9) || (i == 10) || (i == 11) || (i == 12) || (i == 13)
           || (i == 14) || (i == 15) || (i == 16) || (i == 19) || (i == 20)
         {
-          self.skeleton.pos[i].x = state.soldier_parts.pos[i].x
+          self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
             + f32::from(self.direction)
               * self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i].x;
 

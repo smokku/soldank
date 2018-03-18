@@ -98,6 +98,7 @@ fn main() {
     };
 
     let mut soldier = Soldier::new(&mut state);
+    state.camera = state.soldier_parts.pos[1];
 
     // setup window, renderer & main loop
 
@@ -119,9 +120,6 @@ fn main() {
     let mut running = true;
 
     while running {
-        // let wndpos = context.wnd.window().get_position().unwrap();
-        // let wndsize = context.wnd.window().get_outer_size().unwrap();
-
         context.evt.poll_events(|event| match event {
             Event::WindowEvent{event, ..} => match event {
                 WindowEvent::Closed => running = false,
@@ -132,24 +130,12 @@ fn main() {
                 WindowEvent::MouseInput{state, button, ..} => {
                     soldier.update_mouse_button(&(state, button));
                 },
-                // WindowEvent::CursorMoved{position: (x, y), ..} => {
-                //     let center = vec2(wndsize.0 as f32 / 2.0, wndsize.1 as f32 / 2.0);
-                //     state.mouse.x = x as f32 - center.x;
-                //     state.mouse.y = y as f32 - center.y;
-                // },
-                _ => (),
-            },
-
-            Event::DeviceEvent{event, ..} => match event {
-                DeviceEvent::MouseMotion{delta: (x, y)} => {
-                    let (x, y) = (x as f32, y as f32);
-                    let (w, h) = (state.game_width, state.game_height);
-                    state.mouse.x = f32::max(0.0, f32::min(w, state.mouse.x + x));
-                    state.mouse.y = f32::max(0.0, f32::min(h, state.mouse.y + y));
+                WindowEvent::CursorMoved{position: (x, y), ..} => {
+                    state.mouse.x = x as f32 * state.game_width / W as f32;
+                    state.mouse.y = y as f32 * state.game_height / H as f32;
                 },
                 _ => (),
             },
-
             _ => (),
         });
 
@@ -176,8 +162,8 @@ fn main() {
 
                 m.x = (state.mouse.x - state.game_width / 2.0) / 7.0
                     * ((2.0 * 640.0 / state.game_width - 1.0)
-                        + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
-                m.y = (state.mouse.y - state.game_width / 2.0) / 7.0;
+                    + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
+                m.y = (state.mouse.y - state.game_height / 2.0) / 7.0;
 
                 let mut cam_v = state.camera;
 

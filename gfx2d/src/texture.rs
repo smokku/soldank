@@ -8,7 +8,7 @@ use std::convert::AsRef;
 pub struct Texture(TextureHandle, ShaderResourceView, Sampler);
 
 impl Texture {
-	pub fn load<P>(g: &mut Gfx2dContext, fname: P, filter: FilterMethod, wrap: WrapMode, color_key: Option<Color>) -> Texture
+    pub fn load<P>(g: &mut Gfx2dContext, fname: P, filter: FilterMethod, wrap: WrapMode, color_key: Option<Color>) -> Texture
         where P: AsRef<Path>
     {
         // TODO: if wrap is repeat make it power of 2 so it works on webgl 1.0
@@ -24,7 +24,7 @@ impl Texture {
 
         let dimensions = (img.width() as u16, img.height() as u16);
         create_texture(&mut g.fct, &mut g.enc, dimensions, &img, filter, wrap)
-	}
+    }
 
     pub fn new(g: &mut Gfx2dContext, (w, h): (u16, u16),
         data: &[u8], filter: FilterMethod, wrap: WrapMode) -> Texture

@@ -24,8 +24,8 @@ enum BatchUsage {
 
 #[derive(Debug, Clone)]
 pub struct DrawBatch {
-	vbuf: Option<VertexBuffer>,
-	buf: Vec<Vertex>,
+    vbuf: Option<VertexBuffer>,
+    buf: Vec<Vertex>,
     cmds: Vec<BatchCommand>,
     split_start: usize,
     usage: BatchUsage,

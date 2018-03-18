@@ -7,7 +7,6 @@ use gfx2d::*;
 pub struct GameGraphics {
     map: MapGraphics,
     batch: DrawBatch,
-    soldier: Sprite,
 }
 
 impl GameGraphics {
@@ -15,13 +14,6 @@ impl GameGraphics {
         GameGraphics {
             map: MapGraphics::empty(),
             batch: DrawBatch::new(),
-            soldier: Sprite {
-                width: 10.0,
-                height: 10.0,
-                texcoords_x: (0.0, 0.0),
-                texcoords_y: (0.0, 0.0),
-                texture: None,
-            },
         }
     }
 
@@ -37,25 +29,61 @@ impl GameGraphics {
         let dy = state.camera.y - h/2.0;
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
 
-        self.batch.clear();
-        self.batch.add_tinted_sprite(&self.soldier, rgba(255, 255, 0, 128), Transform::WithPivot {
-            pivot: vec2(5.0, 10.0),
-            pos: vec2(soldier.skeleton.pos[1].x, soldier.skeleton.pos[1].y),
-            scale: vec2(1.0, 1.0),
-            rot: 0.0,
-        });
-
         context.clear(rgb(0, 0, 0));
         context.draw(self.map.background(), &Transform::ortho(0.0, 1.0, dy, dy + h).matrix());
         context.draw(self.map.polys_back(), &transform);
         context.draw(self.map.scenery_back(), &transform);
-        context.draw(self.batch.all(), &transform);
         context.draw(self.map.scenery_mid(), &transform);
         context.draw(self.map.polys_front(), &transform);
         context.draw(self.map.scenery_front(), &transform);
 
-        // time precision test
+        // skeleton points
         {
+            self.batch.clear();
+
+            for p in &soldier.skeleton.pos[1..25] {
+                let m = Mat2d::translate(p.x, p.y);
+
+                self.batch.add_quads(None, &[[
+                    vertex(m * vec2(-1.0, -1.0), Vec2::zeros(), rgb(0, 0, 255)),
+                    vertex(m * vec2( 1.0, -1.0), Vec2::zeros(), rgb(0, 0, 255)),
+                    vertex(m * vec2( 1.0,  1.0), Vec2::zeros(), rgb(0, 0, 255)),
+                    vertex(m * vec2(-1.0,  1.0), Vec2::zeros(), rgb(0, 0, 255)),
+                ]]);
+            }
+
+            context.draw(self.batch.all(), &transform);
+        }
+
+        // cursor
+        {
+            let size = context.wnd.get_inner_size().unwrap();
+            let size = vec2(size.0 as f32, size.1 as f32);
+            let x = f32::floor(state.mouse.x * size.x / w);
+            let y = f32::floor(state.mouse.y * size.y / h);
+            let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();
+
+            self.batch.clear();
+            self.batch.add_quads(None, &[
+                [
+                    vertex(vec2(x, y) + vec2(0.0, -8.0), Vec2::zeros(), rgb(0, 0, 0)),
+                    vertex(vec2(x, y) + vec2(1.0, -8.0), Vec2::zeros(), rgb(0, 0, 0)),
+                    vertex(vec2(x, y) + vec2(1.0,  9.0), Vec2::zeros(), rgb(0, 0, 0)),
+                    vertex(vec2(x, y) + vec2(0.0,  9.0), Vec2::zeros(), rgb(0, 0, 0)),
+                ],
+                [
+                    vertex(vec2(x, y) + vec2(-8.0, 0.0), Vec2::zeros(), rgb(0, 0, 0)),
+                    vertex(vec2(x, y) + vec2( 9.0, 0.0), Vec2::zeros(), rgb(0, 0, 0)),
+                    vertex(vec2(x, y) + vec2( 9.0, 1.0), Vec2::zeros(), rgb(0, 0, 0)),
+                    vertex(vec2(x, y) + vec2(-8.0, 1.0), Vec2::zeros(), rgb(0, 0, 0)),
+                ],
+            ]);
+
+            context.draw(self.batch.all(), &screen);
+        }
+
+        // time precision test
+        if false {
             let screen = Transform::ortho(0.0, 1280.0, 0.0, 720.0);
             let a = state.soldier_parts.old_pos[2].x;
             let b = state.soldier_parts.pos[2].x;
