@@ -92,7 +92,9 @@ impl MapGraphics {
             let mut sprite_index = vec![0usize; map.scenery.len()];
 
             for prop in &map.props {
-                scenery_used[prop.style as usize - 1] |= is_prop_active(map, prop);
+                if is_prop_active(map, prop) {
+                    scenery_used[prop.style as usize - 1] |= true;
+                }
             }
 
             let mut n = 0;
