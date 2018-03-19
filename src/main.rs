@@ -3,6 +3,7 @@ extern crate gfx2d;
 extern crate byteorder;
 extern crate time;
 extern crate nalgebra as na;
+extern crate ini;
 
 use na::Vector2;
 use glutin::*;

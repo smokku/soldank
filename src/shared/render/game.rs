@@ -123,7 +123,25 @@ impl GameGraphics {
             }
         }
 
-        // TODO: iterate over main & intf to setup pixel_ratio
+        if let Ok(ini) = ::ini::Ini::load_from_file("assets/mod.ini") {
+            if let Some(data) = ini.section(Some("scale".to_owned())) {
+                use ::std::str::FromStr;
+                let default_scale = match data.get("DefaultScale") {
+                    None => 1.0,
+                    Some(s) => f32::from_str(s).unwrap_or(1.0),
+                };
+
+                for s in &mut main {
+                    let fname = s.filename.strip_prefix("assets/").unwrap().to_str().unwrap();
+                    let scale = match data.get(fname) {
+                        None => default_scale,
+                        Some(s) => f32::from_str(s).unwrap_or(default_scale),
+                    };
+
+                    s.pixel_ratio = vec2(scale, scale);
+                }
+            }
+        }
 
         let main = Spritesheet::new(context, 8, FilterMethod::Trilinear, &main);
         let intf = Spritesheet::new(context, 8, FilterMethod::Trilinear, &intf);
