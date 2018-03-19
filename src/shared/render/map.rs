@@ -1,6 +1,6 @@
+use super::*;
 use gfx2d::*;
 use std::ops::Range;
-use std::path::PathBuf;
 use shared::mapfile::{MapFile, MapProp, MapPolygon, PolyType};
 
 pub struct MapGraphics {
@@ -11,18 +11,6 @@ pub struct MapGraphics {
     pub scenery_back: Range<usize>,
     pub scenery_mid: Range<usize>,
     pub scenery_front: Range<usize>,
-}
-
-fn filename_override(prefix: &str, fname: &str) -> PathBuf {
-    let mut path = PathBuf::from(prefix);
-    path.push(fname);
-
-    for ext in &["png", "jpg", "bmp"] {
-        path.set_extension(ext);
-        if path.exists() { break; }
-    }
-
-    path
 }
 
 fn is_prop_active(map: &MapFile, prop: &MapProp) -> bool {
@@ -113,7 +101,19 @@ impl MapGraphics {
                 .filter(|&(i, _)| scenery_used[i])
                 .map(|(_, s)| {
                     let fname = filename_override("assets/scenery-gfx", &s.filename);
-                    SpriteInfo::new(fname, vec2(1.0, 1.0), Some(rgb(0, 255, 0)))
+
+                    let color_key = match fname.extension() {
+                        Some(ext) => {
+                            if ext == "bmp" || ext == "gif" {
+                                Some(rgb(0, 255, 0))
+                            } else {
+                                None
+                            }
+                        },
+                        _ => None
+                    };
+
+                    SpriteInfo::new(fname, vec2(1.0, 1.0), color_key)
                 }).collect();
 
             Spritesheet::new(context, 8, FilterMethod::Trilinear, &scenery_info).sprites

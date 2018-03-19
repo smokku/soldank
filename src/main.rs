@@ -109,6 +109,7 @@ fn main() {
     context.present();
 
     let mut graphics = GameGraphics::new(&mut context);
+    graphics.load_sprites(&mut context);
     graphics.load_map(&mut context, &state.map);
 
     let time_start = time::precise_time_s();
