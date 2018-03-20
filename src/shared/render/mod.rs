@@ -1,10 +1,14 @@
-mod map;
-mod game;
-mod sprite_data;
+pub mod map;
+pub mod game;
+pub mod gostek;
+pub mod sprite_data;
 
-pub use self::map::*;
-pub use self::game::*;
-pub use self::sprite_data::*;
+pub use self::game::GameGraphics;
+
+use gfx2d::*;
+use self::sprite_data::*;
+use self::gostek::*;
+use self::map::*;
 
 fn filename_override(prefix: &str, fname: &str) -> ::std::path::PathBuf {
     let mut path = ::std::path::PathBuf::from(prefix);

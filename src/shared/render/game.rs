@@ -1,12 +1,14 @@
 use super::*;
-use gfx2d::*;
 use shared::state::MainState;
 use shared::soldier::Soldier;
 use shared::mapfile::MapFile;
 use std::path::PathBuf;
+use std::str::FromStr;
+use ini::Ini;
 
 pub struct GameGraphics {
     map: MapGraphics,
+    gostek: GostekGraphics,
     sprites: Vec<Vec<Sprite>>,
     batch: DrawBatch,
 }
@@ -15,6 +17,7 @@ impl GameGraphics {
     pub fn new(_context: &mut Gfx2dContext) -> GameGraphics {
         GameGraphics {
             map: MapGraphics::empty(),
+            gostek: GostekGraphics::new(),
             sprites: Vec::new(),
             batch: DrawBatch::new(),
         }
@@ -32,12 +35,17 @@ impl GameGraphics {
         context.draw(self.map.background(), &Transform::ortho(0.0, 1.0, dy, dy + h).matrix());
         context.draw(self.map.polys_back(), &transform);
         context.draw(self.map.scenery_back(), &transform);
+
+        self.batch.clear();
+        self.gostek.render(&soldier, &mut self.batch, &self.sprites);
+        context.draw(self.batch.all(), &transform);
+
         context.draw(self.map.scenery_mid(), &transform);
         context.draw(self.map.polys_front(), &transform);
         context.draw(self.map.scenery_front(), &transform);
 
         // skeleton points
-        {
+        if false {
             self.batch.clear();
 
             for p in &soldier.skeleton.pos[1..25] {
@@ -110,22 +118,24 @@ impl GameGraphics {
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
             let fname = filename_override("assets/", fname);
-            v.push(SpriteInfo::new(PathBuf::from(fname), vec2(1.0, 1.0), None));
+            v.push(SpriteInfo::new(PathBuf::from(fname), vec2(4.5, 4.5), None));
         };
 
         for group in SpriteGroup::values() {
             match *group {
                 SpriteGroup::Gostek    => Gostek   ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
-                SpriteGroup::Weapons   => Weapons  ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
-                SpriteGroup::Sparks    => Sparks   ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
-                SpriteGroup::Objects   => Objects  ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
+                SpriteGroup::Weapon    => Weapon   ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
+                SpriteGroup::Spark     => Spark    ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
+                SpriteGroup::Object    => Object   ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
                 SpriteGroup::Interface => Interface::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut intf, f)),
             }
         }
 
-        if let Ok(ini) = ::ini::Ini::load_from_file("assets/mod.ini") {
-            if let Some(data) = ini.section(Some("scale".to_owned())) {
-                use ::std::str::FromStr;
+        // TODO: scale loading is not working
+        if let Ok(cfg) = Ini::load_from_file("assets/mod.ini") {
+            self.gostek.load_data(&cfg);
+
+            if let Some(data) = cfg.section(Some("scale".to_owned())) {
                 let default_scale = match data.get("DefaultScale") {
                     None => 1.0,
                     Some(s) => f32::from_str(s).unwrap_or(1.0),
@@ -153,19 +163,19 @@ impl GameGraphics {
         let mut iintf = 0;
 
         for group in SpriteGroup::values() {
-            let index = group.id() as usize;
+            let index = group.id();
 
             match *group {
                 SpriteGroup::Gostek => for _ in Gostek::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
-                SpriteGroup::Weapons => for _ in Weapons::values() {
+                SpriteGroup::Weapon => for _ in Weapon::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
-                SpriteGroup::Sparks => for _ in Sparks::values() {
+                SpriteGroup::Spark => for _ in Spark::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
-                SpriteGroup::Objects => for _ in Objects::values() {
+                SpriteGroup::Object => for _ in Object::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
                 SpriteGroup::Interface => for _ in Interface::values() {
@@ -173,12 +183,5 @@ impl GameGraphics {
                 }
             }
         }
-    }
-
-    pub fn draw<T: SpriteData>(&mut self, sprite: T, color: Color, transform: Transform) {
-        let g = sprite.group() as usize;
-        let i = sprite.id() as usize;
-        let sprite = &self.sprites[g][i];
-        self.batch.add_tinted_sprite(sprite, color, transform);
     }
 }

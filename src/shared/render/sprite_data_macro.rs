@@ -1,11 +1,11 @@
 macro_rules! sprites {
     (
         $($enm:ident {
-            $($id:ident = $file:tt)*
+            $($id:ident = $file:tt)+
         })+
     ) => {
         pub trait SpriteData where Self: ::std::marker::Sized {
-            fn id(&self) -> i32;
+            fn id(&self) -> usize;
             fn group(&self) -> SpriteGroup;
             fn filename(&self) -> &'static str;
             fn values() -> &'static [Self];
@@ -17,7 +17,7 @@ macro_rules! sprites {
         }
 
         impl SpriteGroup {
-            pub fn id(&self) -> i32 { *self as i32 }
+            pub fn id(&self) -> usize { *self as usize }
             pub fn values() -> &'static [SpriteGroup] {
                 static VALUES: &[SpriteGroup] = &[$(SpriteGroup::$enm,)+];
                 VALUES
@@ -31,7 +31,7 @@ macro_rules! sprites {
             }
 
             impl SpriteData for $enm {
-                fn id(&self) -> i32 { *self as i32 }
+                fn id(&self) -> usize { *self as usize }
                 fn group(&self) -> SpriteGroup { SpriteGroup::$enm }
                 fn filename(&self) -> &'static str {
                     match *self { $($enm::$id => $file,)+ }
@@ -42,8 +42,8 @@ macro_rules! sprites {
                 }
             }
 
-            impl ::std::convert::From<i32> for $enm {
-                fn from(id: i32) -> $enm {
+            impl ::std::convert::From<usize> for $enm {
+                fn from(id: usize) -> $enm {
                     match $enm::values().get(id as usize) {
                         Some(&v) => v,
                         _ => panic!("Invalid sprite identifier."),
@@ -51,15 +51,91 @@ macro_rules! sprites {
                 }
             }
 
-            impl ::std::ops::Add<i32> for $enm {
+            impl ::std::ops::Add<usize> for $enm {
                 type Output = $enm;
-                fn add(self, x: i32) -> $enm { $enm::from(self.id() + x) }
+                fn add(self, x: usize) -> $enm { $enm::from(self.id() + x) }
             }
 
-            impl ::std::ops::Sub<i32> for $enm {
+            impl ::std::ops::Sub<usize> for $enm {
                 type Output = $enm;
-                fn sub(self, x: i32) -> $enm { $enm::from(self.id() - x) }
+                fn sub(self, x: usize) -> $enm { $enm::from(self.id() - x) }
             }
         )+
+    }
+}
+
+macro_rules! gostek_parts_sprite {
+    ( None ) => ( GostekSprite::None );
+    ( $group:ident::$id:ident ) => ( GostekSprite::$group($group::$id) );
+}
+
+macro_rules! gostek_parts {
+    (
+        $(
+            $id:ident =
+                Sprite($($sprite:tt)+),
+                Point($p1:expr, $p2:expr),
+                Center($cx:expr, $cy:expr),
+                Show($show:expr),
+                Flip($flip:expr),
+                Team($team:expr),
+                Flex($flex:expr),
+                Color($color:ident),
+                Alpha($alpha:ident)
+        )+
+    ) => {
+        #[derive(Debug, Copy, Clone)]
+        pub enum GostekPart {
+            $($id,)+
+        }
+
+        impl GostekPart {
+            pub fn id(&self) -> usize { *self as usize }
+
+            pub fn values() -> &'static [GostekPart] {
+                static VALUES: &[GostekPart] = &[$(GostekPart::$id,)+];
+                VALUES
+            }
+
+            pub fn data() -> &'static [GostekPartInfo] {
+                static DATA: &[GostekPartInfo] = &[
+                    $(
+                        GostekPartInfo {
+                            name: stringify!($id),
+                            sprite: gostek_parts_sprite!($($sprite)+),
+                            point: ($p1, $p2),
+                            center: ($cx, $cy),
+                            flexibility: $flex,
+                            flip: $flip,
+                            team: $team,
+                            color: GostekColor::$color,
+                            alpha: GostekAlpha::$alpha,
+                            visible: $show,
+                        },
+                    )+
+                ];
+
+                DATA
+            }
+        }
+
+        impl ::std::convert::From<usize> for GostekPart {
+            fn from(id: usize) -> GostekPart {
+                match GostekPart::values().get(id as usize) {
+                    Some(&v) => v,
+                    _ => panic!("Invalid sprite identifier."),
+                }
+            }
+        }
+
+        impl ::std::ops::Add<usize> for GostekPart {
+            type Output = GostekPart;
+            fn add(self, x: usize) -> GostekPart { GostekPart::from(self.id() + x) }
+        }
+
+        impl ::std::ops::Sub<usize> for GostekPart {
+            type Output = GostekPart;
+            fn sub(self, x: usize) -> GostekPart { GostekPart::from(self.id() - x) }
+        }
     }
 }

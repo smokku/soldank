@@ -4,6 +4,8 @@ extern crate byteorder;
 extern crate time;
 extern crate nalgebra as na;
 extern crate ini;
+extern crate typenum;
+extern crate bit_array;
 
 use na::Vector2;
 use glutin::*;

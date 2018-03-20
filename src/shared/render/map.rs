@@ -1,5 +1,4 @@
 use super::*;
-use gfx2d::*;
 use std::ops::Range;
 use shared::mapfile::{MapFile, MapProp, MapPolygon, PolyType};
 
