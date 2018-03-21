@@ -141,9 +141,9 @@ impl GameGraphics {
                 };
 
                 for sprite_info in main.iter_mut().chain(intf.iter_mut()) {
-                    let fname sprite_info.filename.strip_prefix("assets/").unwrap().to_str().unwrap();
+                    let fname = sprite_info.filename.strip_prefix("assets/").unwrap().to_str().unwrap();
 
-                    let scale = match data.get(&fname) {
+                    let scale = match data.get(fname) {
                         None => default_scale,
                         Some(scale) => f32::from_str(scale).unwrap_or(default_scale),
                     };
