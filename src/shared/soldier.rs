@@ -230,7 +230,7 @@ impl Soldier {
       self.direction = -1;
     }
 
-    for i in 1..20 {
+    for i in 1..21 {
       if self.skeleton.active[i] && !self.dead_meat {
         self.skeleton.old_pos[i] = self.skeleton.pos[i];
 
