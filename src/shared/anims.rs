@@ -3,12 +3,12 @@ use na::Vector3;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-const MAX_POS_INDEX: i32 = 20;
-const MAX_FRAMES_INDEX: i32 = 40;
+const MAX_POS_INDEX: usize = 20;
+const MAX_FRAMES_INDEX: usize = 40;
 
 #[derive(Debug)]
 pub struct Frames {
-  pub pos: [Vector3<f32>; 20],
+  pub pos: [Vector3<f32>; MAX_POS_INDEX + 1],
 }
 
 impl Copy for Frames {}
@@ -27,7 +27,7 @@ pub struct Animation {
   pub count: i32,
   pub curr_frame: i32,
   pub looped: bool,
-  pub frame: [Frames; 40],
+  pub frame: [Frames; MAX_FRAMES_INDEX + 1],
 }
 impl Animation {
   pub fn do_animation(&mut self) {
@@ -57,12 +57,12 @@ impl Animation {
     let mut buf = BufReader::new(file);
 
     buf.read_line(&mut line).ok();
-    let pos: [Vector3<f32>; 20] = [Vector3::new(0.0_f32, 0.0_f32, 0.0_f32); 20];
-    let mut new_frame: [Frames; 40] = [Frames { pos }; 40];
+    let pos = [Vector3::new(0.0_f32, 0.0_f32, 0.0_f32); MAX_POS_INDEX + 1];
+    let mut new_frame = [Frames { pos }; MAX_FRAMES_INDEX + 1];
 
     while line.trim() != "ENDFILE" {
       if line.trim() == "NEXTFRAME" {
-        if num_frames == MAX_FRAMES_INDEX {
+        if num_frames == MAX_FRAMES_INDEX as i32 {
           println!("Corrupted frame index: {}", path.display());
           break;
         }
@@ -81,9 +81,9 @@ impl Animation {
         r2.clear();
         r3.clear();
         r4.clear();
-        if (p >= 1) && (p <= MAX_POS_INDEX) {
-          new_frame[num_frames as usize].pos[p as usize - 1].x = -3.0 * p2 / 1.1;
-          new_frame[num_frames as usize].pos[p as usize - 1].y = -3.0 * p4;
+        if (p >= 1) && (p <= MAX_POS_INDEX as i32) {
+          new_frame[num_frames as usize].pos[p as usize].x = -3.0 * p2 / 1.1;
+          new_frame[num_frames as usize].pos[p as usize].y = -3.0 * p4;
         } else {
           println!("Corrupted Index ({}): {}", p, path.display());
         }

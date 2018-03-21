@@ -240,9 +240,9 @@ impl Soldier {
           {
             // legs
             self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x + self.direction as f32 *
-              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i - 1].x;
+              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].x;
             self.skeleton.pos[i].y = state.soldier_parts.pos[self.num].y +
-              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i - 1].y;
+              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].y;
           }
         }
         if (i == 7) || (i == 8) || (i == 9) || (i == 10) || (i == 11) || (i == 12) || (i == 13)
@@ -250,16 +250,16 @@ impl Soldier {
         {
           self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
             + f32::from(self.direction)
-              * self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i - 1].x;
+              * self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i].x;
 
           if !self.half_dead {
             self.skeleton.pos[i].y = (self.skeleton.pos[6].y
               - (state.soldier_parts.pos[self.num].y - body_y))
               + state.soldier_parts.pos[self.num].y
-              + self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i - 1].y;
+              + self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i].y;
           } else {
             self.skeleton.pos[i].y = 9.00 + state.soldier_parts.pos[self.num].y
-              + self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i - 1].y;
+              + self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i].y;
           }
         }
       }
