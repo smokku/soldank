@@ -71,7 +71,7 @@ impl GostekGraphics {
     pub fn load_data(&mut self, cfg: &Ini) {
         self.data = GostekPart::data().to_vec();
 
-        if let Some(data) = cfg.section(Some("gostek".to_owned())) {
+        if let Some(data) = cfg.section(Some("GOSTEK".to_owned())) {
             let mut key = String::with_capacity(256);
 
             let copy_and_insert_underscores = |dest: &mut String, source: &str| {

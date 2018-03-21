@@ -118,7 +118,7 @@ impl GameGraphics {
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
             let fname = filename_override("assets/", fname);
-            v.push(SpriteInfo::new(PathBuf::from(fname), vec2(4.5, 4.5), None));
+            v.push(SpriteInfo::new(PathBuf::from(fname), vec2(1.0, 1.0), None));
         };
 
         for group in SpriteGroup::values() {
@@ -131,24 +131,24 @@ impl GameGraphics {
             }
         }
 
-        // TODO: scale loading is not working
         if let Ok(cfg) = Ini::load_from_file("assets/mod.ini") {
             self.gostek.load_data(&cfg);
 
-            if let Some(data) = cfg.section(Some("scale".to_owned())) {
+            if let Some(data) = cfg.section(Some("SCALE".to_owned())) {
                 let default_scale = match data.get("DefaultScale") {
                     None => 1.0,
-                    Some(s) => f32::from_str(s).unwrap_or(1.0),
+                    Some(scale) => f32::from_str(scale).unwrap_or(1.0),
                 };
 
-                for s in &mut main {
-                    let fname = s.filename.strip_prefix("assets/").unwrap().to_str().unwrap();
-                    let scale = match data.get(fname) {
+                for sprite_info in main.iter_mut().chain(intf.iter_mut()) {
+                    let fname sprite_info.filename.strip_prefix("assets/").unwrap().to_str().unwrap();
+
+                    let scale = match data.get(&fname) {
                         None => default_scale,
-                        Some(s) => f32::from_str(s).unwrap_or(default_scale),
+                        Some(scale) => f32::from_str(scale).unwrap_or(default_scale),
                     };
 
-                    s.pixel_ratio = vec2(scale, scale);
+                    sprite_info.pixel_ratio = vec2(scale, scale);
                 }
             }
         }
