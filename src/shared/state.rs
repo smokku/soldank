@@ -62,4 +62,5 @@ pub struct MainState {
     pub game_width: f32,
     pub game_height: f32,
     pub gravity: f32,
+    pub zoom: f32,
 }

@@ -26,7 +26,8 @@ impl GameGraphics {
     pub fn render_frame(&mut self, context: &mut Gfx2dContext, state: &MainState, soldier: &Soldier,
         _elapsed: f64, frame_percent: f32)
     {
-        let (w, h) = (state.game_width, state.game_height);
+        let z = f32::exp(state.zoom);
+        let (w, h) = (z*state.game_width, z*state.game_height);
         let dx = state.camera.x - w/2.0;
         let dy = state.camera.y - h/2.0;
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
@@ -66,8 +67,8 @@ impl GameGraphics {
         {
             let size = context.wnd.get_inner_size().unwrap();
             let size = vec2(size.0 as f32, size.1 as f32);
-            let x = f32::floor(state.mouse.x * size.x / w);
-            let y = f32::floor(state.mouse.y * size.y / h);
+            let x = z * f32::floor(state.mouse.x * size.x / w);
+            let y = z * f32::floor(state.mouse.y * size.y / h);
             let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();
 
             self.batch.clear();

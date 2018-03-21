@@ -98,6 +98,7 @@ fn main() {
         mouse: Vector2::new(0.0f32, 0.0f32),
         mouse_prev: Vector2::new(0.0f32, 0.0f32),
         gravity: GRAV,
+        zoom: 0.0,
     };
 
     let mut soldier = Soldier::new(&mut state);
@@ -123,13 +124,26 @@ fn main() {
     let mut timeacc: f64 = 0.0;
     let mut running = true;
 
+    let mut zoomin_pressed = false; // -1
+    let mut zoomout_pressed = false; // +1
+
     while running {
         context.evt.poll_events(|event| match event {
             Event::WindowEvent{event, ..} => match event {
                 WindowEvent::Closed => running = false,
-                WindowEvent::KeyboardInput{input, ..} => match input {
-                    KeyboardInput{virtual_keycode: Some(VirtualKeyCode::Escape), ..} => running = false,
-                    _ => soldier.update_keys(&input),
+                WindowEvent::KeyboardInput{input, ..} => {
+                    match input.virtual_keycode {
+                        Some(VirtualKeyCode::Escape) => running = false,
+                        Some(VirtualKeyCode::Add) => zoomin_pressed = match input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        },
+                        Some(VirtualKeyCode::Subtract) => zoomout_pressed = match input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        },
+                        _ => soldier.update_keys(&input),
+                    }
                 },
                 WindowEvent::MouseInput{state, button, ..} => {
                     soldier.update_mouse_button(&(state, button));
@@ -161,13 +175,21 @@ fn main() {
             state.camera_prev = state.camera;
             state.mouse_prev = state.mouse;
 
+            if zoomin_pressed ^ zoomout_pressed {
+                state.zoom += match zoomin_pressed {
+                    true => -1.0 * dt as f32,
+                    false => 1.0 * dt as f32,
+                };
+            }
+
             state.camera = {
+                let z = f32::exp(state.zoom);
                 let mut m = Vec2::zeros();
 
-                m.x = (state.mouse.x - state.game_width / 2.0) / 7.0
+                m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
                     * ((2.0 * 640.0 / state.game_width - 1.0)
                     + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
-                m.y = (state.mouse.y - state.game_height / 2.0) / 7.0;
+                m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
 
                 let mut cam_v = state.camera;
 
