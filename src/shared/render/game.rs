@@ -49,14 +49,36 @@ impl GameGraphics {
         if false {
             self.batch.clear();
 
+            let px = h / context.wnd.get_inner_size().unwrap().1 as f32;
+            let n = soldier.skeleton.constraint_count as usize;
+
+            for constraint in &soldier.skeleton.constraints[1..n + 1] {
+                let a = soldier.skeleton.pos[constraint.part_a as usize];
+                let b = soldier.skeleton.pos[constraint.part_b as usize];
+
+                let m = Transform::WithPivot {
+                    pos: a,
+                    pivot: vec2(0.0, 0.0),
+                    scale: vec2(::shared::calc::distance(a, b), 1.0),
+                    rot: ::na::angle(&(b - a), &vec2(1.0, 0.0)),
+                }.matrix();
+
+                self.batch.add_quads(None, &[[
+                    vertex(m * vec2(0.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
+                    vertex(m * vec2(1.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
+                    vertex(m * vec2(1.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
+                    vertex(m * vec2(0.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
+                ]]);
+            }
+
             for p in &soldier.skeleton.pos[1..25] {
                 let m = Mat2d::translate(p.x, p.y);
 
                 self.batch.add_quads(None, &[[
-                    vertex(m * vec2(-1.0, -1.0), Vec2::zeros(), rgb(0, 0, 255)),
-                    vertex(m * vec2( 1.0, -1.0), Vec2::zeros(), rgb(0, 0, 255)),
-                    vertex(m * vec2( 1.0,  1.0), Vec2::zeros(), rgb(0, 0, 255)),
-                    vertex(m * vec2(-1.0,  1.0), Vec2::zeros(), rgb(0, 0, 255)),
+                    vertex(m * vec2(-0.75 * px, -0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
+                    vertex(m * vec2( 0.75 * px, -0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
+                    vertex(m * vec2( 0.75 * px,  0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
+                    vertex(m * vec2(-0.75 * px,  0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
                 ]]);
             }
 
