@@ -7,6 +7,8 @@ extern crate ini;
 extern crate typenum;
 extern crate bit_array;
 
+macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then } else { $otherwise }));
+
 use na::Vector2;
 use glutin::*;
 use gfx2d::*;
