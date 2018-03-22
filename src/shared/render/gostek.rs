@@ -103,8 +103,68 @@ impl GostekGraphics {
     }
 
     pub fn render(&self, soldier: &Soldier, batch: &mut DrawBatch, sprites: &Vec<Vec<Sprite>>) {
+        // useless fucking enums...
+        const COLOR_NONE:      usize = GostekColor::None as usize;
+        const COLOR_MAIN:      usize = GostekColor::Main as usize;
+        const COLOR_PANTS:     usize = GostekColor::Pants as usize;
+        const COLOR_SKIN:      usize = GostekColor::Skin as usize;
+        const COLOR_HAIR:      usize = GostekColor::Hair as usize;
+        const COLOR_CYGAR:     usize = GostekColor::Cygar as usize;
+        const COLOR_HEADBLOOD: usize = GostekColor::Headblood as usize;
+        const ALPHA_BASE:      usize = GostekAlpha::Base as usize;
+        const ALPHA_BLOOD:     usize = GostekAlpha::Blood as usize;
+        const ALPHA_NADES:     usize = GostekAlpha::Nades as usize;
+
+        let mut visible = self.base_visibility.clone();
+        let mut color = [rgb(0,0,0); COLOR_HEADBLOOD + 1];
+        let mut alpha = [0u8; ALPHA_NADES + 1];
+
+        color[COLOR_NONE]      = rgb(255, 255, 255);
+        color[COLOR_MAIN]      = rgb( 0 ,  0 ,  0 ); // Player.Color1
+        color[COLOR_PANTS]     = rgb( 0 ,  0 ,  0 ); // Player.Color2
+        color[COLOR_SKIN]      = rgb(230, 180, 120); // Player.SkinColor
+        color[COLOR_HAIR]      = rgb( 0 ,  0 ,  0 ); // Player.HairColor
+        color[COLOR_CYGAR]     = rgb(255, 255, 255);
+        color[COLOR_HEADBLOOD] = rgb(172, 169, 168);
+
+        if soldier.has_cigar == 5 {
+            color[COLOR_CYGAR] = rgb(97, 97, 97);
+        }
+
+        alpha[ALPHA_BASE] = soldier.alpha;
+        alpha[ALPHA_BLOOD] = f32::max(0.0, f32::min(255.0, 200.0 - soldier.health.round())) as u8;
+
+        let realistic_mode = false;
+
+        if soldier.health > (90.0 - 40.0 * f32::from(realistic_mode as u8)) {
+            alpha[ALPHA_BLOOD] = 0;
+        }
+
+        if realistic_mode && soldier.visible > 0 && soldier.visible < 45 && soldier.alpha > 60 {
+            // TODO: if this really needs to change it should be done somewhere during update, not here
+            // soldier.alpha = 3 * soldier.visible;
+            alpha[ALPHA_BASE] = 3 * soldier.visible;
+            alpha[ALPHA_BLOOD] = 0;
+        }
+
+        alpha[ALPHA_NADES] = (0.75 * (alpha[ALPHA_BASE] as f32)) as u8;
+
+        if alpha[ALPHA_BLOOD] > 0 {
+            visible.set(GostekPart::LeftThighDmg.id(), true);
+            visible.set(GostekPart::LeftLowerlegDmg.id(), true);
+            visible.set(GostekPart::LeftForearmDmg.id(), true);
+            visible.set(GostekPart::LeftArmDmg.id(), true);
+            visible.set(GostekPart::ChestDmg.id(), true);
+            visible.set(GostekPart::HipDmg.id(), true);
+            visible.set(GostekPart::HeadDmg.id(), true);
+            visible.set(GostekPart::RightThighDmg.id(), true);
+            visible.set(GostekPart::RightLowerlegDmg.id(), true);
+            visible.set(GostekPart::RightForearmDmg.id(), true);
+            visible.set(GostekPart::RightArmDmg.id(), true);
+        }
+
         for (i, part) in self.data.iter().enumerate() {
-            if self.base_visibility.get(i).unwrap() && !part.sprite.is_none() {
+            if self.base_visibility[i] && !part.sprite.is_none() {
                 let mut sid: usize = 0;
                 let mut cx = part.center.0;
                 let mut cy = part.center.1;
@@ -124,13 +184,16 @@ impl GostekGraphics {
                     scale.x = f32::min(1.5, f32::sqrt((p1.x - p0.x).powi(2) + (p1.y - p0.y).powi(2)) / part.flexibility);
                 }
 
+                let mut part_color = color[part.color as usize];
+                part_color.set_a(alpha[part.alpha as usize]);
+
                 match part.sprite {
                     GostekSprite::Gostek(spriteid) => {
                         let spriteid = spriteid + sid;
                         let sprite = &sprites[spriteid.group().id()][spriteid.id()];
                         let (w, h) = (sprite.width, sprite.height);
 
-                        batch.add_tinted_sprite(sprite, rgb(255, 255, 255), Transform::WithPivot {
+                        batch.add_tinted_sprite(sprite, part_color, Transform::WithPivot {
                             pivot: vec2(cx * w, cy * h),
                             pos: vec2(p0.x, p0.y + 1.0),
                             scale,
