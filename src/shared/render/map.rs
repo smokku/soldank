@@ -69,9 +69,10 @@ impl MapGraphics {
     pub fn new(context: &mut Gfx2dContext, map: &MapFile) -> MapGraphics {
         let texture_file = filename_override("assets/textures", &map.texture_name);
 
-        let texture = match texture_file.exists() {
-            true => Texture::load(context, &texture_file, FilterMethod::Trilinear, WrapMode::Tile, None),
-            false => Texture::new(context, (1, 1), &[255u8; 4], FilterMethod::Scale, WrapMode::Clamp),
+        let texture = if texture_file.exists() {
+            Texture::load(context, &texture_file, FilterMethod::Trilinear, WrapMode::Tile, None)
+        } else {
+            Texture::new(context, (1, 1), &[255u8; 4], FilterMethod::Scale, WrapMode::Clamp)
         };
 
         let (scenery_used, sprite_index) = {
