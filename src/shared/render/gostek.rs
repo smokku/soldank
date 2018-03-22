@@ -218,20 +218,10 @@ impl GostekGraphics {
                 let head_cap = Gostek::Helm; // TODO: Player.HeadCap
 
                 match head_cap {
-                    Gostek::Helm => {
-                        if grabbed {
-                            visible.set(GostekPart::GrabbedHelmet.id(), true);
-                        } else {
-                            visible.set(GostekPart::Helmet.id(), true);
-                        }
-                    },
-                    Gostek::Kap => {
-                        if grabbed {
-                            visible.set(GostekPart::GrabbedHat.id(), true);
-                        } else {
-                            visible.set(GostekPart::Hat.id(), true);
-                        }
-                    },
+                    Gostek::Helm if  grabbed => visible.set(GostekPart::GrabbedHelmet.id(), true),
+                    Gostek::Kap  if  grabbed => visible.set(GostekPart::GrabbedHat.id(), true),
+                    Gostek::Helm if !grabbed => visible.set(GostekPart::Helmet.id(), true),
+                    Gostek::Kap  if !grabbed => visible.set(GostekPart::Hat.id(), true),
                     _ => {},
                 }
             }
