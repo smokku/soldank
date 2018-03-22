@@ -179,13 +179,13 @@ impl GostekGraphics {
 
         match chain {
             1 => {
-                visible.set(GostekPart::SilverLChain.id(), true);
-                visible.set(GostekPart::SilverRChain.id(), true);
+                visible.set(GostekPart::SilverLchain.id(), true);
+                visible.set(GostekPart::SilverRchain.id(), true);
                 visible.set(GostekPart::SilverPendant.id(), true);
             },
             2 => {
-                visible.set(GostekPart::GoldenLChain.id(), true);
-                visible.set(GostekPart::GoldenRChain.id(), true);
+                visible.set(GostekPart::GoldenLchain.id(), true);
+                visible.set(GostekPart::GoldenRchain.id(), true);
                 visible.set(GostekPart::GoldenPendant.id(), true);
             },
             _ => {}
