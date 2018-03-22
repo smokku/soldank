@@ -126,8 +126,8 @@ fn main() {
     let mut timeacc: f64 = 0.0;
     let mut running = true;
 
-    let mut zoomin_pressed = false; // -1
-    let mut zoomout_pressed = false; // +1
+    let mut zoomin_pressed = false;
+    let mut zoomout_pressed = false;
 
     while running {
         context.evt.poll_events(|event| match event {
@@ -178,10 +178,7 @@ fn main() {
             state.mouse_prev = state.mouse;
 
             if zoomin_pressed ^ zoomout_pressed {
-                state.zoom += match zoomin_pressed {
-                    true => -1.0 * dt as f32,
-                    false => 1.0 * dt as f32,
-                };
+                state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * dt as f32;
             }
 
             state.camera = {

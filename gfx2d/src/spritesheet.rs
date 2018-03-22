@@ -73,9 +73,10 @@ impl Spritesheet {
         let mut rects: Vec<Rect> = Vec::with_capacity(info.len());
 
         for (index, ref sprite_info) in info.iter().enumerate() {
-            let mut img = match sprite_info.filename.exists() {
-                true => image::open(&sprite_info.filename).unwrap().to_rgba(),
-                false => Image::from_pixel(1, 1, image::Rgba([0u8; 4])),
+            let mut img = if sprite_info.filename.exists() {
+                image::open(&sprite_info.filename).unwrap().to_rgba()
+            } else {
+                Image::from_pixel(1, 1, image::Rgba([0u8; 4]))
             };
 
             if let Some(color) = sprite_info.color_key {
@@ -153,10 +154,11 @@ impl Spritesheet {
             let mut h = w;
 
             while w <= max_size && h <= max_size && pack_rects(w + pad, h + pad, rects) < rects.len() {
-                match w <= h {
-                    true  => w *= 2,
-                    false => h *= 2,
-                };
+                if w <= h {
+                    w *= 2;
+                } else {
+                    h *= 2;
+                }
             }
 
             if w <= max_size && h <= max_size {

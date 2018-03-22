@@ -2,7 +2,6 @@ use super::*;
 use shared::state::MainState;
 use shared::soldier::Soldier;
 use shared::mapfile::MapFile;
-use std::path::PathBuf;
 use std::str::FromStr;
 use ini::Ini;
 
@@ -141,7 +140,7 @@ impl GameGraphics {
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
             let fname = filename_override("assets/", fname);
-            v.push(SpriteInfo::new(PathBuf::from(fname), vec2(1.0, 1.0), None));
+            v.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
         };
 
         for group in SpriteGroup::values() {

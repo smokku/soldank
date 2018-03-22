@@ -218,15 +218,21 @@ impl GostekGraphics {
                 let head_cap = Gostek::Helm; // TODO: Player.HeadCap
 
                 match head_cap {
-                    Gostek::Helm => match grabbed {
-                        true => visible.set(GostekPart::GrabbedHelmet.id(), true),
-                        false => visible.set(GostekPart::Helmet.id(), true),
+                    Gostek::Helm => {
+                        if grabbed {
+                            visible.set(GostekPart::GrabbedHelmet.id(), true);
+                        } else {
+                            visible.set(GostekPart::Helmet.id(), true);
+                        }
                     },
-                    Gostek::Kap => match grabbed {
-                        true => visible.set(GostekPart::GrabbedHat.id(), true),
-                        false => visible.set(GostekPart::Hat.id(), true),
+                    Gostek::Kap => {
+                        if grabbed {
+                            visible.set(GostekPart::GrabbedHat.id(), true);
+                        } else {
+                            visible.set(GostekPart::Hat.id(), true);
+                        }
                     },
-                    _ => {}
+                    _ => {},
                 }
             }
 
@@ -247,7 +253,7 @@ impl GostekGraphics {
 
         for (i, part) in self.data.iter().enumerate() {
             if visible[i] && !part.sprite.is_none() {
-                let mut sid: usize = 0;
+                let mut sprite_index: usize = 0;
                 let mut cx = part.center.0;
                 let mut cy = part.center.1;
                 let mut scale = vec2(1.0, 1.0);
@@ -256,9 +262,11 @@ impl GostekGraphics {
                 let rot = f32::atan2(p1.y - p0.y, p1.x - p0.x);
 
                 if soldier.direction != 1 {
-                    match part.flip {
-                        true =>  { cy = 1.0 - cy; sid += 1; },
-                        false => { scale.y = -1.0; },
+                    if part.flip {
+                        cy = 1.0 - cy;
+                        sprite_index += 1;
+                    } else {
+                        scale.y = -1.0;
                     }
                 }
 
@@ -283,9 +291,9 @@ impl GostekGraphics {
                 };
 
                 match part.sprite {
-                    GostekSprite::Gostek(spriteid) => {
-                        let spriteid = spriteid + sid;
-                        let sprite = &sprites[spriteid.group().id()][spriteid.id()];
+                    GostekSprite::Gostek(gostek_sprite) => {
+                        let gostek_sprite = gostek_sprite + sprite_index;
+                        let sprite = &sprites[gostek_sprite.group().id()][gostek_sprite.id()];
                         let (w, h) = (sprite.width, sprite.height);
 
                         batch.add_tinted_sprite(sprite, color, Transform::WithPivot {

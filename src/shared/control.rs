@@ -153,9 +153,9 @@ impl Soldier {
       if self.on_ground {
         force.y = -2.5 * iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
       } else if self.position != POS_PRONE {
-        force.y = force.y - iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
+        force.y -= iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
       } else {
-        force.x = force.x + (f32::from(self.direction) * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity));
+        force.x += f32::from(self.direction) * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity);
       }
 
       if (self.legs_animation.id != state.anims.get_up.id)
