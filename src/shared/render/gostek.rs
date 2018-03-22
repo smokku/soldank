@@ -103,53 +103,38 @@ impl GostekGraphics {
     }
 
     pub fn render(&self, soldier: &Soldier, batch: &mut DrawBatch, sprites: &Vec<Vec<Sprite>>) {
-        // useless fucking enums...
-        const COLOR_NONE:      usize = GostekColor::None as usize;
-        const COLOR_MAIN:      usize = GostekColor::Main as usize;
-        const COLOR_PANTS:     usize = GostekColor::Pants as usize;
-        const COLOR_SKIN:      usize = GostekColor::Skin as usize;
-        const COLOR_HAIR:      usize = GostekColor::Hair as usize;
-        const COLOR_CYGAR:     usize = GostekColor::Cygar as usize;
-        const COLOR_HEADBLOOD: usize = GostekColor::Headblood as usize;
-        const ALPHA_BASE:      usize = GostekAlpha::Base as usize;
-        const ALPHA_BLOOD:     usize = GostekAlpha::Blood as usize;
-        const ALPHA_NADES:     usize = GostekAlpha::Nades as usize;
-
         let mut visible = self.base_visibility.clone();
-        let mut color = [rgb(0,0,0); COLOR_HEADBLOOD + 1];
-        let mut alpha = [0u8; ALPHA_NADES + 1];
-
-        color[COLOR_NONE]      = rgb(255, 255, 255);
-        color[COLOR_MAIN]      = rgb( 0 ,  0 ,  0 ); // Player.Color1
-        color[COLOR_PANTS]     = rgb( 0 ,  0 ,  0 ); // Player.Color2
-        color[COLOR_SKIN]      = rgb(230, 180, 120); // Player.SkinColor
-        color[COLOR_HAIR]      = rgb( 0 ,  0 ,  0 ); // Player.HairColor
-        color[COLOR_CYGAR]     = rgb(255, 255, 255);
-        color[COLOR_HEADBLOOD] = rgb(172, 169, 168);
+        let mut alpha_base = soldier.alpha;
+        let mut alpha_blood = f32::max(0.0, f32::min(255.0, 200.0 - soldier.health.round())) as u8;
+        let mut color_cygar = rgb(255, 255, 255);
+        let color_none      = rgb(255, 255, 255);
+        let color_main      = rgb( 0 ,  0 ,  0 ); // TODO: Player.Color1
+        let color_pants     = rgb( 0 ,  0 ,  0 ); // TODO: Player.Color2
+        let color_skin      = rgb(230, 180, 120); // TODO: Player.SkinColor
+        let color_hair      = rgb( 0 ,  0 ,  0 ); // TODO: Player.HairColor
+        let color_headblood = rgb(172, 169, 168);
+        let alpha_nades: u8;
 
         if soldier.has_cigar == 5 {
-            color[COLOR_CYGAR] = rgb(97, 97, 97);
+            color_cygar = rgb(97, 97, 97);
         }
-
-        alpha[ALPHA_BASE] = soldier.alpha;
-        alpha[ALPHA_BLOOD] = f32::max(0.0, f32::min(255.0, 200.0 - soldier.health.round())) as u8;
 
         let realistic_mode = false;
 
         if soldier.health > (90.0 - 40.0 * f32::from(realistic_mode as u8)) {
-            alpha[ALPHA_BLOOD] = 0;
+            alpha_blood = 0;
         }
 
         if realistic_mode && soldier.visible > 0 && soldier.visible < 45 && soldier.alpha > 60 {
             // TODO: if this really needs to change it should be done somewhere during update, not here
             // soldier.alpha = 3 * soldier.visible;
-            alpha[ALPHA_BASE] = 3 * soldier.visible;
-            alpha[ALPHA_BLOOD] = 0;
+            alpha_base = 3 * soldier.visible;
+            alpha_blood = 0;
         }
 
-        alpha[ALPHA_NADES] = (0.75 * (alpha[ALPHA_BASE] as f32)) as u8;
+        alpha_nades = (0.75 * (alpha_base as f32)) as u8;
 
-        if alpha[ALPHA_BLOOD] > 0 {
+        if alpha_blood > 0 {
             visible.set(GostekPart::LeftThighDmg.id(), true);
             visible.set(GostekPart::LeftLowerlegDmg.id(), true);
             visible.set(GostekPart::LeftForearmDmg.id(), true);
@@ -163,8 +148,105 @@ impl GostekGraphics {
             visible.set(GostekPart::RightArmDmg.id(), true);
         }
 
+        if soldier.control.jets && soldier.jets_count > 0 {
+            visible.set(GostekPart::LeftFoot.id(), false);
+            visible.set(GostekPart::RightFoot.id(), false);
+            visible.set(GostekPart::LeftJetfoot.id(), true);
+            visible.set(GostekPart::RightJetfoot.id(), true);
+        }
+
+        if soldier.vest > 0.0 {
+            visible.set(GostekPart::Vest.id(), true);
+        }
+
+        // TODO:    if soldier.tertiary_weapon.num == guns[frag_grenade].num
+        let index = if true {
+            GostekPart::FragGrenade1.id()
+        } else {
+            GostekPart::ClusterGrenade1.id()
+        };
+
+        // TODO: use actual values
+        const THROW_ANIM: i32 = 9;
+        let tertiary_ammo_count = 3;
+        let n = i32::min(5, tertiary_ammo_count - iif!(soldier.body_animation.id == THROW_ANIM, 1, 0));
+
+        for i in 0..n {
+            visible.set(index + i as usize, true);
+        }
+
+        let chain = 0; // TODO: Player.Chain (this seems broken, check skeleton)
+
+        match chain {
+            1 => {
+                visible.set(GostekPart::SilverLChain.id(), true);
+                visible.set(GostekPart::SilverRChain.id(), true);
+                visible.set(GostekPart::SilverPendant.id(), true);
+            },
+            2 => {
+                visible.set(GostekPart::GoldenLChain.id(), true);
+                visible.set(GostekPart::GoldenRChain.id(), true);
+                visible.set(GostekPart::GoldenPendant.id(), true);
+            },
+            _ => {}
+        }
+
+        if soldier.has_cigar == 5 || soldier.has_cigar == 10 {
+            visible.set(GostekPart::Cigar.id(), true);
+        }
+
+        if soldier.dead_meat {
+            visible.set(GostekPart::Head.id(), false);
+            visible.set(GostekPart::HeadDmg.id(), false);
+            visible.set(GostekPart::HeadDead.id(), true);
+            visible.set(GostekPart::HeadDeadDmg.id(), true);
+        }
+
+        // TODO: if weapon is bow or fire bow
+        if false {
+            visible.set(GostekPart::RamboBadge.id(), true);
+        } else {
+            const ANIM_WIPE: i32 = 28;
+            const ANIM_TAKEOFF: i32 = 33;
+
+            let grabbed = match soldier.body_animation.id {
+                ANIM_WIPE | ANIM_TAKEOFF => soldier.body_animation.curr_frame > 4,
+                _ => false,
+            };
+
+            if soldier.wear_helmet == 1 {
+                let head_cap = Gostek::Helm; // TODO: Player.HeadCap
+
+                match head_cap {
+                    Gostek::Helm => match grabbed {
+                        true => visible.set(GostekPart::GrabbedHelmet.id(), true),
+                        false => visible.set(GostekPart::Helmet.id(), true),
+                    },
+                    Gostek::Kap => match grabbed {
+                        true => visible.set(GostekPart::GrabbedHat.id(), true),
+                        false => visible.set(GostekPart::Hat.id(), true),
+                    },
+                    _ => {}
+                }
+            }
+
+            let hair_style = 3; // TODO: Player.HairStyle
+
+            if grabbed || soldier.wear_helmet != 1 || hair_style == 3 {
+                match hair_style {
+                    1 => for i in 0..6 { visible.set(GostekPart::HairDreadlocks.id() + i, true); },
+                    2 => visible.set(GostekPart::HairPunk.id(), true),
+                    3 => visible.set(GostekPart::MrT.id(), true),
+                    4 => visible.set(GostekPart::HairNormal.id(), true),
+                    _ => {},
+                }
+            }
+        }
+
+        // TODO: primary/secondary weapons
+
         for (i, part) in self.data.iter().enumerate() {
-            if self.base_visibility[i] && !part.sprite.is_none() {
+            if visible[i] && !part.sprite.is_none() {
                 let mut sid: usize = 0;
                 let mut cx = part.center.0;
                 let mut cy = part.center.1;
@@ -184,8 +266,21 @@ impl GostekGraphics {
                     scale.x = f32::min(1.5, f32::sqrt((p1.x - p0.x).powi(2) + (p1.y - p0.y).powi(2)) / part.flexibility);
                 }
 
-                let mut part_color = color[part.color as usize];
-                part_color.set_a(alpha[part.alpha as usize]);
+                let mut color = match part.color {
+                    GostekColor::None      => color_none,
+                    GostekColor::Main      => color_main,
+                    GostekColor::Pants     => color_pants,
+                    GostekColor::Skin      => color_skin,
+                    GostekColor::Hair      => color_hair,
+                    GostekColor::Cygar     => color_cygar,
+                    GostekColor::Headblood => color_headblood,
+                };
+
+                match part.alpha {
+                    GostekAlpha::Base  => color.set_a(alpha_base),
+                    GostekAlpha::Blood => color.set_a(alpha_blood),
+                    GostekAlpha::Nades => color.set_a(alpha_nades),
+                };
 
                 match part.sprite {
                     GostekSprite::Gostek(spriteid) => {
@@ -193,7 +288,7 @@ impl GostekGraphics {
                         let sprite = &sprites[spriteid.group().id()][spriteid.id()];
                         let (w, h) = (sprite.width, sprite.height);
 
-                        batch.add_tinted_sprite(sprite, part_color, Transform::WithPivot {
+                        batch.add_tinted_sprite(sprite, color, Transform::WithPivot {
                             pivot: vec2(cx * w, cy * h),
                             pos: vec2(p0.x, p0.y + 1.0),
                             scale,
