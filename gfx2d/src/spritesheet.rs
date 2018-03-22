@@ -74,7 +74,7 @@ impl Spritesheet {
 
         for (index, ref sprite_info) in info.iter().enumerate() {
             let mut img = if sprite_info.filename.exists() {
-                image::open(&sprite_info.filename).unwrap().to_rgba()
+                gfx2d_extra::load_image_rgba(&sprite_info.filename)
             } else {
                 Image::from_pixel(1, 1, image::Rgba([0u8; 4]))
             };

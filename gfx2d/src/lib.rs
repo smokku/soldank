@@ -42,6 +42,7 @@ pub type Vec2 = nalgebra::Vector2<f32>;
 pub fn vec2(x: f32, y: f32) -> Vec2 {Vec2::new(x,y)}
 
 pub mod gfx2d_extra {
+    pub use super::texture::load_image_rgba;
     pub use super::texture::premultiply_image;
     pub use super::texture::remove_color_key;
 }

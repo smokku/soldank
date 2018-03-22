@@ -14,7 +14,7 @@ impl Texture {
         // TODO: if wrap is repeat make it power of 2 so it works on webgl 1.0
         // TODO: handle image loading errors?
 
-        let mut img = image::open(fname).unwrap().to_rgba();
+        let mut img = load_image_rgba(fname);
 
         if let Some(color) = color_key {
             remove_color_key(&mut img, color);
@@ -54,6 +54,14 @@ pub fn create_texture(fct: &mut GlFactory, enc: &mut GlEncoder, (w, h): (u16, u1
     let s = fct.create_sampler(SamplerInfo::new(filter, wrap));
     enc.generate_mipmap(&v);
     Texture(t, v, s)
+}
+
+pub fn load_image_rgba<P: AsRef<Path>>(filename: P) -> image::RgbaImage {
+    let img = image::open(filename).unwrap();
+    match img {
+        image::DynamicImage::ImageRgba8(img) => img,
+        _ => img.to_rgba()
+    }
 }
 
 pub fn premultiply_image(img: &mut image::RgbaImage) {
