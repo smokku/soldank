@@ -48,7 +48,7 @@ pub enum PolyType {
   NotFlaggers,
   NonFlaggersCollide,
   Background,
-  BackgroundTransistion,
+  BackgroundTransition,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -214,7 +214,7 @@ impl MapFile {
           22 => PolyType::NotFlaggers,
           23 => PolyType::NonFlaggersCollide,
           24 => PolyType::Background,
-          25 => PolyType::BackgroundTransistion,
+          25 => PolyType::BackgroundTransition,
           _ => PolyType::Normal
         }
       }

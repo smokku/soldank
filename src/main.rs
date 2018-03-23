@@ -1,20 +1,26 @@
-extern crate byteorder;
-#[macro_use]
-extern crate gfx;
-extern crate gfx_window_glutin;
 extern crate glutin;
-extern crate image;
+extern crate gfx2d;
+extern crate byteorder;
+extern crate time;
 extern crate nalgebra as na;
+extern crate ini;
+extern crate typenum;
+extern crate bit_array;
+
+macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then } else { $otherwise }));
+
+use na::Vector2;
+use glutin::*;
+use gfx2d::*;
 
 use shared::anims::Animation;
 use shared::parts::ParticleSystem;
 use shared::mapfile::MapFile;
 use shared::state::*;
-use shared::sprites::*;
+use shared::soldier::*;
+use shared::render::*;
 
 mod shared;
-use na::Vector2;
-use shared::renderer::*;
 
 const GRAV: f32 = 0.06;
 
@@ -71,29 +77,139 @@ fn main() {
     gostek.gravity = 1.06 * GRAV;
     gostek.v_damping = 0.9945;
 
-    let mut sprite_parts = ParticleSystem::new();
+    let mut soldier_parts = ParticleSystem::new();
 
-    sprite_parts.timestep = 1.0;
-    sprite_parts.gravity = GRAV;
-    sprite_parts.e_damping = 0.99;
+    soldier_parts.timestep = 1.0;
+    soldier_parts.gravity = GRAV;
+    soldier_parts.e_damping = 0.99;
 
     let map = MapFile::load_map_file(&String::from("ctf_Ash.pms"));
+
+    const W: u32 = 1280;
+    const H: u32 = 720;
 
     let mut state = MainState {
         map: map,
         anims: anims,
-        sprite_parts: sprite_parts,
+        soldier_parts: soldier_parts,
         gostek_skeleton: gostek,
-        game_width: 768,
-        game_height: 480,
+        game_width: W as f32 * (480.0 / H as f32),
+        game_height: 480.0,
         camera: Vector2::new(0.0f32, 0.0f32),
         camera_prev: Vector2::new(0.0f32, 0.0f32),
         mouse: Vector2::new(0.0f32, 0.0f32),
         mouse_prev: Vector2::new(0.0f32, 0.0f32),
         gravity: GRAV,
+        zoom: 0.0,
     };
 
-    let mut sprite = Sprite::new(&mut state);
-    // setup rendering & gameloop
-    renderer::render(&mut state, &mut sprite);
+    let mut soldier = Soldier::new(&mut state);
+    state.camera = state.soldier_parts.pos[1];
+
+    // setup window, renderer & main loop
+
+    let mut context = gfx2d::Gfx2dContext::initialize("Soldank", W, H);
+    context.wnd.window().set_cursor(glutin::MouseCursor::NoneCursor);
+    context.wnd.window().set_cursor_state(glutin::CursorState::Grab).unwrap();
+    context.clear(rgb(0, 0, 0));
+    context.present();
+
+    let mut graphics = GameGraphics::new(&mut context);
+    graphics.load_sprites(&mut context);
+    graphics.load_map(&mut context, &state.map);
+
+    let time_start = time::precise_time_s();
+    let current_time = || {time::precise_time_s() - time_start};
+
+    let mut timecur: f64 = current_time();
+    let mut timeprv: f64 = timecur;
+    let mut timeacc: f64 = 0.0;
+    let mut running = true;
+
+    let mut zoomin_pressed = false;
+    let mut zoomout_pressed = false;
+
+    while running {
+        context.evt.poll_events(|event| match event {
+            Event::WindowEvent{event, ..} => match event {
+                WindowEvent::Closed => running = false,
+                WindowEvent::KeyboardInput{input, ..} => {
+                    match input.virtual_keycode {
+                        Some(VirtualKeyCode::Escape) => running = false,
+                        Some(VirtualKeyCode::Add) => zoomin_pressed = match input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        },
+                        Some(VirtualKeyCode::Subtract) => zoomout_pressed = match input.state {
+                            ElementState::Pressed => true,
+                            ElementState::Released => false,
+                        },
+                        _ => soldier.update_keys(&input),
+                    }
+                },
+                WindowEvent::MouseInput{state, button, ..} => {
+                    soldier.update_mouse_button(&(state, button));
+                },
+                WindowEvent::CursorMoved{position: (x, y), ..} => {
+                    state.mouse.x = x as f32 * state.game_width / W as f32;
+                    state.mouse.y = y as f32 * state.game_height / H as f32;
+                },
+                _ => (),
+            },
+            _ => (),
+        });
+
+        let dt = 1.0/60.0;
+
+        timecur = current_time();
+        timeacc += timecur - timeprv;
+        timeprv = timecur;
+
+        while timeacc >= dt {
+            timeacc -= dt;
+
+            state.soldier_parts.do_eurler_timestep_for(1);
+            soldier.update(&mut state);
+
+            state.soldier_parts.old_pos[2] = state.soldier_parts.pos[2];
+            state.soldier_parts.pos[2].x += 50.0 * dt as f32;
+
+            state.camera_prev = state.camera;
+            state.mouse_prev = state.mouse;
+
+            if zoomin_pressed ^ zoomout_pressed {
+                state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * dt as f32;
+            }
+
+            state.camera = {
+                let z = f32::exp(state.zoom);
+                let mut m = Vec2::zeros();
+
+                m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
+                    * ((2.0 * 640.0 / state.game_width - 1.0)
+                    + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
+                m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
+
+                let mut cam_v = state.camera;
+
+                let p = vec2(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
+                let norm = p - cam_v;
+                let s = norm * 0.14;
+                cam_v += s;
+                cam_v += m;
+                cam_v
+            };
+
+            timecur = current_time();
+            timeacc += timecur - timeprv;
+            timeprv = timecur;
+        }
+
+        let p = f64::min(1.0, f64::max(0.0, timeacc/dt));
+        graphics.render_frame(&mut context, &state, &soldier, timecur - dt*(1.0 - p), p as f32);
+        context.present();
+
+        // only sleep if no vsync (or if vsync doesn't wait), also needs timeBeginPeriod(1)
+        // std::thread::sleep(std::time::Duration::from_millis(1));
+    }
 }

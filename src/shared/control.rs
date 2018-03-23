@@ -1,5 +1,5 @@
 use shared::state::MainState;
-use shared::sprites::*;
+use shared::soldier::*;
 
 const POS_STAND: u8 = 1;
 const POS_CROUCH: u8 = 2;
@@ -43,7 +43,7 @@ pub struct Control {
   pub was_reloading_weapon: bool,
 }
 
-impl Sprite {
+impl Soldier {
   pub fn control(&mut self, state: &mut MainState) {
     let mut player_pressed_left_right = false;
     if self.legs_animation.speed < 1 {
@@ -53,49 +53,51 @@ impl Sprite {
       self.body_animation.speed = 1;
     }
 
-    println!(
-      "curr_frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
-      self.legs_animation.curr_frame,
-      self.legs_animation.id,
-      self.body_animation.id,
-      self.legs_animation.num_frames,
-      self.direction
-    );
+    // println!(
+    //   "curr_frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
+    //   self.legs_animation.curr_frame,
+    //   self.legs_animation.id,
+    //   self.body_animation.id,
+    //   self.legs_animation.num_frames,
+    //   self.direction
+    // );
 
     self.control.mouse_aim_x =
       (state.mouse.x - state.game_width as f32 / 2.0 + state.camera.x).round() as i32;
     self.control.mouse_aim_y =
       (state.mouse.y - state.game_height as f32 / 2.0 + state.camera.y).round() as i32;
 
+    let (mut cleft, mut cright) = (self.control.left, self.control.right);
+
     // If both left and right directions are pressed, then decide which direction to go in
-    if self.control.left && self.control.right {
+    if cleft && cright {
       // Remember that both directions were pressed, as it's useful for some moves
       player_pressed_left_right = true;
 
       if self.control.was_jumping {
         // If jumping, keep going in the old direction
         if self.control.was_running_left {
-          self.control.right = false;
+          cright = false;
         } else {
-          self.control.left = false;
+          cleft = false;
         }
       } else {
         // If not jumping, instead go in the new direction
         if self.control.was_running_left {
-          self.control.left = false;
+          cleft = false;
         } else {
-          self.control.right = false;
+          cright = false;
         }
       }
     } else {
-      self.control.was_running_left = self.control.left;
+      self.control.was_running_left = cleft;
       self.control.was_jumping = self.control.up;
     }
 
+    let conflicting_keys_pressed = |c: &Control| (c.grenade as u8 + c.change as u8 + c.throw as u8 + c.reload as u8) > 1;
+
     // Handle simultaneous key presses that would conflict
-    if ((self.control.grenade as u8) + self.control.change as u8 + self.control.throw as u8
-      + self.control.reload as u8) > 1
-    {
+    if conflicting_keys_pressed(&self.control) {
       // At least two buttons pressed, so deactivate any previous one
       if self.control.was_throwing_grenade {
         self.control.grenade = false;
@@ -108,20 +110,15 @@ impl Sprite {
       }
 
       // If simultaneously pressing two or more new buttons, then deactivate them in order
-      // of least prefecence
-      while (self.control.grenade as u8 + self.control.change as u8 + self.control.throw as u8
-        + self.control.reload as u8) > 1
-      {
+      // of least preference
+      while conflicting_keys_pressed(&self.control) {
         if self.control.reload {
           self.control.reload = false;
-        }
-        if self.control.change {
+        } else if self.control.change {
           self.control.change = false;
-        }
-        if self.control.throw {
+        } else if self.control.throw {
           self.control.throw = false;
-        }
-        if self.control.grenade {
+        } else if self.control.grenade {
           self.control.grenade = false;
         }
       }
@@ -138,62 +135,45 @@ impl Sprite {
 
     //self.fired = 0;
     self.control.mouse_aim_x =
-      (self.control.mouse_aim_x as f32 + state.sprite_parts.velocity[self.num].x).round() as i32;
+      (self.control.mouse_aim_x as f32 + state.soldier_parts.velocity[self.num].x).round() as i32;
     self.control.mouse_aim_y =
-      (self.control.mouse_aim_y as f32 + state.sprite_parts.velocity[self.num].y).round() as i32;
+      (self.control.mouse_aim_y as f32 + state.soldier_parts.velocity[self.num].y).round() as i32;
 
     if self.control.jets
       && (((self.legs_animation.id == state.anims.jump_side.id)
-        && (((self.direction == -1) && self.control.right)
-          || ((self.direction == 1) && self.control.left) || player_pressed_left_right))
+        && (((self.direction == -1) && cright)
+          || ((self.direction == 1) && cleft) || player_pressed_left_right))
         || ((self.legs_animation.id == state.anims.roll_back.id) && self.control.up))
     {
       self.body_apply_animation(state.anims.roll_back.clone(), 1);
       self.legs_apply_animation(state.anims.roll_back.clone(), 1);
-    } else {
-      if self.control.jets && (self.jets_count > 0) {
-        if self.on_ground {
-          state.sprite_parts.forces[self.num].y = -2.5 * {
-            if state.gravity > 0.05 {
-              JETSPEED
-            } else {
-              state.gravity * 2.0
-            }
-          };
-        } else {
-          if self.position != POS_PRONE {
-            state.sprite_parts.forces[self.num].y = state.sprite_parts.forces[self.num].y - {
-              if state.gravity > 0.05 {
-                JETSPEED
-              } else {
-                state.gravity * 2.0
-              }
-            };
-          } else {
-            state.sprite_parts.forces[self.num].x = state.sprite_parts.forces[self.num].x
-              + (f32::from(self.direction) * {
-                if state.gravity > 0.05 {
-                  JETSPEED
-                } else {
-                  state.gravity * 2.0
-                }
-              } / 2.0);
-          }
-        }
+    } else if self.control.jets && (self.jets_count > 0) {
+      let force = &mut state.soldier_parts.forces[self.num];
 
-        if (self.legs_animation.id != state.anims.get_up.id)
-          && (self.body_animation.id != state.anims.roll.id)
-          && (self.body_animation.id != state.anims.roll_back.id)
-        {
-          self.legs_apply_animation(state.anims.fall.clone(), 1);
-        }
-
-        self.jets_count -= 1;
-
-        if (self.jets_count == 1) && self.control.jets {
-          self.jets_count = 0;
-        }
+      if self.on_ground {
+        force.y = -2.5 * iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
+      } else if self.position != POS_PRONE {
+        force.y -= iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
+      } else {
+        force.x += f32::from(self.direction) * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity);
       }
+
+      if (self.legs_animation.id != state.anims.get_up.id)
+        && (self.body_animation.id != state.anims.roll.id)
+        && (self.body_animation.id != state.anims.roll_back.id)
+      {
+        self.legs_apply_animation(state.anims.fall.clone(), 1);
+      }
+
+      // this seems stupid
+      // {
+      //   let i = self.jets_count;
+      //   self.jets_count -= 1;
+
+      //   if i == 1 && self.control.jets {
+      //     self.jets_count = 0;
+      //   }
+      // }
     }
 
     // Buttstock!
@@ -253,7 +233,7 @@ impl Sprite {
     // animation can be seen as the "wind up" for the jump
     if (self.legs_animation.id == state.anims.get_up.id)
       && (self.legs_animation.curr_frame > 23 - (4 - 1)) && self.on_ground && self.control.up
-      && (self.control.right || self.control.left)
+      && (cright || cleft)
     {
       // Set sidejump frame 1 to 4 depending on which unprone frame we're in
       let id = self.legs_animation.curr_frame - (23 - (4 - 1));
@@ -261,7 +241,7 @@ impl Sprite {
       unprone = true;
     } else if (self.legs_animation.id == state.anims.get_up.id)
       && (self.legs_animation.curr_frame > 23 - (4 - 1)) && self.on_ground
-      && self.control.up && !(self.control.right || self.control.left)
+      && self.control.up && !(cright || cleft)
     {
       // Set jump frame 6 to 9 depending on which unprone frame we're in
       let id = self.legs_animation.curr_frame - (23 - (9 - 1));
@@ -270,8 +250,8 @@ impl Sprite {
     } else if (self.legs_animation.id == state.anims.get_up.id)
       && (self.legs_animation.curr_frame > 23)
     {
-      if self.control.right || self.control.left {
-        if (self.direction == 1) ^ self.control.left {
+      if cright || cleft {
+        if (self.direction == 1) ^ cleft {
           self.legs_apply_animation(state.anims.run.clone(), 1);
         } else {
           self.legs_apply_animation(state.anims.run_back.clone(), 1);
@@ -340,16 +320,16 @@ impl Sprite {
           || (self.legs_animation.id == state.anims.run.id)
           || (self.legs_animation.id == state.anims.run_back.id)
         {
-          state.sprite_parts.velocity[self.num].x /= self.legs_animation.speed as f32;
-          state.sprite_parts.velocity[self.num].y /= self.legs_animation.speed as f32;
+          state.soldier_parts.velocity[self.num].x /= self.legs_animation.speed as f32;
+          state.soldier_parts.velocity[self.num].y /= self.legs_animation.speed as f32;
         }
 
         if self.legs_animation.speed > 2 {
           if (self.legs_animation.id == state.anims.prone_move.id)
             || (self.legs_animation.id == state.anims.crouch_run.id)
           {
-            state.sprite_parts.velocity[self.num].x /= self.legs_animation.speed as f32;
-            state.sprite_parts.velocity[self.num].y /= self.legs_animation.speed as f32;
+            state.soldier_parts.velocity[self.num].x /= self.legs_animation.speed as f32;
+            state.soldier_parts.velocity[self.num].y /= self.legs_animation.speed as f32;
           }
         }
       }
@@ -364,7 +344,7 @@ impl Sprite {
         || (self.body_animation.id == state.anims.wipe.id)
         || (self.body_animation.id == state.anims.groin.id)
       {
-        if self.control.left || self.control.right || self.control.up || self.control.down
+        if cleft || cright || self.control.up || self.control.down
           || self.control.fire || self.control.jets || self.control.grenade
           || self.control.change || self.control.change || self.control.throw
           || self.control.reload || self.control.prone
@@ -387,27 +367,27 @@ impl Sprite {
         {
           if self.legs_animation.id == state.anims.roll.id {
             if self.on_ground {
-              state.sprite_parts.forces[self.num].x = f32::from(self.direction) * ROLLSPEED;
+              state.soldier_parts.forces[self.num].x = f32::from(self.direction) * ROLLSPEED;
             } else {
-              state.sprite_parts.forces[self.num].x = f32::from(self.direction) * 2.0 * FLYSPEED;
+              state.soldier_parts.forces[self.num].x = f32::from(self.direction) * 2.0 * FLYSPEED;
             }
           } else if self.legs_animation.id == state.anims.roll_back.id {
             if self.on_ground {
-              state.sprite_parts.forces[self.num].x = -f32::from(self.direction) * ROLLSPEED;
+              state.soldier_parts.forces[self.num].x = -f32::from(self.direction) * ROLLSPEED;
             } else {
-              state.sprite_parts.forces[self.num].x = -f32::from(self.direction) * 2.0 * FLYSPEED;
+              state.soldier_parts.forces[self.num].x = -f32::from(self.direction) * 2.0 * FLYSPEED;
             }
             // if appropriate frames to move
             if (self.legs_animation.curr_frame > 1) && (self.legs_animation.curr_frame < 8) {
               if self.control.up {
-                state.sprite_parts.forces[self.num].y -= JUMPDIRSPEED * 1.5;
-                state.sprite_parts.forces[self.num].x *= 0.5;
-                state.sprite_parts.velocity[self.num].x *= 0.8;
+                state.soldier_parts.forces[self.num].y -= JUMPDIRSPEED * 1.5;
+                state.soldier_parts.forces[self.num].x *= 0.5;
+                state.soldier_parts.velocity[self.num].x *= 0.8;
               }
             }
           }
         // downright
-        } else if (self.control.right) && (self.control.down) {
+        } else if (cright) && (self.control.down) {
           if self.on_ground {
             // roll to the side
             if (self.legs_animation.id == state.anims.run.id)
@@ -445,15 +425,15 @@ impl Sprite {
             if (self.legs_animation.id == state.anims.crouch_run.id)
               || (self.legs_animation.id == state.anims.crouch_run_back.id)
             {
-              state.sprite_parts.forces[self.num].x = CROUCHRUNSPEED;
+              state.soldier_parts.forces[self.num].x = CROUCHRUNSPEED;
             } else if (self.legs_animation.id == state.anims.roll.id)
               || (self.legs_animation.id == state.anims.roll_back.id)
             {
-              state.sprite_parts.forces[self.num].x = 2.0 * CROUCHRUNSPEED;
+              state.soldier_parts.forces[self.num].x = 2.0 * CROUCHRUNSPEED;
             }
           }
         // downleft
-        } else if self.control.left && self.control.down {
+        } else if cleft && self.control.down {
           if self.on_ground {
             // roll to the side
             if (self.legs_animation.id == state.anims.run.id)
@@ -491,7 +471,7 @@ impl Sprite {
             if (self.legs_animation.id == state.anims.crouch_run.id)
               || (self.legs_animation.id == state.anims.crouch_run_back.id)
             {
-              state.sprite_parts.forces[self.num].x = -CROUCHRUNSPEED;
+              state.soldier_parts.forces[self.num].x = -CROUCHRUNSPEED;
             }
           }
         // Proning
@@ -506,10 +486,10 @@ impl Sprite {
               && (self.legs_animation.curr_frame > 25))
               || (self.legs_animation.id == state.anims.prone_move.id)
             {
-              if self.control.left || self.control.right {
+              if cleft || cright {
                 if (self.legs_animation.curr_frame < 4) || (self.legs_animation.curr_frame > 14) {
-                  state.sprite_parts.forces[self.num].x = {
-                    if self.control.left {
+                  state.soldier_parts.forces[self.num].x = {
+                    if cleft {
                       -PRONESPEED
                     } else {
                       PRONESPEED
@@ -541,7 +521,7 @@ impl Sprite {
               }
             }
           }
-        } else if self.control.right && self.control.up {
+        } else if cright && self.control.up {
           if self.on_ground {
             if (self.legs_animation.id == state.anims.run.id)
               || (self.legs_animation.id == state.anims.run_back.id)
@@ -573,11 +553,11 @@ impl Sprite {
 
           if self.legs_animation.id == state.anims.jump_side.id {
             if (self.legs_animation.curr_frame > 3) && (self.legs_animation.curr_frame < 11) {
-              state.sprite_parts.forces[self.num].x = JUMPDIRSPEED;
-              state.sprite_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
+              state.soldier_parts.forces[self.num].x = JUMPDIRSPEED;
+              state.soldier_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
             }
           }
-        } else if self.control.left && self.control.up {
+        } else if cleft && self.control.up {
           if self.on_ground {
             if (self.legs_animation.id == state.anims.run.id)
               || (self.legs_animation.id == state.anims.run_back.id)
@@ -610,8 +590,8 @@ impl Sprite {
 
           if self.legs_animation.id == state.anims.jump_side.id {
             if (self.legs_animation.curr_frame > 3) && (self.legs_animation.curr_frame < 11) {
-              state.sprite_parts.forces[self.num].x = -JUMPDIRSPEED;
-              state.sprite_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
+              state.soldier_parts.forces[self.num].x = -JUMPDIRSPEED;
+              state.soldier_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
             }
           }
         } else if self.control.up {
@@ -625,7 +605,7 @@ impl Sprite {
           }
           if self.legs_animation.id == state.anims.jump.id {
             if (self.legs_animation.curr_frame > 8) && (self.legs_animation.curr_frame < 15) {
-              state.sprite_parts.forces[self.num].y = -JUMPSPEED;
+              state.soldier_parts.forces[self.num].y = -JUMPSPEED;
             }
             if self.legs_animation.curr_frame == self.legs_animation.num_frames {
               self.legs_apply_animation(state.anims.fall.clone(), 1);
@@ -635,7 +615,7 @@ impl Sprite {
           if self.on_ground {
             self.legs_apply_animation(state.anims.crouch.clone(), 1);
           }
-        } else if self.control.right {
+        } else if cright {
           if true {
             // if self.para = 0
             if self.direction == 1 {
@@ -646,12 +626,12 @@ impl Sprite {
           }
 
           if self.on_ground {
-            state.sprite_parts.forces[self.num].x = RUNSPEED;
-            state.sprite_parts.forces[self.num].y = -RUNSPEEDUP;
+            state.soldier_parts.forces[self.num].x = RUNSPEED;
+            state.soldier_parts.forces[self.num].y = -RUNSPEEDUP;
           } else {
-            state.sprite_parts.forces[self.num].x = FLYSPEED;
+            state.soldier_parts.forces[self.num].x = FLYSPEED;
           }
-        } else if self.control.left {
+        } else if cleft {
           if true {
             // if self.para = 0
             if self.direction == -1 {
@@ -662,10 +642,10 @@ impl Sprite {
           }
 
           if self.on_ground {
-            state.sprite_parts.forces[self.num].x = -RUNSPEED;
-            state.sprite_parts.forces[self.num].y = -RUNSPEEDUP;
+            state.soldier_parts.forces[self.num].x = -RUNSPEED;
+            state.soldier_parts.forces[self.num].y = -RUNSPEEDUP;
           } else {
-            state.sprite_parts.forces[self.num].x = -FLYSPEED;
+            state.soldier_parts.forces[self.num].x = -FLYSPEED;
           }
         } else {
           if self.on_ground {
@@ -718,7 +698,7 @@ impl Sprite {
         // Was probably a roll
         if self.on_ground {
           if self.control.down {
-            if self.control.left || self.control.right {
+            if cleft || cright {
               if self.body_animation.id == state.anims.roll.id {
                 self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
               } else {
@@ -730,9 +710,9 @@ impl Sprite {
           }
         // Was probably a backflip
         } else if (self.body_animation.id == state.anims.roll_back.id) && self.control.up {
-          if self.control.left || self.control.right {
+          if cleft || cright {
             // Run back or forward depending on facing direction and direction key pressed
-            if (self.direction == 1) ^ (self.control.left) {
+            if (self.direction == 1) ^ (cleft) {
               self.legs_apply_animation(state.anims.run.clone(), 1);
             } else {
               self.legs_apply_animation(state.anims.run_back.clone(), 1);
@@ -742,7 +722,7 @@ impl Sprite {
           }
         // Was probably a roll (that ended mid-air)
         } else if self.control.down {
-          if self.control.left || self.control.right {
+          if cleft || cright {
             if self.body_animation.id == state.anims.roll.id {
               self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
             } else {

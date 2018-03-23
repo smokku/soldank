@@ -7,10 +7,10 @@ const NUM_PARTICLES: i32 = 560;
 
 #[derive(Debug)]
 pub struct Constraint {
-  active: bool,
-  part_a: i32,
-  part_b: i32,
-  rest_length: f32,
+  pub active: bool,
+  pub part_a: i32,
+  pub part_b: i32,
+  pub rest_length: f32,
 }
 
 impl Copy for Constraint {}
@@ -27,14 +27,14 @@ pub struct ParticleSystem {
   pub velocity: [Vector2<f32>; 560],
   pub old_pos: [Vector2<f32>; 560],
   pub forces: [Vector2<f32>; 560],
-  one_over_mass: [f32; 560],
+  pub one_over_mass: [f32; 560],
   pub timestep: f32,
   pub gravity: f32,
   pub v_damping: f32,
   pub e_damping: f32,
-  constraint_count: i32,
-  part_count: i32,
-  constraints: [Constraint; 560],
+  pub constraint_count: i32,
+  pub part_count: i32,
+  pub constraints: [Constraint; 560],
 }
 
 impl ParticleSystem {
@@ -128,7 +128,7 @@ impl ParticleSystem {
   }
   pub fn satisfy_contstraints(&mut self) {
     if self.constraint_count > 0 {
-      for i in 0..self.constraint_count {
+      for i in 1..self.constraint_count + 1 {
         if self.constraints[i as usize].active {
           let mut diff = 0.0;
           let delta = Vector2::new(self.constraints[i as usize].part_b as f32, 0.0f32)
