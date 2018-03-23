@@ -12,12 +12,11 @@
 
 # How to build: 
 1. Install cargo and rust (nightly) - https://doc.rust-lang.org/cargo/getting-started/installation.html
-2. copy ```anims objects maps textures``` from soldat to `soldank/assets`
+2. copy ```anims objects maps textures scenery-gfx gostek-gfx objects-gfx sparks-gfx weapons-gfx interface-gfx mod.ini``` from soldat to `soldank/assets`
 3. ```cargo run``` to run the game
-
 
 # ROADMAP:
 
-* Refactor rendering code and add support for sceneries and gostek rendering
-* Implement proper game loop
+* ~~Refactor rendering code and add support for sceneries and gostek rendering~~
+* ~~Implement proper game loop~~
 
