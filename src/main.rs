@@ -6,6 +6,7 @@ extern crate nalgebra as na;
 extern crate ini;
 extern crate typenum;
 extern crate bit_array;
+extern crate clap;
 
 macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then } else { $otherwise }));
 
@@ -19,12 +20,24 @@ use shared::mapfile::MapFile;
 use shared::state::*;
 use shared::soldier::*;
 use shared::render::*;
+use clap::{App, Arg};
 
 mod shared;
 
 const GRAV: f32 = 0.06;
 
 fn main() {
+
+    let cmd = App::new("Soldank")
+                .about("open source clone of Soldat engine written in rust")
+                .version("0.0.1")
+                .arg(Arg::with_name("map")
+                    .help("name of map to load")
+                    .short("m")
+                    .long("map")
+                    .takes_value(true))
+                .get_matches();
+
     let anims = AnimsList {
         stand: Animation::load_from_file(&String::from("stoi.poa"), 0, 3, true),
         run: Animation::load_from_file(&String::from("biega.poa"), 1, 1, true),
@@ -83,7 +96,11 @@ fn main() {
     soldier_parts.gravity = GRAV;
     soldier_parts.e_damping = 0.99;
 
-    let map = MapFile::load_map_file(&String::from("ctf_Ash.pms"));
+    let mut map_name = cmd.value_of("map").unwrap_or("ctf_Ash").to_owned();
+
+    map_name.push_str(".pms");
+
+    let map = MapFile::load_map_file(map_name.as_str());
 
     const W: u32 = 1280;
     const H: u32 = 720;
