@@ -102,7 +102,7 @@ impl GostekGraphics {
         }
     }
 
-    pub fn render(&self, soldier: &Soldier, batch: &mut DrawBatch, sprites: &Vec<Vec<Sprite>>) {
+    pub fn render(&self, soldier: &Soldier, batch: &mut DrawBatch, sprites: &Vec<Vec<Sprite>>, frame_percent: f32) {
         let mut visible = self.base_visibility.clone();
         let mut alpha_base = soldier.alpha;
         let mut alpha_blood = f32::max(0.0, f32::min(255.0, 200.0 - soldier.health.round())) as u8;
@@ -247,8 +247,8 @@ impl GostekGraphics {
                 let mut cx = part.center.0;
                 let mut cy = part.center.1;
                 let mut scale = vec2(1.0, 1.0);
-                let p0 = soldier.skeleton.pos[part.point.0];
-                let p1 = soldier.skeleton.pos[part.point.1];
+                let p0 = lerp(soldier.skeleton.old_pos[part.point.0], soldier.skeleton.pos[part.point.0], frame_percent);
+                let p1 = lerp(soldier.skeleton.old_pos[part.point.1], soldier.skeleton.pos[part.point.1], frame_percent);
                 let rot = f32::atan2(p1.y - p0.y, p1.x - p0.x);
 
                 if soldier.direction != 1 {

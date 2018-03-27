@@ -12,8 +12,8 @@ macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then 
 
 use na::Vector2;
 use glutin::*;
-use gfx2d::*;
 
+use shared::calc::*;
 use shared::anims::Animation;
 use shared::parts::ParticleSystem;
 use shared::mapfile::MapFile;
@@ -128,7 +128,7 @@ fn main() {
     let mut context = gfx2d::Gfx2dContext::initialize("Soldank", W, H);
     context.wnd.window().set_cursor(glutin::MouseCursor::NoneCursor);
     context.wnd.window().set_cursor_state(glutin::CursorState::Grab).unwrap();
-    context.clear(rgb(0, 0, 0));
+    context.clear(gfx2d::rgb(0, 0, 0));
     context.present();
 
     let mut graphics = GameGraphics::new(&mut context);

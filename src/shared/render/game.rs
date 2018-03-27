@@ -26,9 +26,9 @@ impl GameGraphics {
         _elapsed: f64, frame_percent: f32)
     {
         let z = f32::exp(state.zoom);
+        let cam = lerp(state.camera_prev, state.camera, frame_percent);
         let (w, h) = (z*state.game_width, z*state.game_height);
-        let dx = state.camera.x - w/2.0;
-        let dy = state.camera.y - h/2.0;
+        let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
 
         context.clear(rgb(0, 0, 0));
@@ -37,7 +37,7 @@ impl GameGraphics {
         context.draw(self.map.scenery_back(), &transform);
 
         self.batch.clear();
-        self.gostek.render(&soldier, &mut self.batch, &self.sprites);
+        self.gostek.render(&soldier, &mut self.batch, &self.sprites, frame_percent);
         context.draw(self.batch.all(), &transform);
 
         context.draw(self.map.scenery_mid(), &transform);

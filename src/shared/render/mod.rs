@@ -1,3 +1,5 @@
+use super::*;
+
 pub mod map;
 pub mod game;
 pub mod gostek;
