@@ -48,6 +48,12 @@ impl<'a> DrawSlice<'a> {
     }
 }
 
+impl ::std::default::Default for DrawBatch {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DrawBatch {
     pub fn new() -> DrawBatch {
         Self::with_usage(BatchUsage::Dynamic)
@@ -75,22 +81,24 @@ impl DrawBatch {
         self.cmds.clear();
     }
 
-    pub fn add(&mut self, t: Option<&Texture>, v: &[[Vertex; 3]]) {
+    pub fn add(&mut self, texture: Option<&Texture>, vertices: &[[Vertex; 3]]) {
         let i = self.buf.len();
-        let n = 3 * v.len();
+        let n = 3 * vertices.len();
 
         self.updated = false;
 
         unsafe {
             use std::slice::from_raw_parts;
-            self.buf.extend_from_slice(from_raw_parts(v.as_ptr() as *const Vertex, n));
+            self.buf.extend_from_slice(from_raw_parts(vertices.as_ptr() as *const Vertex, n));
         }
 
         let m = self.cmds.len();
 
-        if m == 0 || m == self.split_start || (m > 0 && (t.is_none() != self.last_texture().is_none() ||
-            t.is_some() && t.unwrap().is(self.last_texture().unwrap()))) {
-            self.cmds.push(batch_command(t, i..i + n));
+        if m == 0 || m == self.split_start || (m > 0 &&
+            (texture.is_none() != self.last_texture().is_none() ||
+            texture.is_some() && texture.unwrap().is(self.last_texture().unwrap())))
+        {
+            self.cmds.push(batch_command(texture, i..i + n));
         } else {
             self.cmds.last_mut().unwrap().vertex_range.end += n;
         }
@@ -99,7 +107,7 @@ impl DrawBatch {
     fn last_texture(&self) -> Option<&Texture> {
         match self.cmds.last() {
             None => None,
-            Some(ref cmd) => cmd.texture.as_ref().clone()
+            Some(cmd) => cmd.texture.as_ref()
         }
     }
 
@@ -118,22 +126,22 @@ impl DrawBatch {
         let (w, h) = (sprite.width, sprite.height);
         let (tx0, tx1) = sprite.texcoords_x;
         let (ty0, ty1) = sprite.texcoords_y;
-        let (a, b, c, d) = (vec2(0.0, 0.0), vec2(w, 0.0), vec2(w, h), vec2(0.0, h));
+        let (p0, p1, p2, p3) = (vec2(0.0, 0.0), vec2(w, 0.0), vec2(w, h), vec2(0.0, h));
 
-        let (a, b, c, d) = match &transform {
-            &Transform::Pos(p) => (p + a, p + b, p + c, p + d),
+        let (p0, p1, p2, p3) = match transform {
+            Transform::Pos(p) => (p + p0, p + p1, p + p2, p + p3),
             _ => {
                 let m = transform.matrix();
-                (m*a, m*b, m*c, m*d)
+                (m*p0, m*p1, m*p2, m*p3)
             }
         };
 
         self.add_quads(sprite.texture.as_ref(), &[
             [
-                vertex(a, vec2(tx0, ty0), color),
-                vertex(b, vec2(tx1, ty0), color),
-                vertex(c, vec2(tx1, ty1), color),
-                vertex(d, vec2(tx0, ty1), color),
+                vertex(p0, vec2(tx0, ty0), color),
+                vertex(p1, vec2(tx1, ty0), color),
+                vertex(p2, vec2(tx1, ty1), color),
+                vertex(p3, vec2(tx0, ty1), color),
             ]
         ]);
     }

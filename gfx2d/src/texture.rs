@@ -49,11 +49,11 @@ impl Texture {
 pub fn create_texture(fct: &mut GlFactory, enc: &mut GlEncoder, (w, h): (u16, u16),
     data: &[u8], filter: FilterMethod, wrap: WrapMode) -> Texture
 {
-    let k = D2(w, h as u16, AaMode::Single);
-    let (t, v) = fct.create_texture_immutable_u8::<Rgba8>(k, Mipmap::Allocated, &[data]).unwrap();
-    let s = fct.create_sampler(SamplerInfo::new(filter, wrap));
-    enc.generate_mipmap(&v);
-    Texture(t, v, s)
+    let kind = D2(w, h as u16, AaMode::Single);
+    let (tex, view) = fct.create_texture_immutable_u8::<Rgba8>(kind, Mipmap::Allocated, &[data]).unwrap();
+    let sampler = fct.create_sampler(SamplerInfo::new(filter, wrap));
+    enc.generate_mipmap(&view);
+    Texture(tex, view, sampler)
 }
 
 pub fn load_image_rgba<P: AsRef<Path>>(filename: P) -> image::RgbaImage {
@@ -66,12 +66,12 @@ pub fn load_image_rgba<P: AsRef<Path>>(filename: P) -> image::RgbaImage {
 
 pub fn premultiply_image(img: &mut image::RgbaImage) {
     for pixel in img.pixels_mut() {
-        let a = pixel[3] as f32 / 255.0;
+        let a = f32::from(pixel[3]) / 255.0;
 
         *pixel = image::Rgba([
-            (pixel[0] as f32 * a) as u8,
-            (pixel[1] as f32 * a) as u8,
-            (pixel[2] as f32 * a) as u8,
+            (f32::from(pixel[0]) * a) as u8,
+            (f32::from(pixel[1]) * a) as u8,
+            (f32::from(pixel[2]) * a) as u8,
             pixel[3],
         ]);
     }

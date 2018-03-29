@@ -48,8 +48,8 @@ impl Sprite {
         let (w, h) = texture.dimensions();
 
         Sprite {
-            width: w as f32 / pixel_ratio.x,
-            height: h as f32 / pixel_ratio.y,
+            width: f32::from(w) / pixel_ratio.x,
+            height: f32::from(h) / pixel_ratio.y,
             texcoords_x: (0.0, 1.0),
             texcoords_y: (0.0, 1.0),
             texture: Some(texture.clone()),
@@ -72,7 +72,7 @@ impl Spritesheet {
         let mut sprites: Vec<Sprite> = Vec::with_capacity(info.len());
         let mut rects: Vec<Rect> = Vec::with_capacity(info.len());
 
-        for (index, ref sprite_info) in info.iter().enumerate() {
+        for (index, sprite_info) in info.iter().enumerate() {
             let mut img = if sprite_info.filename.exists() {
                 gfx2d_extra::load_image_rgba(&sprite_info.filename)
             } else {
@@ -135,8 +135,8 @@ impl Spritesheet {
             let (y0, y1) = (rc.top() as f32, (rc.bottom() - padding) as f32);
 
             sprite.texture = Some(texture.clone());
-            sprite.texcoords_x = (x0 / w as f32, x1 / w as f32);
-            sprite.texcoords_y = (y0 / h as f32, y1 / h as f32);
+            sprite.texcoords_x = (x0 / f32::from(w), x1 / f32::from(w));
+            sprite.texcoords_y = (y0 / f32::from(h), y1 / f32::from(h));
         }
 
         Spritesheet{textures, sprites}
@@ -149,7 +149,7 @@ impl Spritesheet {
             rects[0].data.1 = sheets.len();
             sheets.push((rects[0].w - pad, rects[0].h - pad));
         } else if rects.len() > 1 {
-            let area = rects.iter().fold(0u64, |acc, ref rc| acc + (rc.w*rc.h).abs() as u64);
+            let area = rects.iter().fold(0u64, |acc, rc| acc + (rc.w*rc.h).abs() as u64);
             let mut w = u32::next_power_of_two(f64::sqrt(area as f64).ceil().round() as u32) as i32;
             let mut h = w;
 
@@ -173,7 +173,7 @@ impl Spritesheet {
                 let mut a = 0;
 
                 while a < area && i < rects.len() - 1 {
-                    a = a + (rects[i].w*rects[i].h).abs() as u64;
+                    a += (rects[i].w*rects[i].h).abs() as u64;
                     i += 1;
                 }
 

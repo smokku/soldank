@@ -32,17 +32,17 @@ impl GameGraphics {
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
 
         context.clear(rgb(0, 0, 0));
-        context.draw(self.map.background(), &Transform::ortho(0.0, 1.0, dy, dy + h).matrix());
-        context.draw(self.map.polys_back(), &transform);
-        context.draw(self.map.scenery_back(), &transform);
+        context.draw(&mut self.map.background(), &Transform::ortho(0.0, 1.0, dy, dy + h).matrix());
+        context.draw(&mut self.map.polys_back(), &transform);
+        context.draw(&mut self.map.scenery_back(), &transform);
 
         self.batch.clear();
         self.gostek.render(&soldier, &mut self.batch, &self.sprites, frame_percent);
-        context.draw(self.batch.all(), &transform);
+        context.draw(&mut self.batch.all(), &transform);
 
-        context.draw(self.map.scenery_mid(), &transform);
-        context.draw(self.map.polys_front(), &transform);
-        context.draw(self.map.scenery_front(), &transform);
+        context.draw(&mut self.map.scenery_mid(), &transform);
+        context.draw(&mut self.map.polys_front(), &transform);
+        context.draw(&mut self.map.scenery_front(), &transform);
 
         // skeleton points
         if false {
@@ -81,7 +81,7 @@ impl GameGraphics {
                 ]]);
             }
 
-            context.draw(self.batch.all(), &transform);
+            context.draw(&mut self.batch.all(), &transform);
         }
 
         // cursor
@@ -108,7 +108,7 @@ impl GameGraphics {
                 ],
             ]);
 
-            context.draw(self.batch.all(), &screen);
+            context.draw(&mut self.batch.all(), &screen);
         }
 
         // time precision test
@@ -126,7 +126,7 @@ impl GameGraphics {
                 vertex(vec2(x + 0.0, 720.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
             ]]);
 
-            context.draw(self.batch.all(), &screen.matrix());
+            context.draw(&mut self.batch.all(), &screen.matrix());
         }
     }
 

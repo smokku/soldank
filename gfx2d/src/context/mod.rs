@@ -83,14 +83,14 @@ impl Gfx2dContext {
 
     pub fn clear(&mut self, color: Color) {
         self.enc.clear(&self.rtv, [
-            color.r() as f32 / 255.0,
-            color.g() as f32 / 255.0,
-            color.b() as f32 / 255.0,
-            color.a() as f32 / 255.0
+            f32::from(color.r()) / 255.0,
+            f32::from(color.g()) / 255.0,
+            f32::from(color.b()) / 255.0,
+            f32::from(color.a()) / 255.0
         ]);
     }
 
-    pub fn draw(&mut self, slice: DrawSlice, transform: &Mat2d) {
+    pub fn draw(&mut self, slice: &mut DrawSlice, transform: &Mat2d) {
         slice.batch.update(self);
 
         let mut data = pipe::Data {

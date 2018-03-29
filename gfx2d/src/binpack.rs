@@ -39,8 +39,8 @@ pub fn pack_rects<T>(width: i32, height: i32, rects: &mut [Rect<T>]) -> usize {
         let mut best_rect = BPRect{x: 0, y: 0, w: 0, h: 0, data: ()};
         let mut best_score = MAX_SCORE;
 
-        for j in i..rects.len() {
-            let (rc, score) = score_rect(&bp, rects[j].w, rects[j].h);
+        for (j, rect) in rects.iter().enumerate().skip(i) {
+            let (rc, score) = score_rect(&bp, rect.w, rect.h);
 
             if score.0 < best_score.0 || (score.0 == best_score.0 && score.1 < best_score.1) {
                 best_index = j;
@@ -93,7 +93,7 @@ fn place_rect(bp: &mut BinPack, rect: &BPRect) {
     while i < bp.free.len() {
         let free_rect = bp.free[i];
 
-        if split_free_rect(bp, &free_rect, &rect) {
+        if split_free_rect(bp, &free_rect, rect) {
             bp.free.remove(i);
         }
         else {

@@ -54,10 +54,10 @@ impl Transform {
     }
 
     pub fn matrix(&self) -> Mat2d {
-        match self {
-            &Transform::Pos(p) => Mat2d::translate(p.x, p.y),
+        match *self {
+            Transform::Pos(p) => Mat2d::translate(p.x, p.y),
 
-            &Transform::FromOrigin{pos, scale, rot} => {
+            Transform::FromOrigin{pos, scale, rot} => {
                 let (s, c) = (f32::sin(rot.0), f32::cos(rot.0));
 
                 Mat2d (
@@ -66,7 +66,7 @@ impl Transform {
                 )
             },
 
-            &Transform::WithPivot{pivot, pos, scale, rot} => {
+            Transform::WithPivot{pivot, pos, scale, rot} => {
                 let (s, c) = (f32::sin(rot), f32::cos(rot));
 
                 let m = (
@@ -80,7 +80,7 @@ impl Transform {
                 )
             },
 
-            &Transform::Ortho{left, right, top, bottom} => {
+            Transform::Ortho{left, right, top, bottom} => {
                 let (w, h) = (right - left, top - bottom);
 
                 Mat2d (
