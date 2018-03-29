@@ -1,5 +1,5 @@
-use shared::state::MainState;
 use shared::soldier::*;
+use shared::state::MainState;
 
 const POS_STAND: u8 = 1;
 const POS_CROUCH: u8 = 2;
@@ -53,14 +53,16 @@ impl Soldier {
       self.body_animation.speed = 1;
     }
 
-    // println!(
-    //   "curr_frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
-    //   self.legs_animation.curr_frame,
-    //   self.legs_animation.id,
-    //   self.body_animation.id,
-    //   self.legs_animation.num_frames,
-    //   self.direction
-    // );
+    /*
+    println!(
+      "curr_frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
+      self.body_animation.curr_frame,
+      self.body_animation.id,
+      self.body_animation.id,
+      self.body_animation.num_frames,
+      self.direction
+    );
+    */
 
     self.control.mouse_aim_x =
       (state.mouse.x - state.game_width as f32 / 2.0 + state.camera.x).round() as i32;
@@ -94,7 +96,8 @@ impl Soldier {
       self.control.was_jumping = self.control.up;
     }
 
-    let conflicting_keys_pressed = |c: &Control| (c.grenade as u8 + c.change as u8 + c.throw as u8 + c.reload as u8) > 1;
+    let conflicting_keys_pressed =
+      |c: &Control| (c.grenade as u8 + c.change as u8 + c.throw as u8 + c.reload as u8) > 1;
 
     // Handle simultaneous key presses that would conflict
     if conflicting_keys_pressed(&self.control) {
@@ -141,8 +144,8 @@ impl Soldier {
 
     if self.control.jets
       && (((self.legs_animation.id == state.anims.jump_side.id)
-        && (((self.direction == -1) && cright)
-          || ((self.direction == 1) && cleft) || player_pressed_left_right))
+        && (((self.direction == -1) && cright) || ((self.direction == 1) && cleft)
+          || player_pressed_left_right))
         || ((self.legs_animation.id == state.anims.roll_back.id) && self.control.up))
     {
       self.body_apply_animation(state.anims.roll_back.clone(), 1);
@@ -155,7 +158,8 @@ impl Soldier {
       } else if self.position != POS_PRONE {
         force.y -= iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
       } else {
-        force.x += f32::from(self.direction) * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity);
+        force.x +=
+          f32::from(self.direction) * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity);
       }
 
       if (self.legs_animation.id != state.anims.get_up.id)
@@ -165,15 +169,48 @@ impl Soldier {
         self.legs_apply_animation(state.anims.fall.clone(), 1);
       }
 
-      // this seems stupid
-      // {
-      //   let i = self.jets_count;
-      //   self.jets_count -= 1;
+      self.jets_count -= 1;
+    }
 
-      //   if i == 1 && self.control.jets {
-      //     self.jets_count = 0;
-      //   }
-      // }
+    // FIRE!!!!
+    if (self.body_animation.id != state.anims.roll.id)
+      && (self.body_animation.id != state.anims.roll_back.id)
+      && (self.body_animation.id != state.anims.melee.id)
+      && (self.body_animation.id != state.anims.change.id)
+    {
+      if ((self.body_animation.id == state.anims.hands_up_aim.id)
+        && (self.body_animation.curr_frame == 11))
+        || (self.body_animation.id != state.anims.hands_up_aim.id)
+      {
+        if self.control.fire
+        // and (SpriteC.CeaseFireCounter < 0) */
+        {
+          self.body_apply_animation(state.anims.punch.clone(), 1);
+        }
+      }
+    }
+
+    // change weapon animation
+    if (self.body_animation.id != state.anims.roll.id)
+      && (self.body_animation.id != state.anims.roll_back.id)
+    {
+      if self.control.change {
+        self.body_apply_animation(state.anims.change.clone(), 1);
+      }
+    }
+
+    // change weapon
+    // sound
+    if (self.body_animation.id == state.anims.change.id) && (self.body_animation.curr_frame == 2) {
+      self.body_animation.curr_frame += 1;
+    }
+
+    // Punch!
+    if !self.dead_meat {
+      if (self.body_animation.id == state.anims.punch.id) && (self.body_animation.curr_frame == 11)
+      {
+        self.body_animation.curr_frame += 1;
+      }
     }
 
     // Buttstock!
@@ -344,10 +381,10 @@ impl Soldier {
         || (self.body_animation.id == state.anims.wipe.id)
         || (self.body_animation.id == state.anims.groin.id)
       {
-        if cleft || cright || self.control.up || self.control.down
-          || self.control.fire || self.control.jets || self.control.grenade
-          || self.control.change || self.control.change || self.control.throw
-          || self.control.reload || self.control.prone
+        if cleft || cright || self.control.up || self.control.down || self.control.fire
+          || self.control.jets || self.control.grenade || self.control.change
+          || self.control.change || self.control.throw || self.control.reload
+          || self.control.prone
         {
           self.body_animation.curr_frame = self.body_animation.num_frames;
         }
