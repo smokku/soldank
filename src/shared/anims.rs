@@ -6,17 +6,9 @@ use std::path::PathBuf;
 const MAX_POS_INDEX: usize = 20;
 const MAX_FRAMES_INDEX: usize = 40;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Frames {
   pub pos: [Vector3<f32>; MAX_POS_INDEX + 1],
-}
-
-impl Copy for Frames {}
-
-impl Clone for Frames {
-  fn clone(&self) -> Frames {
-    *self
-  }
 }
 
 #[derive(Copy, Clone)]
@@ -29,6 +21,7 @@ pub struct Animation {
   pub looped: bool,
   pub frame: [Frames; MAX_FRAMES_INDEX + 1],
 }
+
 impl Animation {
   pub fn do_animation(&mut self) {
     self.count += 1;
@@ -96,12 +89,12 @@ impl Animation {
     }
 
     Box::new(Animation {
-      id: id,
-      num_frames: num_frames,
-      speed: speed,
+      id,
+      num_frames,
+      speed,
       count: 0,
       curr_frame: 1,
-      looped: looped,
+      looped,
       frame: new_frame,
     })
   }

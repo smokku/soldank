@@ -5,20 +5,12 @@ use std::path::PathBuf;
 
 const NUM_PARTICLES: i32 = 560;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Constraint {
   pub active: bool,
   pub part_a: i32,
   pub part_b: i32,
   pub rest_length: f32,
-}
-
-impl Copy for Constraint {}
-
-impl Clone for Constraint {
-  fn clone(&self) -> Constraint {
-    *self
-  }
 }
 
 pub struct ParticleSystem {

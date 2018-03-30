@@ -193,7 +193,6 @@ impl MapFile {
 
       fn poly_to_enum(id: u8) -> PolyType {
         match id {
-          0 => PolyType::Normal,
           1 => PolyType::OnlyBulletsCollide,
           2 => PolyType::OnlyPlayersCollide,
           3 => PolyType::NoCollide,
@@ -226,10 +225,10 @@ impl MapFile {
       let bounciness = (normals[2].x.powi(2) + normals[2].y.powi(2)).sqrt();
 
       polygons.push(MapPolygon {
-        vertices: vertices,
-        normals: normals,
+        vertices,
+        normals,
         polytype: poly_to_enum(polytype),
-        bounciness: bounciness
+        bounciness,
       });
 
       let mut perp: [Vector2<f32>; 3] = [
@@ -258,7 +257,7 @@ impl MapFile {
     for _i in 0..n {
       let m = buf.read_u16::<LittleEndian>().unwrap();
 
-      if m as i32 > MAX_POLYS {
+      if i32::from(m) > MAX_POLYS {
         break;
       }
 
@@ -276,9 +275,9 @@ impl MapFile {
     let sectores = vec![sector.clone(); 51];
     let mut sectored = vec![sectores.clone(); 71];
 
-    for i in 0..51 {
-      for j in 0..51 {
-        sectored[i][j] = sectors[k].clone();
+    for sec_i in sectored.iter_mut().take(51) {
+      for sec_ij in sec_i.iter_mut().take(51) {
+        *sec_ij = sectors[k].clone();
         k += 1;
       }
     }
@@ -331,7 +330,7 @@ impl MapFile {
       let date = buf.read_i32::<LittleEndian>().unwrap();
 
       scenery.push(MapScenery {
-        filename: filename,
+        filename,
         date,
       });
     }
