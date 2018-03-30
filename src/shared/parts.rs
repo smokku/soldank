@@ -1,4 +1,4 @@
-use na::Vector2;
+use super::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -67,6 +67,7 @@ impl ParticleSystem {
       constraints,
     }
   }
+
   pub fn do_verlet_timestep(&mut self) {
     for i in 1..NUM_PARTICLES {
       if self.active[i as usize] {
@@ -75,10 +76,12 @@ impl ParticleSystem {
     }
     self.satisfy_contstraints();
   }
+
   pub fn do_verlet_timestep_for(&mut self, i: i32, j: i32) {
     self.verlet(i);
     self.satisfy_contstraints_for(j);
   }
+
   #[allow(dead_code)]
   pub fn do_eurler_timestep(&mut self) {
     for i in 1..NUM_PARTICLES {
@@ -87,9 +90,11 @@ impl ParticleSystem {
       }
     }
   }
+
   pub fn do_eurler_timestep_for(&mut self, i: i32) {
     self.euler(i)
   }
+
   pub fn euler(&mut self, i: i32) {
     // Accumulate Forces
     let temp_pos = self.pos[i as usize];
@@ -126,6 +131,7 @@ impl ParticleSystem {
     self.forces[i as usize].x = 0.0f32;
     self.forces[i as usize].y = 0.0f32;
   }
+
   pub fn satisfy_contstraints(&mut self) {
     if self.constraint_count > 0 {
       for i in 1..self.constraint_count + 1 {
@@ -149,6 +155,7 @@ impl ParticleSystem {
       }
     }
   }
+
   pub fn satisfy_contstraints_for(&mut self, i: i32) {
     let mut diff = 0.0;
     let delta = Vector2::new(self.constraints[i as usize].part_b as f32, 0.0f32)
@@ -166,6 +173,7 @@ impl ParticleSystem {
       self.pos[self.constraints[i as usize].part_a as usize] += d;
     }
   }
+
   pub fn create_part(&mut self, start: Vector2<f32>, vel: Vector2<f32>, mass: f32, num: i32) {
     self.active[num as usize] = true;
     self.pos[num as usize] = start;
@@ -173,6 +181,7 @@ impl ParticleSystem {
     self.old_pos[num as usize] = start;
     self.one_over_mass[num as usize] = 1.00 / mass;
   }
+
   pub fn make_constraint(&mut self, pa: i32, pb: i32, rest: f32) {
     self.constraint_count += 1;
     self.constraints[self.constraint_count as usize].active = true;
@@ -180,65 +189,63 @@ impl ParticleSystem {
     self.constraints[self.constraint_count as usize].part_b = pb;
     self.constraints[self.constraint_count as usize].rest_length = rest;
   }
+
   pub fn load_from_file(&mut self, file_name: &str, scale: f32) {
     let mut path = PathBuf::new();
     path.push("assets/objects/");
     path.push(file_name);
+
     let mut i: i32 = 0;
-    let mut p = Vector2::new(0.0f32, 0.0f32);
-    let v = Vector2::new(0.0f32, 0.0f32);
-
     let file = File::open(&path).expect("Error opening File");
-
     let mut line = String::new();
     let mut buf = BufReader::new(file);
-    buf.read_line(&mut line).ok();
+
+    let read_line = |buf: &mut BufReader<File>, line: &mut String| {
+      line.clear();
+      buf.read_line(line).ok();
+    };
+
+    let read_f32 = |buf: &mut BufReader<File>, line: &mut String| -> f32 {
+      read_line(buf, line);
+      line.trim().parse().unwrap()
+    };
+
+    let read_i32 = |line: &str| -> i32 {
+      let mut chars = line.chars();
+      chars.next();
+      chars.as_str().trim().parse().unwrap()
+    };
+
+    read_line(&mut buf, &mut line);
 
     while line.trim() != "CONSTRAINTS" {
-      let mut x = String::new();
-      let mut y = String::new();
-      let mut z = String::new();
-      buf.read_line(&mut x).ok();
-      buf.read_line(&mut y).ok();
-      buf.read_line(&mut z).ok();
+      let x = read_f32(&mut buf, &mut line);
+      let _ = read_f32(&mut buf, &mut line);
+      let z = read_f32(&mut buf, &mut line);
 
-      let x2: f32 = x.trim().parse().unwrap_or(0.0_f32);
-      //let y2: f32 = y.trim().parse().unwrap_or(0.0_f32);
-      let z2: f32 = z.trim().parse().unwrap_or(0.0_f32);
-
-      p.x = -x2 * scale / 1.2;
-      p.y = -z2 * scale;
       i += 1;
-      self.create_part(p, v, 1.00f32, i);
-      if line.trim() == "CONSTRAINTS" {
-        break;
-      }
-      line.clear();
-      buf.read_line(&mut line).ok();
+      self.create_part(vec2(-x * scale / 1.2, -z * scale), vec2(0.0, 0.0), 1.0, i);
+      read_line(&mut buf, &mut line);
     }
+
     self.part_count = i;
-    line.clear();
+
     loop {
-      if buf.read_line(&mut line).unwrap() == 0 {
-        break;
-      }
-      if line.trim() == "ENDFILE" {
-        break;
-      }
-      line.remove(0);
+      let pa = {
+        read_line(&mut buf, &mut line);
+        if line.is_empty() || line.trim() == "ENDFILE" {
+          break;
+        }
+        read_i32(&line)
+      };
 
-      let pa: i32 = line.trim().parse().unwrap_or(0);
-      line.clear();
-      if buf.read_line(&mut line).unwrap() == 0 {
-        break;
-      }
-      line.remove(0);
-
-      let pb: i32 = line.trim().parse().unwrap_or(0);
+      let pb = {
+        read_line(&mut buf, &mut line);
+        read_i32(&line)
+      };
 
       let delta = self.pos[pa as usize] - self.pos[pb as usize];
       self.make_constraint(pa, pb, (delta.x * delta.x + delta.y * delta.y).sqrt());
-      line.clear();
     }
   }
 }
