@@ -140,7 +140,7 @@ impl Soldier {
       skeleton: gostek,
       legs_animation: state.anims.stand.clone(),
       body_animation: state.anims.stand.clone(),
-      control: control,
+      control,
     }
   }
   pub fn legs_apply_animation(&mut self, anim: Box<Animation>, curr: i32) {
@@ -181,7 +181,6 @@ impl Soldier {
 
   pub fn update(&mut self, state: &mut MainState) {
     let mut body_y = 0.0;
-
     let mut arm_s;
 
     self.control(state);
@@ -238,20 +237,16 @@ impl Soldier {
       if self.skeleton.active[i] && !self.dead_meat {
         self.skeleton.old_pos[i] = self.skeleton.pos[i];
 
-        if !self.half_dead {
-          if (i == 1) || (i == 4) || (i == 2) || (i == 3) || (i == 5) || (i == 6) || (i == 17)
-            || (i == 18)
-          {
-            // legs
-            self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x + self.direction as f32 *
-              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].x;
-            self.skeleton.pos[i].y = state.soldier_parts.pos[self.num].y +
-              self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].y;
-          }
+        if !self.half_dead && ((i >= 1 && i <= 6) || (i == 17) || (i == 18)) {
+          // legs
+          self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
+            + f32::from(self.direction)
+              * self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].x;
+          self.skeleton.pos[i].y = state.soldier_parts.pos[self.num].y +
+            self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i].y;
         }
-        if (i == 7) || (i == 8) || (i == 9) || (i == 10) || (i == 11) || (i == 12) || (i == 13)
-          || (i == 14) || (i == 15) || (i == 16) || (i == 19) || (i == 20)
-        {
+
+        if i >= 7 && i <= 16 || i == 19 || i == 20 {
           self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
             + f32::from(self.direction)
               * self.body_animation.frame[self.body_animation.curr_frame as usize].pos[i].x;
@@ -380,16 +375,14 @@ impl Soldier {
       self.skeleton.pos[i].y = p.y;
     }
 
-    for i in 1..20 {
-      if self.dead_meat || self.half_dead {
-        if (i != 17) && (i != 18) && (i != 19) && (i != 20) && (i != 8) && (i != 7) && (i != 21) {
-          let mut position = Vector2::new(
-            state.soldier_parts.pos[self.num].x,
-            state.soldier_parts.pos[self.num].y,
-          );
-          self.on_ground = self.check_skeleton_map_collision(state, i, position.x, position.y);
-          println!("ok");
-        }
+    for i in 1..21 {
+      if (self.dead_meat || self.half_dead) && (i < 17) && (i != 7) && (i != 8) {
+        let mut position = Vector2::new(
+          state.soldier_parts.pos[self.num].x,
+          state.soldier_parts.pos[self.num].y,
+        );
+        self.on_ground = self.check_skeleton_map_collision(state, i, position.x, position.y);
+        println!("ok");
       }
     }
 
@@ -509,6 +502,7 @@ impl Soldier {
       state.soldier_parts.velocity[self.num].y = MAX_VELOCITY;
     }
   }
+
   pub fn check_map_collision(&mut self, state: &mut MainState, x: f32, y: f32, area: i32) -> bool {
     let s_pos = Vector2::new(x, y);
 
@@ -523,32 +517,30 @@ impl Soldier {
       && (ry < state.map.sectors_num + 25)
     {
       for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
-        let polytype = state.map.polygons[w].polytype;
+        let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+        let polytype = state.map.polygons[poly].polytype;
 
         if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
-          let mut polygons = state.map.polygons[w as usize];
+          let mut polygons = state.map.polygons[poly];
           if state.map.point_in_poly(pos, &mut polygons) {
             self.handle_special_polytypes(state, polytype, pos);
-            let mut d = 0.0;
 
+            let mut dist = 0.0;
             let mut k = 0;
 
             let mut perp = state
               .map
-              .closest_perpendicular(w as i32, pos, &mut d, &mut k);
+              .closest_perpendicular(poly as i32, pos, &mut dist, &mut k);
 
             let step = perp;
 
             perp = calc::vec2normalize(perp, perp);
+            perp *= dist;
+            dist = calc::vec2length(state.soldier_parts.velocity[self.num]);
 
-            perp *= d;
-
-            d = calc::vec2length(state.soldier_parts.velocity[self.num]);
-
-            if calc::vec2length(perp) > d {
+            if calc::vec2length(perp) > dist {
               perp = calc::vec2normalize(perp, perp);
-              perp *= d;
+              perp *= dist;
             }
             if (area == 0)
               || ((area == 1)
@@ -558,9 +550,9 @@ impl Soldier {
             {
               state.soldier_parts.old_pos[self.num] = state.soldier_parts.pos[self.num];
               state.soldier_parts.pos[self.num] -= perp;
-              if state.map.polygons[w as usize].polytype == PolyType::Bouncy {
+              if state.map.polygons[poly].polytype == PolyType::Bouncy {
                 perp = calc::vec2normalize(perp, perp);
-                perp *= state.map.polygons[w as usize].bounciness * d;
+                perp *= state.map.polygons[poly].bounciness * dist;
               }
               state.soldier_parts.velocity[self.num] -= perp;
             }
@@ -617,23 +609,23 @@ impl Soldier {
                     state.soldier_parts.velocity[self.num].y *= STANDSURFACECOEFY;
                   }
                 }
+              } else if (self.legs_animation.id == state.anims.crouch_run.id)
+                || (self.legs_animation.id == state.anims.crouch_run_back.id)
+              {
+                state.soldier_parts.velocity[self.num].x *= CROUCHMOVESURFACECOEFX;
+                state.soldier_parts.velocity[self.num].y *= CROUCHMOVESURFACECOEFY;
               } else {
-                if (self.legs_animation.id == state.anims.crouch_run.id)
-                  || (self.legs_animation.id == state.anims.crouch_run_back.id)
-                {
-                  state.soldier_parts.velocity[self.num].x *= CROUCHMOVESURFACECOEFX;
-                  state.soldier_parts.velocity[self.num].y *= CROUCHMOVESURFACECOEFY;
-                } else {
-                  state.soldier_parts.velocity[self.num].x *= SURFACECOEFX;
-                  state.soldier_parts.velocity[self.num].y *= SURFACECOEFY;
-                }
+                state.soldier_parts.velocity[self.num].x *= SURFACECOEFX;
+                state.soldier_parts.velocity[self.num].y *= SURFACECOEFY;
               }
             }
+
             return true;
           }
         }
       }
     }
+
     false
   }
 
@@ -658,18 +650,18 @@ impl Soldier {
       && (ry < state.map.sectors_num + 25)
     {
       for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
-        let polytype = state.map.polygons[w].polytype;
+        let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+        let polytype = state.map.polygons[poly].polytype;
 
         if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
           for i in 0..3 {
             let vert = Vector2::new(
-              state.map.polygons[w].vertices[i].x,
-              state.map.polygons[w].vertices[i].y,
+              state.map.polygons[poly].vertices[i].x,
+              state.map.polygons[poly].vertices[i].y,
             );
 
-            let d = calc::distance(vert, pos);
-            if d < r {
+            let dist = calc::distance(vert, pos);
+            if dist < r {
               if !has_collided {
                 self.handle_special_polytypes(state, polytype, pos);
               }
@@ -684,6 +676,7 @@ impl Soldier {
     }
     false
   }
+
   pub fn check_radius_map_collision(
     &mut self,
     state: &mut MainState,
@@ -711,17 +704,17 @@ impl Soldier {
         && (ry < state.map.sectors_num + 25)
       {
         for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-          let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
-          let polytype = state.map.polygons[w].polytype;
+          let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+          let polytype = state.map.polygons[poly].polytype;
 
           if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
             for k in 0..2 {
-              let mut norm = state.map.perps[w as usize][k];
+              let mut norm = state.map.perps[poly][k];
               norm *= -SOLDIER_COL_RADIUS;
 
               let mut pos = s_pos + norm;
 
-              if state.map.point_in_poly_edges(pos.x, pos.y, w as i32) {
+              if state.map.point_in_poly_edges(pos.x, pos.y, poly as i32) {
                 if !has_collided {
                   self.handle_special_polytypes(state, polytype, pos);
                 }
@@ -729,39 +722,39 @@ impl Soldier {
                 let mut b = 0;
                 let mut perp = state
                   .map
-                  .closest_perpendicular(w as i32, pos, &mut d, &mut b);
+                  .closest_perpendicular(poly as i32, pos, &mut d, &mut b);
 
                 let mut p1 = Vector2::new(0.0, 0.0);
                 let mut p2 = Vector2::new(0.0, 0.0);
                 match b {
                   1 => {
                     p1 = Vector2::new(
-                      state.map.polygons[w].vertices[0].x,
-                      state.map.polygons[w].vertices[0].y,
+                      state.map.polygons[poly].vertices[0].x,
+                      state.map.polygons[poly].vertices[0].y,
                     );
                     p2 = Vector2::new(
-                      state.map.polygons[w].vertices[1].x,
-                      state.map.polygons[w].vertices[1].y,
+                      state.map.polygons[poly].vertices[1].x,
+                      state.map.polygons[poly].vertices[1].y,
                     );
                   }
                   2 => {
                     p1 = Vector2::new(
-                      state.map.polygons[w].vertices[1].x,
-                      state.map.polygons[w].vertices[1].y,
+                      state.map.polygons[poly].vertices[1].x,
+                      state.map.polygons[poly].vertices[1].y,
                     );
                     p2 = Vector2::new(
-                      state.map.polygons[w].vertices[2].x,
-                      state.map.polygons[w].vertices[2].y,
+                      state.map.polygons[poly].vertices[2].x,
+                      state.map.polygons[poly].vertices[2].y,
                     );
                   }
                   3 => {
                     p1 = Vector2::new(
-                      state.map.polygons[w].vertices[2].x,
-                      state.map.polygons[w].vertices[2].y,
+                      state.map.polygons[poly].vertices[2].x,
+                      state.map.polygons[poly].vertices[2].y,
                     );
                     p2 = Vector2::new(
-                      state.map.polygons[w].vertices[0].x,
-                      state.map.polygons[w].vertices[0].y,
+                      state.map.polygons[poly].vertices[0].x,
+                      state.map.polygons[poly].vertices[0].y,
                     );
                   }
                   _ => {}
@@ -781,8 +774,10 @@ impl Soldier {
         }
       }
     }
-    return false;
+
+    false
   }
+
   pub fn check_skeleton_map_collision(
     &mut self,
     state: &mut MainState,
@@ -799,16 +794,16 @@ impl Soldier {
       && (ry < state.map.sectors_num + 25)
     {
       for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-        let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+        let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
 
-        if state.map.point_in_poly_edges(pos.x, pos.y, w as i32) {
-          let mut d = 0.0;
+        if state.map.point_in_poly_edges(pos.x, pos.y, i32::from(poly)) {
+          let mut dist = 0.0;
           let mut b = 0;
           let mut perp = state
             .map
-            .closest_perpendicular(w as i32, pos, &mut d, &mut b);
+            .closest_perpendicular(i32::from(poly), pos, &mut dist, &mut b);
           perp = calc::vec2normalize(perp, perp);
-          perp *= d;
+          perp *= dist;
 
           self.skeleton.pos[i as usize] = self.skeleton.old_pos[i as usize];
           self.skeleton.pos[i as usize] -= perp;
@@ -826,16 +821,16 @@ impl Soldier {
         && (ry < state.map.sectors_num + 25)
       {
         for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-          let w = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
-          //if (Map.PolyType[w] <> POLY_TYPE_DOESNT) and (Map.PolyType[w] <> POLY_TYPE_ONLY_BULLETS) then
-          if state.map.point_in_poly_edges(pos.x, pos.y, w as i32) {
-            let mut d = 0.0;
+          let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+          //if (Map.PolyType[poly] <> POLY_TYPE_DOESNT) and (Map.PolyType[poly] <> POLY_TYPE_ONLY_BULLETS) then
+          if state.map.point_in_poly_edges(pos.x, pos.y, i32::from(poly)) {
+            let mut dist = 0.0;
             let mut b = 0;
             let mut perp = state
               .map
-              .closest_perpendicular(w as i32, pos, &mut d, &mut b);
+              .closest_perpendicular(i32::from(poly), pos, &mut dist, &mut b);
             perp = calc::vec2normalize(perp, perp);
-            perp = perp * d;
+            perp *= dist;
 
             self.skeleton.pos[i as usize] = self.skeleton.old_pos[i as usize];
             self.skeleton.pos[i as usize] -= perp;
@@ -844,6 +839,7 @@ impl Soldier {
         }
       }
     }
-    return result;
+
+    result
   }
 }
