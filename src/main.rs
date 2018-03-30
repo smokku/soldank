@@ -106,9 +106,9 @@ fn main() {
     const H: u32 = 720;
 
     let mut state = MainState {
-        map: map,
-        anims: anims,
-        soldier_parts: soldier_parts,
+        map,
+        anims,
+        soldier_parts,
         gostek_skeleton: gostek,
         game_width: W as f32 * (480.0 / H as f32),
         game_height: 480.0,
@@ -147,8 +147,8 @@ fn main() {
     let mut zoomout_pressed = false;
 
     while running {
-        context.evt.poll_events(|event| match event {
-            Event::WindowEvent{event, ..} => match event {
+        context.evt.poll_events(|e| if let Event::WindowEvent{event, ..} = e {
+            match event {
                 WindowEvent::Closed => running = false,
                 WindowEvent::KeyboardInput{input, ..} => {
                     match input.virtual_keycode {
@@ -172,8 +172,7 @@ fn main() {
                     state.mouse.y = y as f32 * state.game_height / H as f32;
                 },
                 _ => (),
-            },
-            _ => (),
+            }
         });
 
         let dt = 1.0/60.0;
@@ -187,9 +186,6 @@ fn main() {
 
             state.soldier_parts.do_eurler_timestep_for(1);
             soldier.update(&mut state);
-
-            state.soldier_parts.old_pos[2] = state.soldier_parts.pos[2];
-            state.soldier_parts.pos[2].x += 50.0 * dt as f32;
 
             state.camera_prev = state.camera;
             state.mouse_prev = state.mouse;

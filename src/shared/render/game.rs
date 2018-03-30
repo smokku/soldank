@@ -25,109 +25,57 @@ impl GameGraphics {
     pub fn render_frame(&mut self, context: &mut Gfx2dContext, state: &MainState, soldier: &Soldier,
         _elapsed: f64, frame_percent: f32)
     {
-        let z = f32::exp(state.zoom);
+        let zoom = f32::exp(state.zoom);
         let cam = lerp(state.camera_prev, state.camera, frame_percent);
-        let (w, h) = (z*state.game_width, z*state.game_height);
+        let (w, h) = (zoom*state.game_width, zoom*state.game_height);
         let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
+
+        self.batch.clear();
+        self.gostek.render(soldier, &mut self.batch, &self.sprites, frame_percent);
+
+        if false {
+            let px = h / context.wnd.get_inner_size().unwrap().1 as f32;
+            GostekGraphics::render_skeleton(soldier, &mut self.batch, px, frame_percent);
+        }
 
         context.clear(rgb(0, 0, 0));
         context.draw(&mut self.map.background(), &Transform::ortho(0.0, 1.0, dy, dy + h).matrix());
         context.draw(&mut self.map.polys_back(), &transform);
         context.draw(&mut self.map.scenery_back(), &transform);
-
-        self.batch.clear();
-        self.gostek.render(&soldier, &mut self.batch, &self.sprites, frame_percent);
         context.draw(&mut self.batch.all(), &transform);
-
         context.draw(&mut self.map.scenery_mid(), &transform);
         context.draw(&mut self.map.polys_front(), &transform);
         context.draw(&mut self.map.scenery_front(), &transform);
+        self.render_cursor(context, state);
+    }
 
-        // skeleton points
-        if false {
-            self.batch.clear();
+    fn render_cursor(&mut self, context: &mut Gfx2dContext, state: &MainState) {
+        let zoom = f32::exp(state.zoom);
+        let (w, h) = (zoom*state.game_width, zoom*state.game_height);
+        let size = context.wnd.get_inner_size().unwrap();
+        let size = vec2(size.0 as f32, size.1 as f32);
+        let x = zoom * f32::floor(state.mouse.x * size.x / w);
+        let y = zoom * f32::floor(state.mouse.y * size.y / h);
+        let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();
 
-            let px = h / context.wnd.get_inner_size().unwrap().1 as f32;
-            let n = soldier.skeleton.constraint_count as usize;
+        self.batch.clear();
+        self.batch.add_quads(None, &[
+            [
+                vertex(vec2(x, y) + vec2(0.0, -8.0), Vec2::zeros(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(1.0, -8.0), Vec2::zeros(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(1.0,  9.0), Vec2::zeros(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(0.0,  9.0), Vec2::zeros(), rgb(0, 0, 0)),
+            ],
+            [
+                vertex(vec2(x, y) + vec2(-8.0, 0.0), Vec2::zeros(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2( 9.0, 0.0), Vec2::zeros(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2( 9.0, 1.0), Vec2::zeros(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(-8.0, 1.0), Vec2::zeros(), rgb(0, 0, 0)),
+            ],
+        ]);
 
-            for constraint in &soldier.skeleton.constraints[1..n + 1] {
-                let a = soldier.skeleton.pos[constraint.part_a as usize];
-                let b = soldier.skeleton.pos[constraint.part_b as usize];
-
-                let m = Transform::WithPivot {
-                    pos: a,
-                    pivot: vec2(0.0, 0.0),
-                    scale: vec2(::shared::calc::distance(a, b), 1.0),
-                    rot: ::na::angle(&(b - a), &vec2(1.0, 0.0)),
-                }.matrix();
-
-                self.batch.add_quads(None, &[[
-                    vertex(m * vec2(0.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-                    vertex(m * vec2(1.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-                    vertex(m * vec2(1.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-                    vertex(m * vec2(0.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-                ]]);
-            }
-
-            for p in &soldier.skeleton.pos[1..25] {
-                let m = Mat2d::translate(p.x, p.y);
-
-                self.batch.add_quads(None, &[[
-                    vertex(m * vec2(-0.75 * px, -0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
-                    vertex(m * vec2( 0.75 * px, -0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
-                    vertex(m * vec2( 0.75 * px,  0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
-                    vertex(m * vec2(-0.75 * px,  0.75 * px), Vec2::zeros(), rgb(0, 0, 255)),
-                ]]);
-            }
-
-            context.draw(&mut self.batch.all(), &transform);
-        }
-
-        // cursor
-        {
-            let size = context.wnd.get_inner_size().unwrap();
-            let size = vec2(size.0 as f32, size.1 as f32);
-            let x = z * f32::floor(state.mouse.x * size.x / w);
-            let y = z * f32::floor(state.mouse.y * size.y / h);
-            let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();
-
-            self.batch.clear();
-            self.batch.add_quads(None, &[
-                [
-                    vertex(vec2(x, y) + vec2(0.0, -8.0), Vec2::zeros(), rgb(0, 0, 0)),
-                    vertex(vec2(x, y) + vec2(1.0, -8.0), Vec2::zeros(), rgb(0, 0, 0)),
-                    vertex(vec2(x, y) + vec2(1.0,  9.0), Vec2::zeros(), rgb(0, 0, 0)),
-                    vertex(vec2(x, y) + vec2(0.0,  9.0), Vec2::zeros(), rgb(0, 0, 0)),
-                ],
-                [
-                    vertex(vec2(x, y) + vec2(-8.0, 0.0), Vec2::zeros(), rgb(0, 0, 0)),
-                    vertex(vec2(x, y) + vec2( 9.0, 0.0), Vec2::zeros(), rgb(0, 0, 0)),
-                    vertex(vec2(x, y) + vec2( 9.0, 1.0), Vec2::zeros(), rgb(0, 0, 0)),
-                    vertex(vec2(x, y) + vec2(-8.0, 1.0), Vec2::zeros(), rgb(0, 0, 0)),
-                ],
-            ]);
-
-            context.draw(&mut self.batch.all(), &screen);
-        }
-
-        // time precision test
-        if false {
-            let screen = Transform::ortho(0.0, 1280.0, 0.0, 720.0);
-            let a = state.soldier_parts.old_pos[2].x;
-            let b = state.soldier_parts.pos[2].x;
-            let x = (a + (b - a) * frame_percent) % 1280.0;
-
-            self.batch.clear();
-            self.batch.add_quads(None, &[[
-                vertex(vec2(x + 0.0,   0.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
-                vertex(vec2(x + 1.0,   0.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
-                vertex(vec2(x + 1.0, 720.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
-                vertex(vec2(x + 0.0, 720.0), vec2(0.0, 0.0), rgb(255, 0, 0)),
-            ]]);
-
-            context.draw(&mut self.batch.all(), &screen.matrix());
-        }
+        context.draw(&mut self.batch.all(), &screen);
     }
 
     pub fn load_map(&mut self, context: &mut Gfx2dContext, map: &MapFile) {
