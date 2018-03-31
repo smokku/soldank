@@ -81,18 +81,13 @@ impl DrawBatch {
         self.cmds.clear();
     }
 
-    pub fn add(&mut self, texture: Option<&Texture>, vertices: &[[Vertex; 3]]) {
+    pub fn add(&mut self, texture: Option<&Texture>, vertices: &[Vertex; 3]) {
         let i = self.buf.len();
-        let n = 3 * vertices.len();
+        let n = vertices.len();
+        let m = self.cmds.len();
 
         self.updated = false;
-
-        unsafe {
-            use std::slice::from_raw_parts;
-            self.buf.extend_from_slice(from_raw_parts(vertices.as_ptr() as *const Vertex, n));
-        }
-
-        let m = self.cmds.len();
+        self.buf.extend_from_slice(vertices);
 
         if m == 0 || m == self.split_start || (m > 0 &&
             (texture.is_none() != self.last_texture().is_none() ||
@@ -111,18 +106,12 @@ impl DrawBatch {
         }
     }
 
-    pub fn add_quads(&mut self, t: Option<&Texture>, v: &[[Vertex; 4]]) {
-        self.buf.reserve(6 * v.len());
-
-        for q in v.iter() {
-            self.add(t, &[
-                [q[0], q[1], q[2]],
-                [q[2], q[0], q[3]],
-            ]);
-        }
+    pub fn add_quad(&mut self, texture: Option<&Texture>, vertices: &[Vertex; 4]) {
+        self.add(texture, &[vertices[0], vertices[1], vertices[2]]);
+        self.add(texture, &[vertices[2], vertices[0], vertices[3]]);
     }
 
-    pub fn add_tinted_sprite(&mut self, sprite: &Sprite, color: Color, transform: Transform) {
+    pub fn add_sprite(&mut self, sprite: &Sprite, color: Color, transform: Transform) {
         let (w, h) = (sprite.width, sprite.height);
         let (tx0, tx1) = sprite.texcoords_x;
         let (ty0, ty1) = sprite.texcoords_y;
@@ -136,18 +125,12 @@ impl DrawBatch {
             }
         };
 
-        self.add_quads(sprite.texture.as_ref(), &[
-            [
-                vertex(p0, vec2(tx0, ty0), color),
-                vertex(p1, vec2(tx1, ty0), color),
-                vertex(p2, vec2(tx1, ty1), color),
-                vertex(p3, vec2(tx0, ty1), color),
-            ]
+        self.add_quad(sprite.texture.as_ref(), &[
+            vertex(p0, vec2(tx0, ty0), color),
+            vertex(p1, vec2(tx1, ty0), color),
+            vertex(p2, vec2(tx1, ty1), color),
+            vertex(p3, vec2(tx0, ty1), color),
         ]);
-    }
-
-    pub fn add_sprite(&mut self, sprite: &Sprite, transform: Transform) {
-        self.add_tinted_sprite(sprite, rgb(255, 255, 255), transform);
     }
 
     pub fn split(&mut self) -> Range<usize> {
@@ -171,7 +154,8 @@ impl DrawBatch {
                 BatchUsage::Dynamic => {
                     if self.vbuf.is_none() || self.vbuf.as_ref().unwrap().len() < self.buf.len() {
                         let n = self.buf.len().next_power_of_two();
-                        self.vbuf = Some(context.fct.create_buffer(n, VertexRole, Dynamic, Bind::empty()).unwrap());
+                        let vbuf = context.fct.create_buffer(n, VertexRole, Dynamic, Bind::empty());
+                        self.vbuf = Some(vbuf.unwrap());
                     }
 
                     context.enc.update_buffer(self.vbuf.as_ref().unwrap(), &self.buf, 0).unwrap();

@@ -19,10 +19,9 @@ DrawBatch
     ::new()
     ::new_static()
     .clear()
-    .add(Option<&Texture>, &[[Vertex;3]])        // slice of 3 vertex arrays (triangles)
-    .add_quads(Option<&Texture>, &[[Vertex;4]])
-    .add_tinted_sprite(&Sprite, Color, Transform)
-    .add_sprite(&Sprite, Transform)
+    .add(Option<&Texture>, &[Vertex;3])
+    .add_quad(Option<&Texture>, &[Vertex;4])
+    .add_sprite(&Sprite, Color, Transform)
     .split() -> Range<usize> // range from last split (or start) to last added stuff
     .slice(Range<usize>) -> DrawSlice
     .all() -> DrawSlice

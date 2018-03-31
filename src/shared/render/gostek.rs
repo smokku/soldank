@@ -140,7 +140,7 @@ impl GostekGraphics {
                         let sprite = &sprites[gostek_sprite.group().id()][gostek_sprite.id()];
                         let (w, h) = (sprite.width, sprite.height);
 
-                        batch.add_tinted_sprite(sprite, color, Transform::WithPivot {
+                        batch.add_sprite(sprite, color, Transform::WithPivot {
                             pivot: vec2(cx * w, cy * h),
                             pos: vec2(p0.x, p0.y + 1.0),
                             scale,
@@ -324,24 +324,24 @@ impl GostekGraphics {
                 rot: f32::atan2(b.y - a.y, b.x - a.x),
             }.matrix();
 
-            batch.add_quads(None, &[[
+            batch.add_quad(None, &[
                 vertex(m * vec2(0.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
                 vertex(m * vec2(1.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
                 vertex(m * vec2(1.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
                 vertex(m * vec2(0.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-            ]]);
+            ]);
         }
 
         for (a, b) in sk.old_pos[1..25].iter().zip(&sk.pos[1..25]) {
             let p = lerp(*a, *b, frame_percent);
             let m = Mat2d::translate(p.x, p.y);
 
-            batch.add_quads(None, &[[
+            batch.add_quad(None, &[
                 vertex(m * vec2(-1.0 * px, -1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
                 vertex(m * vec2( 1.0 * px, -1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
                 vertex(m * vec2( 1.0 * px,  1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
                 vertex(m * vec2(-1.0 * px,  1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
-            ]]);
+            ]);
         }
     }
 }
