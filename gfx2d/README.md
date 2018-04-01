@@ -3,8 +3,8 @@
 
 ::rgba(r, g, b, a) -> Color
 ::rgb(r, g, b) -> Color     // rgb & rgba take u8 params
-::vec2(x, y) -> Vec2        // Vec2 is an alias to nalgebra::Vector2<f32>
 ::vertex(pos: Vec2, texcoords: Vec2, color: Color) -> Vertex
+::gfx2d_extra::load_image_rgba(filename) -> image::RgbaImage
 ::gfx2d_extra::premultiply_image(&mut image::RgbaImage)
 ::gfx2d_extra::remove_color_key(&mut image::RgbaImage, Color)
 
@@ -43,8 +43,8 @@ Transform // enum
 
     // enum variants
     Pos(Vec2)
-    FromOrigin{pos: Vec2, scale: Vec2, rot: (f32, Vec2)}
-    WithPivot{pivot: Vec2, pos: Vec2, scale: Vec2, rot: f32}
+    FromOrigin{pos: Vec2, scale: Vec2, rot: (Rad, Vec2)}
+    WithPivot{pivot: Vec2, pos: Vec2, scale: Vec2, rot: Rad}
     Ortho{left, right, top, bottom}
 
     // FromOrigin:
@@ -75,19 +75,25 @@ SpriteInfo
 Color
     .r(), .g(), .b(), .a() -> u8
     .set_r(u8), .set_g(u8), .set_b(u8), .set_a(u8)
-Mat2d((f32,f32,f32), (f32,f32,f32))
-    .0 // 1st row
-    .1 // 2nd row - 3rd row is implicit, always (0,0,1)
-    .to_3x3() -> [[f32;3];3] // column major result
-    ::identity() -> Mat2d
-    ::translate(x, y) -> Mat2d
-    ::scale(x, y) -> Mat2d
-    ::rotate(angle) -> Mat2d
-    Mat2d * Mat2d -> Mat2d
-    Mat2d * Vec2 -> Vec2
 Vertex {
     pos: [f32;4],
     texcoords: [f32;4],
     color: [U8Norm;4]
 }
+
+math (submodule)
+    ::rad(angle) -> Rad     // alias to cgmath::Rad<f32>
+    ::deg(angle) -> Deg     // alias to cgmath::Deg<f32>
+    ::vec2(x, y) -> Vec2    // alias to cgmath::Vector2<f32>
+    ::vec3(x, y, z) -> Vec3 // alias to cgmath::Vector3<f32>
+    Mat2d((f32,f32,f32), (f32,f32,f32))
+        .0 // 1st row
+        .1 // 2nd row - 3rd row is implicit, always (0,0,1)
+        .to_3x3() -> [[f32;3];3] // column major result
+        ::identity() -> Mat2d
+        ::translate(x, y) -> Mat2d
+        ::scale(x, y) -> Mat2d
+        ::rotate(angle) -> Mat2d
+        Mat2d * Mat2d -> Mat2d
+        Mat2d * Vec2 -> Vec2
 ```

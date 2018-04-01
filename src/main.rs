@@ -2,7 +2,6 @@ extern crate glutin;
 extern crate gfx2d;
 extern crate byteorder;
 extern crate time;
-extern crate nalgebra as na;
 extern crate ini;
 extern crate typenum;
 extern crate bit_array;
@@ -10,7 +9,6 @@ extern crate clap;
 
 macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then } else { $otherwise }));
 
-use na::Vector2;
 use glutin::*;
 
 use shared::calc::*;
@@ -112,10 +110,10 @@ fn main() {
         gostek_skeleton: gostek,
         game_width: W as f32 * (480.0 / H as f32),
         game_height: 480.0,
-        camera: Vector2::new(0.0f32, 0.0f32),
-        camera_prev: Vector2::new(0.0f32, 0.0f32),
-        mouse: Vector2::new(0.0f32, 0.0f32),
-        mouse_prev: Vector2::new(0.0f32, 0.0f32),
+        camera: Vec2::zero(),
+        camera_prev: Vec2::zero(),
+        mouse: Vec2::zero(),
+        mouse_prev: Vec2::zero(),
         gravity: GRAV,
         zoom: 0.0,
     };
@@ -136,7 +134,7 @@ fn main() {
     graphics.load_map(&mut context, &state.map);
 
     let time_start = time::precise_time_s();
-    let current_time = || {time::precise_time_s() - time_start};
+    let current_time = || time::precise_time_s() - time_start;
 
     let mut timecur: f64 = current_time();
     let mut timeprv: f64 = timecur;
@@ -196,7 +194,7 @@ fn main() {
 
             state.camera = {
                 let z = f32::exp(state.zoom);
-                let mut m = Vec2::zeros();
+                let mut m = Vec2::zero();
 
                 m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
                     * ((2.0 * 640.0 / state.game_width - 1.0)

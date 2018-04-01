@@ -1,4 +1,28 @@
-use super::{Vec2, vec2};
+pub use cgmath::{Angle, Array, Bounded, InnerSpace, MetricSpace, Zero};
+pub use std::f32::consts::PI;
+
+pub type Rad = ::cgmath::Rad<f32>;
+pub type Deg = ::cgmath::Deg<f32>;
+pub type Vec2 = ::cgmath::Vector2<f32>;
+pub type Vec3 = ::cgmath::Vector3<f32>;
+
+pub fn rad(angle: f32) -> Rad {
+    ::cgmath::Rad(angle)
+}
+
+pub fn deg(angle: f32) -> Deg {
+    ::cgmath::Deg(angle)
+}
+
+pub fn vec2(x: f32, y: f32) -> Vec2 {
+    ::cgmath::vec2(x, y)
+}
+
+pub fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
+    ::cgmath::vec3(x, y, z)
+}
+
+// Mat2d
 
 // Indexed by row. Works like a 3x3 matrix where last row is always [0, 0, 1]
 #[derive(Debug, Copy, Clone)]
@@ -17,8 +41,8 @@ impl Mat2d {
         Mat2d((x, 0.0, 0.0), (0.0, y, 0.0))
     }
 
-    pub fn rotate(r: f32) -> Mat2d {
-        let (c, s) = (f32::cos(r), f32::sin(r));
+    pub fn rotate(r: Rad) -> Mat2d {
+        let (c, s) = (Rad::cos(r), Rad::sin(r));
         Mat2d((c, -s, 0.0), (s, c, 0.0))
     }
 

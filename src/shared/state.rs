@@ -1,7 +1,7 @@
+use shared::calc::*;
 use shared::mapfile::MapFile;
 use shared::anims::Animation;
 use shared::parts::ParticleSystem;
-use na::Vector2;
 
 pub struct AnimsList {
     pub run: Box<Animation>,
@@ -55,10 +55,10 @@ pub struct MainState {
     pub anims: AnimsList,
     pub soldier_parts: ParticleSystem,
     pub gostek_skeleton: ParticleSystem,
-    pub camera: Vector2<f32>,
-    pub camera_prev: Vector2<f32>,
-    pub mouse: Vector2<f32>,
-    pub mouse_prev: Vector2<f32>,
+    pub camera: Vec2,
+    pub camera_prev: Vec2,
+    pub mouse: Vec2,
+    pub mouse_prev: Vec2,
     pub game_width: f32,
     pub game_height: f32,
     pub gravity: f32,

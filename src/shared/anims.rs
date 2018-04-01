@@ -1,14 +1,14 @@
 use std::fs::File;
-use na::Vector3;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
+use shared::calc::*;
 
 const MAX_POS_INDEX: usize = 20;
 const MAX_FRAMES_INDEX: usize = 40;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Frames {
-  pub pos: [Vector3<f32>; MAX_POS_INDEX + 1],
+  pub pos: [Vec3; MAX_POS_INDEX + 1],
 }
 
 #[derive(Copy, Clone)]
@@ -50,7 +50,7 @@ impl Animation {
     let mut buf = BufReader::new(file);
 
     buf.read_line(&mut line).ok();
-    let pos = [Vector3::new(0.0_f32, 0.0_f32, 0.0_f32); MAX_POS_INDEX + 1];
+    let pos = [Vec3::zero(); MAX_POS_INDEX + 1];
     let mut new_frame = [Frames { pos }; MAX_FRAMES_INDEX + 1];
 
     while line.trim() != "ENDFILE" {

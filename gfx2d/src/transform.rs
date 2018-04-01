@@ -11,7 +11,7 @@ pub enum Transform {
     FromOrigin {
         pos: Vec2,
         scale: Vec2,
-        rot: (f32, Vec2),
+        rot: (Rad, Vec2),
     },
 
     // Position, rotation and scale are all done relative to a pivot point.
@@ -20,7 +20,7 @@ pub enum Transform {
         pivot: Vec2,
         pos: Vec2,
         scale: Vec2,
-        rot: f32,
+        rot: Rad,
     },
 
     // Orthographic projection (with 'y' from top to bottom)
@@ -41,11 +41,11 @@ impl Transform {
         Transform::Pos(vec2(x, y))
     }
 
-    pub fn origin(pos: Vec2, scale: Vec2, rot: (f32, Vec2)) -> Transform {
+    pub fn origin(pos: Vec2, scale: Vec2, rot: (Rad, Vec2)) -> Transform {
         Transform::FromOrigin { pos, scale, rot }
     }
 
-    pub fn pivot(pivot: Vec2, pos: Vec2, scale: Vec2, rot: f32) -> Transform {
+    pub fn pivot(pivot: Vec2, pos: Vec2, scale: Vec2, rot: Rad) -> Transform {
         Transform::WithPivot {
             pivot,
             pos,
@@ -68,7 +68,7 @@ impl Transform {
             Transform::Pos(p) => Mat2d::translate(p.x, p.y),
 
             Transform::FromOrigin { pos, scale, rot } => {
-                let (s, c) = (f32::sin(rot.0), f32::cos(rot.0));
+                let (s, c) = (Rad::sin(rot.0), Rad::cos(rot.0));
 
                 Mat2d(
                     (
@@ -90,7 +90,7 @@ impl Transform {
                 scale,
                 rot,
             } => {
-                let (s, c) = (f32::sin(rot), f32::cos(rot));
+                let (s, c) = (Rad::sin(rot), Rad::cos(rot));
                 let m = ((c * scale.x, -s * scale.y), (s * scale.x, c * scale.y));
 
                 Mat2d(

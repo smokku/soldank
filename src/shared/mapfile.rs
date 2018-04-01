@@ -1,12 +1,10 @@
 use byteorder::{LittleEndian, ReadBytesExt};
-use na::Vector3;
-use na::Vector2;
 
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 use std::error::Error;
-use shared::calc;
+use shared::calc::*;
 
 const MAX_POLYS: i32 = 5000;
 //const MIN_SECTOR: i32 = -25;
@@ -73,7 +71,7 @@ pub struct MapVertex {
 #[derive(Debug, Copy, Clone)]
 pub struct MapPolygon {
   pub vertices: [MapVertex; 3],
-  normals: [Vector3<f32>; 3],
+  normals: [Vec3; 3],
   pub polytype: PolyType,
   pub bounciness: f32,
 }
@@ -91,7 +89,7 @@ pub struct MapProp {
   pub height: i32,
   pub x: f32,
   pub y: f32,
-  pub rotation: f32,
+  pub rotation: Rad,
   pub scale_x: f32,
   pub scale_y: f32,
   pub alpha: u8,
@@ -144,7 +142,7 @@ pub struct MapFile {
   colliders: Vec<MapCollider>,
   pub spawnpoints: Vec<MapSpawnpoint>,
   pub sectors_poly: Vec<Vec<MapSector>>,
-  pub perps: Vec<[Vector2<f32>; 3]>,
+  pub perps: Vec<[Vec2; 3]>,
 }
 
 impl MapFile {
@@ -183,7 +181,7 @@ impl MapFile {
         read_vertex(&mut buf),
       ];
 
-      let normals: [Vector3<f32>; 3] = [
+      let normals: [Vec3; 3] = [
         read_vec3(&mut buf),
         read_vec3(&mut buf),
         read_vec3(&mut buf),
@@ -222,7 +220,7 @@ impl MapFile {
         }
       }
 
-      let bounciness = (normals[2].x.powi(2) + normals[2].y.powi(2)).sqrt();
+      let bounciness = normals[2].magnitude();
 
       polygons.push(MapPolygon {
         vertices,
@@ -231,15 +229,15 @@ impl MapFile {
         bounciness,
       });
 
-      let mut perp: [Vector2<f32>; 3] = [
-        Vector2::new(normals[0].x, normals[0].y),
-        Vector2::new(normals[1].x, normals[1].y),
-        Vector2::new(normals[2].x, normals[2].y),
+      let mut perp: [Vec2; 3] = [
+        vec2(normals[0].x, normals[0].y),
+        vec2(normals[1].x, normals[1].y),
+        vec2(normals[2].x, normals[2].y),
       ];
 
-      perp[0] = calc::vec2normalize(perp[0], perp[0]);
-      perp[1] = calc::vec2normalize(perp[1], perp[1]);
-      perp[2] = calc::vec2normalize(perp[2], perp[2]);
+      perp[0] = vec2normalize(perp[0], perp[0]);
+      perp[1] = vec2normalize(perp[1], perp[1]);
+      perp[2] = vec2normalize(perp[2], perp[2]);
 
       perps.push(perp);
     }
@@ -298,7 +296,7 @@ impl MapFile {
       let height = buf.read_i32::<LittleEndian>().unwrap();
       let x = buf.read_f32::<LittleEndian>().unwrap();
       let y = buf.read_f32::<LittleEndian>().unwrap();
-      let rotation = buf.read_f32::<LittleEndian>().unwrap();
+      let rotation = rad(buf.read_f32::<LittleEndian>().unwrap());
       let scale_x = buf.read_f32::<LittleEndian>().unwrap();
       let scale_y = buf.read_f32::<LittleEndian>().unwrap();
       let alpha = buf.read_i32::<LittleEndian>().unwrap() as u8;
@@ -390,7 +388,7 @@ impl MapFile {
     }
   }
 
-  pub fn point_in_poly(&mut self, p: Vector2<f32>, poly: &mut MapPolygon) -> bool {
+  pub fn point_in_poly(&mut self, p: Vec2, poly: &mut MapPolygon) -> bool {
     let a = &poly.vertices[0];
     let b = &poly.vertices[1];
     let c = &poly.vertices[2];
@@ -439,10 +437,10 @@ impl MapFile {
   pub fn closest_perpendicular(
     &mut self,
     j: i32,
-    pos: Vector2<f32>,
+    pos: Vec2,
     d: &mut f32,
     n: &mut i32,
-  ) -> Vector2<f32> {
+  ) -> Vec2 {
     let px: [f32; 3] = [
       self.polygons[j as usize].vertices[0].x,
       self.polygons[j as usize].vertices[1].x,
@@ -455,10 +453,10 @@ impl MapFile {
       self.polygons[j as usize].vertices[2].y,
     ];
 
-    let mut p1 = Vector2::new(px[0], py[0]);
-    let mut p2 = Vector2::new(px[1], py[1]);
+    let mut p1 = vec2(px[0], py[0]);
+    let mut p2 = vec2(px[1], py[1]);
 
-    let d1 = calc::point_line_distance(p1, p2, pos);
+    let d1 = point_line_distance(p1, p2, pos);
     *d = d1;
 
     let mut edge_v1 = 1;
@@ -470,7 +468,7 @@ impl MapFile {
     p2.x = px[2];
     p2.y = py[2];
 
-    let d2 = calc::point_line_distance(p1, p2, pos);
+    let d2 = point_line_distance(p1, p2, pos);
 
     if d2 < d1 {
       edge_v1 = 2;
@@ -484,7 +482,7 @@ impl MapFile {
     p2.x = px[0];
     p2.y = py[0];
 
-    let d3 = calc::point_line_distance(p1, p2, pos);
+    let d3 = point_line_distance(p1, p2, pos);
 
     if (d3 < d2) && (d3 < d1) {
       edge_v1 = 3;
@@ -507,7 +505,7 @@ impl MapFile {
       return self.perps[j as usize][2];
     }
 
-    Vector2::new(0.0f32, 0.0f32)
+    vec2(0.0f32, 0.0f32)
   }
 }
 
@@ -554,10 +552,10 @@ pub fn read_vertex<T: Read>(reader: &mut T) -> MapVertex {
   }
 }
 
-pub fn read_vec3<T: Read>(reader: &mut T) -> Vector3<f32> {
+pub fn read_vec3<T: Read>(reader: &mut T) -> Vec3 {
   let x = reader.read_f32::<LittleEndian>().unwrap();
   let y = reader.read_f32::<LittleEndian>().unwrap();
   let z = reader.read_f32::<LittleEndian>().unwrap();
 
-  Vector3::new(x, y, z)
+  vec3(x, y, z)
 }

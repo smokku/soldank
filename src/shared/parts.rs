@@ -15,10 +15,10 @@ pub struct Constraint {
 
 pub struct ParticleSystem {
   pub active: [bool; 560],
-  pub pos: [Vector2<f32>; 560],
-  pub velocity: [Vector2<f32>; 560],
-  pub old_pos: [Vector2<f32>; 560],
-  pub forces: [Vector2<f32>; 560],
+  pub pos: [Vec2; 560],
+  pub velocity: [Vec2; 560],
+  pub old_pos: [Vec2; 560],
+  pub forces: [Vec2; 560],
   pub one_over_mass: [f32; 560],
   pub timestep: f32,
   pub gravity: f32,
@@ -32,10 +32,10 @@ pub struct ParticleSystem {
 impl ParticleSystem {
   pub fn new() -> ParticleSystem {
     let active: [bool; 560] = [false; 560];
-    let pos: [Vector2<f32>; 560] = [Vector2::zeros(); 560];
-    let velocity: [Vector2<f32>; 560] = [Vector2::zeros(); 560];
-    let old_pos: [Vector2<f32>; 560] = [Vector2::zeros(); 560];
-    let forces: [Vector2<f32>; 560] = [Vector2::zeros(); 560];
+    let pos: [Vec2; 560] = [Vec2::zero(); 560];
+    let velocity: [Vec2; 560] = [Vec2::zero(); 560];
+    let old_pos: [Vec2; 560] = [Vec2::zero(); 560];
+    let forces: [Vec2; 560] = [Vec2::zero(); 560];
     let one_over_mass: [f32; 560] = [0.00f32; 560];
     let constraints: [Constraint; 560] = [Constraint {
       active: false,
@@ -92,7 +92,7 @@ impl ParticleSystem {
     let temp_pos = self.pos[i as usize];
     self.forces[i as usize].y += self.gravity;
 
-    let mut s: Vector2<f32> = self.forces[i as usize] * self.one_over_mass[i as usize];
+    let mut s: Vec2 = self.forces[i as usize] * self.one_over_mass[i as usize];
     s *= self.timestep.powi(2);
 
     self.velocity[i as usize] += s;
@@ -106,11 +106,11 @@ impl ParticleSystem {
 
   pub fn verlet(&mut self, i: i32) {
     // Accumulate Forces
-    let temp_pos = Vector2::new(0.0f32, 0.0f32);
+    let temp_pos = vec2(0.0f32, 0.0f32);
     self.forces[i as usize].y += self.gravity;
 
-    let mut s1: Vector2<f32> = self.pos[i as usize] * (1.00 + self.v_damping);
-    let mut s2: Vector2<f32> = self.old_pos[i as usize] * self.v_damping;
+    let mut s1: Vec2 = self.pos[i as usize] * (1.00 + self.v_damping);
+    let mut s2: Vec2 = self.old_pos[i as usize] * self.v_damping;
 
     let d = s1 - s2;
 
@@ -129,8 +129,8 @@ impl ParticleSystem {
       for i in 1..self.constraint_count + 1 {
         if self.constraints[i as usize].active {
           let mut diff = 0.0;
-          let delta = Vector2::new(self.constraints[i as usize].part_b as f32, 0.0f32)
-            - Vector2::new(self.constraints[i as usize].part_b as f32, 0.0f32);
+          let delta = vec2(self.constraints[i as usize].part_b as f32, 0.0f32)
+            - vec2(self.constraints[i as usize].part_b as f32, 0.0f32);
           let delta_length: f32 = (delta.x * delta.x + delta.x * delta.y).sqrt();
           if delta_length != 0.0 {
             diff = (delta_length - self.constraints[i as usize].rest_length) / delta_length;
@@ -150,8 +150,8 @@ impl ParticleSystem {
 
   pub fn satisfy_contstraints_for(&mut self, i: i32) {
     let mut diff = 0.0;
-    let delta = Vector2::new(self.constraints[i as usize].part_b as f32, 0.0f32)
-      - Vector2::new(self.constraints[i as usize].part_b as f32, 0.0f32);
+    let delta = vec2(self.constraints[i as usize].part_b as f32, 0.0f32)
+      - vec2(self.constraints[i as usize].part_b as f32, 0.0f32);
     let delta_length: f32 = (delta.x * delta.x + delta.y * delta.y).sqrt();
     if delta_length != 0.0 {
       diff = (delta_length - self.constraints[i as usize].rest_length) / delta_length;
@@ -166,7 +166,7 @@ impl ParticleSystem {
     }
   }
 
-  pub fn create_part(&mut self, start: Vector2<f32>, vel: Vector2<f32>, mass: f32, num: i32) {
+  pub fn create_part(&mut self, start: Vec2, vel: Vec2, mass: f32, num: i32) {
     self.active[num as usize] = true;
     self.pos[num as usize] = start;
     self.velocity[num as usize] = vel;

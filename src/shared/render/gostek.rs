@@ -114,7 +114,7 @@ impl GostekGraphics {
                 let mut scale = vec2(1.0, 1.0);
                 let p0 = lerp(soldier.skeleton.old_pos[part.point.0], soldier.skeleton.pos[part.point.0], frame_percent);
                 let p1 = lerp(soldier.skeleton.old_pos[part.point.1], soldier.skeleton.pos[part.point.1], frame_percent);
-                let rot = f32::atan2(p1.y - p0.y, p1.x - p0.x);
+                let rot = vec2angle(p1 - p0);
 
                 if soldier.direction != 1 {
                     if part.flip {
@@ -321,14 +321,14 @@ impl GostekGraphics {
                 pos: a,
                 pivot: vec2(0.0, 0.0),
                 scale: vec2(distance(a, b), 1.0),
-                rot: f32::atan2(b.y - a.y, b.x - a.x),
+                rot: vec2angle(b - a),
             }.matrix();
 
             batch.add_quad(None, &[
-                vertex(m * vec2(0.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-                vertex(m * vec2(1.0, -0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-                vertex(m * vec2(1.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
-                vertex(m * vec2(0.0,  0.5 * px), Vec2::zeros(), rgb(255, 255, 0)),
+                vertex(m * vec2(0.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                vertex(m * vec2(1.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                vertex(m * vec2(1.0,  0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                vertex(m * vec2(0.0,  0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
             ]);
         }
 
@@ -337,10 +337,10 @@ impl GostekGraphics {
             let m = Mat2d::translate(p.x, p.y);
 
             batch.add_quad(None, &[
-                vertex(m * vec2(-1.0 * px, -1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
-                vertex(m * vec2( 1.0 * px, -1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
-                vertex(m * vec2( 1.0 * px,  1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
-                vertex(m * vec2(-1.0 * px,  1.0 * px), Vec2::zeros(), rgb(0, 0, 255)),
+                vertex(m * vec2(-1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                vertex(m * vec2( 1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                vertex(m * vec2( 1.0 * px,  1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                vertex(m * vec2(-1.0 * px,  1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
             ]);
         }
     }

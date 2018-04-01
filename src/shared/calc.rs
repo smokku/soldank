@@ -1,4 +1,4 @@
-pub use gfx2d:: {Vec2, vec2};
+pub use gfx2d::math::*;
 
 pub fn distance(p1: Vec2, p2: Vec2) -> f32 {
   ((p1.x - p2.x).powi(2) + (p1.y - p2.y).powi(2)).sqrt()
@@ -15,6 +15,10 @@ pub fn vec2normalize(v_out: Vec2, v: Vec2) -> Vec2 {
   } else {
     vec2(v_out.x / len, v_out.y / len)
   }
+}
+
+pub fn vec2angle(v: Vec2) -> Rad {
+  Vec2::angle(Vec2::unit_x(), v)
 }
 
 pub fn point_line_distance(p1: Vec2, p2: Vec2, p3: Vec2) -> f32 {
