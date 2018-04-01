@@ -8,18 +8,34 @@ pub struct Rect<T> {
 }
 
 impl<T> Rect<T> {
-    pub fn left(&self)   -> i32 { self.x }
-    pub fn right(&self)  -> i32 { self.x + self.w }
-    pub fn top(&self)    -> i32 { self.y }
-    pub fn bottom(&self) -> i32 { self.y + self.h }
+    pub fn left(&self) -> i32 {
+        self.x
+    }
+
+    pub fn right(&self) -> i32 {
+        self.x + self.w
+    }
+
+    pub fn top(&self) -> i32 {
+        self.y
+    }
+
+    pub fn bottom(&self) -> i32 {
+        self.y + self.h
+    }
 
     pub fn contains(&self, rc: &Rect<T>) -> bool {
-        rc.left() >= self.left() && rc.top() >= self.top() &&
-        rc.right() <= self.right() && rc.bottom() <= self.bottom()
+        rc.left() >= self.left() && rc.top() >= self.top() && rc.right() <= self.right()
+            && rc.bottom() <= self.bottom()
     }
 }
 
 type BPRect = Rect<()>;
+
+fn bp_rect(x: i32, y: i32, w: i32, h: i32) -> BPRect {
+    let data = ();
+    BPRect { x, y, w, h, data }
+}
 
 struct BinPack {
     used: Vec<BPRect>,
@@ -31,13 +47,13 @@ const MAX_SCORE: (i32, i32) = (::std::i32::MAX, ::std::i32::MAX);
 pub fn pack_rects<T>(width: i32, height: i32, rects: &mut [Rect<T>]) -> usize {
     let mut bp = BinPack {
         used: vec![],
-        free: vec![BPRect{x: 0, y: 0, w: width, h: height, data: ()}],
+        free: vec![bp_rect(0, 0, width, height)],
     };
 
     for i in 0..rects.len() {
-        let mut best_index = rects.len();
-        let mut best_rect = BPRect{x: 0, y: 0, w: 0, h: 0, data: ()};
         let mut best_score = MAX_SCORE;
+        let mut best_index = rects.len();
+        let mut best_rect = bp_rect(0, 0, 0, 0);
 
         for (j, rect) in rects.iter().enumerate().skip(i) {
             let (rc, score) = score_rect(&bp, rect.w, rect.h);
@@ -67,8 +83,8 @@ pub fn pack_rects<T>(width: i32, height: i32, rects: &mut [Rect<T>]) -> usize {
 }
 
 fn score_rect(bp: &BinPack, w: i32, h: i32) -> (BPRect, (i32, i32)) {
-    let mut best_rect = BPRect{x: 0, y: 0, w: 0, h: 0, data: ()};
     let mut best_score = MAX_SCORE;
+    let mut best_rect = bp_rect(0, 0, 0, 0);
 
     for free in &bp.free {
         if free.w >= w && free.h >= h {
@@ -84,7 +100,14 @@ fn score_rect(bp: &BinPack, w: i32, h: i32) -> (BPRect, (i32, i32)) {
         }
     }
 
-    (best_rect, if best_rect.h == 0 { MAX_SCORE } else { best_score })
+    (
+        best_rect,
+        if best_rect.h == 0 {
+            MAX_SCORE
+        } else {
+            best_score
+        },
+    )
 }
 
 fn place_rect(bp: &mut BinPack, rect: &BPRect) {
@@ -95,8 +118,7 @@ fn place_rect(bp: &mut BinPack, rect: &BPRect) {
 
         if split_free_rect(bp, &free_rect, rect) {
             bp.free.remove(i);
-        }
-        else {
+        } else {
             i += 1;
         }
     }
@@ -106,21 +128,22 @@ fn place_rect(bp: &mut BinPack, rect: &BPRect) {
 }
 
 fn split_free_rect(bp: &mut BinPack, free_rect: &BPRect, used_rect: &BPRect) -> bool {
-    if used_rect.left() >= free_rect.right() || used_rect.right() <= free_rect.left() ||
-        used_rect.top() >= free_rect.bottom() || used_rect.bottom() <= free_rect.top() {
+    if used_rect.left() >= free_rect.right() || used_rect.right() <= free_rect.left()
+        || used_rect.top() >= free_rect.bottom() || used_rect.bottom() <= free_rect.top()
+    {
         return false;
     }
 
     if used_rect.left() < free_rect.right() && used_rect.right() > free_rect.left() {
         if used_rect.top() > free_rect.top() && used_rect.top() < free_rect.bottom() {
-            bp.free.push(BPRect{
+            bp.free.push(BPRect {
                 h: used_rect.y - free_rect.y,
                 ..*free_rect
             });
         }
 
         if used_rect.bottom() < free_rect.bottom() {
-            bp.free.push(BPRect{
+            bp.free.push(BPRect {
                 y: used_rect.bottom(),
                 h: free_rect.bottom() - used_rect.bottom(),
                 ..*free_rect
@@ -130,14 +153,14 @@ fn split_free_rect(bp: &mut BinPack, free_rect: &BPRect, used_rect: &BPRect) -> 
 
     if used_rect.top() < free_rect.bottom() && used_rect.bottom() > free_rect.top() {
         if used_rect.left() > free_rect.left() && used_rect.left() < free_rect.right() {
-            bp.free.push(BPRect{
+            bp.free.push(BPRect {
                 w: used_rect.x - free_rect.x,
                 ..*free_rect
             });
         }
 
         if used_rect.right() < free_rect.right() {
-            bp.free.push(BPRect{
+            bp.free.push(BPRect {
                 x: used_rect.right(),
                 w: free_rect.right() - used_rect.right(),
                 ..*free_rect
@@ -161,8 +184,7 @@ fn prune_free_list(bp: &mut BinPack) {
                 break;
             } else if bp.free[i].contains(&bp.free[j]) {
                 bp.free.remove(j);
-            }
-            else {
+            } else {
                 j += 1;
             }
         }

@@ -1,15 +1,22 @@
 use super::*;
 use gfx::Factory;
 use image;
-use std::path::Path;
 use std::convert::AsRef;
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct Texture(TextureHandle, ShaderResourceView, Sampler);
 
 impl Texture {
-    pub fn load<P>(g: &mut Gfx2dContext, fname: P, filter: FilterMethod, wrap: WrapMode, color_key: Option<Color>) -> Texture
-        where P: AsRef<Path>
+    pub fn load<P>(
+        g: &mut Gfx2dContext,
+        fname: P,
+        filter: FilterMethod,
+        wrap: WrapMode,
+        color_key: Option<Color>,
+    ) -> Texture
+    where
+        P: AsRef<Path>,
     {
         // TODO: if wrap is repeat make it power of 2 so it works on webgl 1.0
         // TODO: handle image loading errors?
@@ -26,9 +33,13 @@ impl Texture {
         create_texture(&mut g.fct, &mut g.enc, dimensions, &img, filter, wrap)
     }
 
-    pub fn new(g: &mut Gfx2dContext, (w, h): (u16, u16),
-        data: &[u8], filter: FilterMethod, wrap: WrapMode) -> Texture
-    {
+    pub fn new(
+        g: &mut Gfx2dContext,
+        (w, h): (u16, u16),
+        data: &[u8],
+        filter: FilterMethod,
+        wrap: WrapMode,
+    ) -> Texture {
         create_texture(&mut g.fct, &mut g.enc, (w, h), data, filter, wrap)
     }
 
@@ -46,21 +57,27 @@ impl Texture {
     }
 }
 
-pub fn create_texture(fct: &mut GlFactory, enc: &mut GlEncoder, (w, h): (u16, u16),
-    data: &[u8], filter: FilterMethod, wrap: WrapMode) -> Texture
-{
+pub fn create_texture(
+    fct: &mut GlFactory,
+    enc: &mut GlEncoder,
+    (w, h): (u16, u16),
+    data: &[u8],
+    filter: FilterMethod,
+    wrap: WrapMode,
+) -> Texture {
     let kind = D2(w, h as u16, AaMode::Single);
-    let (tex, view) = fct.create_texture_immutable_u8::<Rgba8>(kind, Mipmap::Allocated, &[data]).unwrap();
+    let texture = fct.create_texture_immutable_u8::<Rgba8>(kind, Mipmap::Allocated, &[data]);
+    let (texture, view) = texture.unwrap();
     let sampler = fct.create_sampler(SamplerInfo::new(filter, wrap));
     enc.generate_mipmap(&view);
-    Texture(tex, view, sampler)
+    Texture(texture, view, sampler)
 }
 
 pub fn load_image_rgba<P: AsRef<Path>>(filename: P) -> image::RgbaImage {
     let img = image::open(filename).unwrap();
     match img {
         image::DynamicImage::ImageRgba8(img) => img,
-        _ => img.to_rgba()
+        _ => img.to_rgba(),
     }
 }
 

@@ -23,7 +23,11 @@ pub struct SpriteInfo {
 
 impl SpriteInfo {
     pub fn new(filename: PathBuf, pixel_ratio: Vec2, color_key: Option<Color>) -> SpriteInfo {
-        SpriteInfo{filename, pixel_ratio, color_key}
+        SpriteInfo {
+            filename,
+            pixel_ratio,
+            color_key,
+        }
     }
 }
 
@@ -34,7 +38,13 @@ pub struct Spritesheet {
 }
 
 impl Sprite {
-    pub fn new(width: f32, height: f32, tx: (f32, f32), ty: (f32, f32), texture: Option<&Texture>) -> Sprite {
+    pub fn new(
+        width: f32,
+        height: f32,
+        tx: (f32, f32),
+        ty: (f32, f32),
+        texture: Option<&Texture>,
+    ) -> Sprite {
         Sprite {
             width,
             height,
@@ -59,10 +69,18 @@ impl Sprite {
 
 impl Spritesheet {
     pub fn empty() -> Spritesheet {
-        Spritesheet{textures: vec![], sprites: vec![]}
+        Spritesheet {
+            textures: vec![],
+            sprites: vec![],
+        }
     }
 
-    pub fn new(context: &mut Gfx2dContext, padding: i32, filter: FilterMethod, info: &[SpriteInfo]) -> Spritesheet {
+    pub fn new(
+        context: &mut Gfx2dContext,
+        padding: i32,
+        filter: FilterMethod,
+        info: &[SpriteInfo],
+    ) -> Spritesheet {
         if info.is_empty() {
             return Spritesheet::empty();
         }
@@ -97,7 +115,8 @@ impl Spritesheet {
             let mut h = i32::min(max_size, img.height() as i32);
 
             if w != img.width() as i32 || h != img.height() as i32 {
-                img = image::imageops::resize(&img, w as u32, h as u32, image::FilterType::Lanczos3);
+                let filter = image::FilterType::Lanczos3;
+                img = image::imageops::resize(&img, w as u32, h as u32, filter);
             }
 
             rects.push(binpack::Rect {
@@ -114,7 +133,10 @@ impl Spritesheet {
         let mut sheets: Vec<(i32, i32)> = Vec::new();
         Self::pack_recursive(&mut rects[..], &mut sheets, padding, max_size);
 
-        let mut sheets: Vec<Image> = sheets.iter().map(|s| Image::new(s.0 as u32, s.0 as u32)).collect();
+        let mut sheets: Vec<Image> = sheets
+            .iter()
+            .map(|s| Image::new(s.0 as u32, s.0 as u32))
+            .collect();
 
         for rc in &rects {
             let image_index = rc.data.0;
@@ -122,9 +144,18 @@ impl Spritesheet {
             sheets[sheet_index].copy_from(&images[image_index], rc.x as u32, rc.y as u32);
         }
 
-        let textures: Vec<Texture> = sheets.drain(..).map(|ref img| {
-            Texture::new(context, (img.width() as u16, img.height() as u16), img, filter, WrapMode::Clamp)
-        }).collect();
+        let textures: Vec<Texture> = sheets
+            .drain(..)
+            .map(|ref img| {
+                Texture::new(
+                    context,
+                    (img.width() as u16, img.height() as u16),
+                    img,
+                    filter,
+                    WrapMode::Clamp,
+                )
+            })
+            .collect();
 
         for rc in &rects {
             let sprite = &mut sprites[rc.data.0];
@@ -139,7 +170,7 @@ impl Spritesheet {
             sprite.texcoords_y = (y0 / f32::from(h), y1 / f32::from(h));
         }
 
-        Spritesheet{textures, sprites}
+        Spritesheet { textures, sprites }
     }
 
     fn pack_recursive(rects: &mut [Rect], sheets: &mut Vec<(i32, i32)>, pad: i32, max_size: i32) {
@@ -149,11 +180,19 @@ impl Spritesheet {
             rects[0].data.1 = sheets.len();
             sheets.push((rects[0].w - pad, rects[0].h - pad));
         } else if rects.len() > 1 {
-            let area = rects.iter().fold(0u64, |acc, rc| acc + (rc.w*rc.h).abs() as u64);
-            let mut w = u32::next_power_of_two(f64::sqrt(area as f64).ceil().round() as u32) as i32;
+            let area = {
+                let mut area: u64 = 0;
+                let rects = rects.iter();
+                rects.for_each(|rc| area += (rc.w * rc.h).abs() as u64);
+                area
+            };
+
+            let mut w = u32::next_power_of_two(f64::sqrt(area as f64).ceil() as u32) as i32;
             let mut h = w;
 
-            while w <= max_size && h <= max_size && pack_rects(w + pad, h + pad, rects) < rects.len() {
+            while w <= max_size && h <= max_size
+                && pack_rects(w + pad, h + pad, rects) < rects.len()
+            {
                 if w <= h {
                     w *= 2;
                 } else {
@@ -173,7 +212,7 @@ impl Spritesheet {
                 let mut a = 0;
 
                 while a < area && i < rects.len() - 1 {
-                    a += (rects[i].w*rects[i].h).abs() as u64;
+                    a += (rects[i].w * rects[i].h).abs() as u64;
                     i += 1;
                 }
 

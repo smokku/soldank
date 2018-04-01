@@ -12,34 +12,36 @@ extern crate nalgebra;
 
 include!("gfx_types.rs");
 
-mod context;
-mod texture;
 mod batch;
-mod transform;
-mod spritesheet;
-mod matrix;
 mod color;
+mod context;
+mod matrix;
+mod spritesheet;
+mod texture;
+mod transform;
 
 pub mod binpack;
-pub use context::Gfx2dContext;
-pub use context::vertex;
-pub use context::Vertex;
-pub use texture::Texture;
 pub use batch::DrawBatch;
 pub use batch::DrawSlice;
-pub use spritesheet::Sprite;
-pub use spritesheet::SpriteInfo;
-pub use spritesheet::Spritesheet;
-pub use matrix::Mat2d;
-pub use transform::Transform;
 pub use color::Color;
 pub use color::rgb;
 pub use color::rgba;
+pub use context::Gfx2dContext;
+pub use context::Vertex;
+pub use context::vertex;
 pub use gfx::texture::FilterMethod;
 pub use gfx::texture::WrapMode;
+pub use matrix::Mat2d;
+pub use spritesheet::Sprite;
+pub use spritesheet::SpriteInfo;
+pub use spritesheet::Spritesheet;
+pub use texture::Texture;
+pub use transform::Transform;
 
 pub type Vec2 = nalgebra::Vector2<f32>;
-pub fn vec2(x: f32, y: f32) -> Vec2 {Vec2::new(x,y)}
+pub fn vec2(x: f32, y: f32) -> Vec2 {
+    Vec2::new(x, y)
+}
 
 pub mod gfx2d_extra {
     pub use super::texture::load_image_rgba;
