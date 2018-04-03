@@ -18,6 +18,7 @@ use shared::mapfile::MapFile;
 use shared::state::*;
 use shared::soldier::*;
 use shared::render::*;
+use shared::weapons::*;
 use clap::{App, Arg};
 
 mod shared;
@@ -144,6 +145,11 @@ fn main() {
     let mut zoomin_pressed = false;
     let mut zoomout_pressed = false;
 
+    let weapons: Vec<Weapon> = WeaponKind::values()
+        .iter()
+        .map(|k| Weapon::new(*k, false))
+        .collect();
+
     while running {
         context.evt.poll_events(|e| if let Event::WindowEvent{event, ..} = e {
             match event {
@@ -158,6 +164,13 @@ fn main() {
                         Some(VirtualKeyCode::Subtract) => zoomout_pressed = match input.state {
                             ElementState::Pressed => true,
                             ElementState::Released => false,
+                        },
+                        Some(VirtualKeyCode::Tab) => {
+                            if input.state == ElementState::Pressed {
+                                let index = soldier.primary_weapon().kind.index();
+                                let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
+                                soldier.weapons[soldier.active_weapon] = weapons[index];
+                            }
                         },
                         _ => soldier.update_keys(&input),
                     }

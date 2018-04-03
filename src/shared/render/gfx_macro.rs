@@ -6,20 +6,20 @@ macro_rules! sprites {
     ) => {
         pub trait SpriteData where Self: ::std::marker::Sized {
             fn id(&self) -> usize;
-            fn group(&self) -> SpriteGroup;
+            fn group(&self) -> Group;
             fn filename(&self) -> &'static str;
             fn values() -> &'static [Self];
         }
 
         #[derive(Debug, Copy, Clone)]
-        pub enum SpriteGroup {
+        pub enum Group {
             $($enm,)+
         }
 
-        impl SpriteGroup {
+        impl Group {
             pub fn id(&self) -> usize { *self as usize }
-            pub fn values() -> &'static [SpriteGroup] {
-                static VALUES: &[SpriteGroup] = &[$(SpriteGroup::$enm,)+];
+            pub fn values() -> &'static [Group] {
+                static VALUES: &[Group] = &[$(Group::$enm,)+];
                 VALUES
             }
         }
@@ -32,7 +32,7 @@ macro_rules! sprites {
 
             impl SpriteData for $enm {
                 fn id(&self) -> usize { *self as usize }
-                fn group(&self) -> SpriteGroup { SpriteGroup::$enm }
+                fn group(&self) -> Group { Group::$enm }
                 fn filename(&self) -> &'static str {
                     match *self { $($enm::$id => $file,)+ }
                 }

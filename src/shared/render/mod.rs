@@ -3,12 +3,11 @@ use super::*;
 pub mod map;
 pub mod game;
 pub mod gostek;
-pub mod sprite_data;
+pub mod gfx;
 
 pub use self::game::GameGraphics;
 
 use gfx2d::*;
-use self::sprite_data::*;
 use self::gostek::*;
 use self::map::*;
 

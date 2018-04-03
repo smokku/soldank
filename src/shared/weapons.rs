@@ -1,4 +1,4 @@
-use shared::render::sprite_data::Weapon as WeaponSprite;
+use shared::render::gfx;
 
 const SECOND: u16 = 60;
 const BULLET_TIMEOUT: u16 = SECOND * 7;
@@ -145,10 +145,10 @@ pub struct Weapon {
     pub fire_mode: u8,
     pub timeout: u16,
     pub bullet_style: u8,
-    pub sprite: Option<WeaponSprite>,
-    pub clip_sprite: Option<WeaponSprite>,
-    pub fire_sprite: Option<WeaponSprite>,
-    pub bullet_sprite: Option<WeaponSprite>,
+    pub sprite: Option<gfx::Weapon>,
+    pub clip_sprite: Option<gfx::Weapon>,
+    pub fire_sprite: Option<gfx::Weapon>,
+    pub bullet_sprite: Option<gfx::Weapon>,
 }
 
 impl Weapon {
@@ -164,10 +164,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = true;
                 weapon.fire_mode = 2;
-                weapon.sprite = Some(WeaponSprite::Deagles);
-                weapon.clip_sprite = Some(WeaponSprite::DeaglesClip);
-                weapon.bullet_sprite = Some(WeaponSprite::DeaglesBullet);
-                weapon.fire_sprite = Some(WeaponSprite::DeaglesFire);
+                weapon.sprite = Some(gfx::Weapon::Deagles);
+                weapon.clip_sprite = Some(gfx::Weapon::DeaglesClip);
+                weapon.bullet_sprite = Some(gfx::Weapon::DeaglesBullet);
+                weapon.fire_sprite = Some(gfx::Weapon::DeaglesFire);
 
                 if realistic {
                     weapon.hit_multiply = 1.66;
@@ -211,10 +211,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = true;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Mp5);
-                weapon.clip_sprite = Some(WeaponSprite::Mp5Clip);
-                weapon.bullet_sprite = Some(WeaponSprite::Mp5Bullet);
-                weapon.fire_sprite = Some(WeaponSprite::Mp5Fire);
+                weapon.sprite = Some(gfx::Weapon::Mp5);
+                weapon.clip_sprite = Some(gfx::Weapon::Mp5Clip);
+                weapon.bullet_sprite = Some(gfx::Weapon::Mp5Bullet);
+                weapon.fire_sprite = Some(gfx::Weapon::Mp5Fire);
 
                 if realistic {
                     weapon.hit_multiply = 0.94;
@@ -258,10 +258,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = true;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Ak74);
-                weapon.clip_sprite = Some(WeaponSprite::Ak74Clip);
-                weapon.bullet_sprite = Some(WeaponSprite::Ak74Bullet);
-                weapon.fire_sprite = Some(WeaponSprite::Ak74Fire);
+                weapon.sprite = Some(gfx::Weapon::Ak74);
+                weapon.clip_sprite = Some(gfx::Weapon::Ak74Clip);
+                weapon.bullet_sprite = Some(gfx::Weapon::Ak74Bullet);
+                weapon.fire_sprite = Some(gfx::Weapon::Ak74Fire);
 
                 if realistic {
                     weapon.hit_multiply = 1.08;
@@ -305,10 +305,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = true;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Steyr);
-                weapon.clip_sprite = Some(WeaponSprite::SteyrClip);
-                weapon.bullet_sprite = Some(WeaponSprite::SteyrBullet);
-                weapon.fire_sprite = Some(WeaponSprite::SteyrFire);
+                weapon.sprite = Some(gfx::Weapon::Steyr);
+                weapon.clip_sprite = Some(gfx::Weapon::SteyrClip);
+                weapon.bullet_sprite = Some(gfx::Weapon::SteyrBullet);
+                weapon.fire_sprite = Some(gfx::Weapon::SteyrFire);
 
                 if realistic {
                     weapon.hit_multiply = 0.68;
@@ -352,10 +352,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = false;
                 weapon.fire_mode = 2;
-                weapon.sprite = Some(WeaponSprite::Spas);
+                weapon.sprite = Some(gfx::Weapon::Spas);
                 weapon.clip_sprite = None;
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::SpasFire);
+                weapon.fire_sprite = Some(gfx::Weapon::SpasFire);
 
                 if realistic {
                     weapon.hit_multiply = 1.2;
@@ -399,10 +399,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = false;
                 weapon.fire_mode = 2;
-                weapon.sprite = Some(WeaponSprite::Ruger);
+                weapon.sprite = Some(gfx::Weapon::Ruger);
                 weapon.clip_sprite = None;
-                weapon.bullet_sprite = Some(WeaponSprite::RugerBullet);
-                weapon.fire_sprite = Some(WeaponSprite::RugerFire);
+                weapon.bullet_sprite = Some(gfx::Weapon::RugerBullet);
+                weapon.fire_sprite = Some(gfx::Weapon::RugerFire);
 
                 if realistic {
                     weapon.hit_multiply = 2.22;
@@ -446,10 +446,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = true;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::M79);
-                weapon.clip_sprite = Some(WeaponSprite::M79Clip);
+                weapon.sprite = Some(gfx::Weapon::M79);
+                weapon.clip_sprite = Some(gfx::Weapon::M79Clip);
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::M79Fire);
+                weapon.fire_sprite = Some(gfx::Weapon::M79Fire);
 
                 if realistic {
                     weapon.hit_multiply = 1600.0;
@@ -493,10 +493,10 @@ impl Weapon {
                 weapon.ini_name = "Barret M82A1";
                 weapon.clip_reload = true;
                 weapon.fire_mode = 2;
-                weapon.sprite = Some(WeaponSprite::Barrett);
-                weapon.clip_sprite = Some(WeaponSprite::BarrettClip);
-                weapon.bullet_sprite = Some(WeaponSprite::BarrettBullet);
-                weapon.fire_sprite = Some(WeaponSprite::BarrettFire);
+                weapon.sprite = Some(gfx::Weapon::Barrett);
+                weapon.clip_sprite = Some(gfx::Weapon::BarrettClip);
+                weapon.bullet_sprite = Some(gfx::Weapon::BarrettBullet);
+                weapon.fire_sprite = Some(gfx::Weapon::BarrettFire);
 
                 if realistic {
                     weapon.hit_multiply = 4.95;
@@ -540,10 +540,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = true;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Minimi);
-                weapon.clip_sprite = Some(WeaponSprite::MinimiClip);
-                weapon.bullet_sprite = Some(WeaponSprite::MinimiBullet);
-                weapon.fire_sprite = Some(WeaponSprite::MinimiFire);
+                weapon.sprite = Some(gfx::Weapon::Minimi);
+                weapon.clip_sprite = Some(gfx::Weapon::MinimiClip);
+                weapon.bullet_sprite = Some(gfx::Weapon::MinimiBullet);
+                weapon.fire_sprite = Some(gfx::Weapon::MinimiFire);
 
                 if realistic {
                     weapon.hit_multiply = 0.81;
@@ -587,10 +587,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Minigun);
+                weapon.sprite = Some(gfx::Weapon::Minigun);
                 weapon.clip_sprite = None;
-                weapon.bullet_sprite = Some(WeaponSprite::MinigunBullet);
-                weapon.fire_sprite = Some(WeaponSprite::MinigunFire);
+                weapon.bullet_sprite = Some(gfx::Weapon::MinigunBullet);
+                weapon.fire_sprite = Some(gfx::Weapon::MinigunFire);
 
                 if realistic {
                     weapon.hit_multiply = 0.43;
@@ -634,10 +634,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = true;
                 weapon.fire_mode = 2;
-                weapon.sprite = Some(WeaponSprite::Socom);
-                weapon.clip_sprite = Some(WeaponSprite::SocomClip);
-                weapon.bullet_sprite = Some(WeaponSprite::ColtBullet);
-                weapon.fire_sprite = Some(WeaponSprite::SocomFire);
+                weapon.sprite = Some(gfx::Weapon::Socom);
+                weapon.clip_sprite = Some(gfx::Weapon::SocomClip);
+                weapon.bullet_sprite = Some(gfx::Weapon::ColtBullet);
+                weapon.fire_sprite = Some(gfx::Weapon::SocomFire);
 
                 if realistic {
                     weapon.hit_multiply = 1.30;
@@ -681,7 +681,7 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Knife);
+                weapon.sprite = Some(gfx::Weapon::Knife);
                 weapon.clip_sprite = None;
                 weapon.bullet_sprite = None;
                 weapon.fire_sprite = None;
@@ -728,10 +728,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Chainsaw);
+                weapon.sprite = Some(gfx::Weapon::Chainsaw);
                 weapon.clip_sprite = None;
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::ChainsawFire);
+                weapon.fire_sprite = Some(gfx::Weapon::ChainsawFire);
 
                 if realistic {
                     weapon.hit_multiply = 21.0;
@@ -775,10 +775,10 @@ impl Weapon {
                 weapon.ini_name = "M72 LAW";
                 weapon.clip_reload = true;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Law);
+                weapon.sprite = Some(gfx::Weapon::Law);
                 weapon.clip_sprite = None;
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::LawFire);
+                weapon.fire_sprite = Some(gfx::Weapon::LawFire);
 
                 if realistic {
                     weapon.hit_multiply = 1500.0;
@@ -822,10 +822,10 @@ impl Weapon {
                 weapon.ini_name = "Flamed Arrows";
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Bow);
-                weapon.clip_sprite = Some(WeaponSprite::BowS);
+                weapon.sprite = Some(gfx::Weapon::Bow);
+                weapon.clip_sprite = Some(gfx::Weapon::BowS);
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::BowFire);
+                weapon.fire_sprite = Some(gfx::Weapon::BowFire);
 
                 if realistic {
                     weapon.hit_multiply = 8.0;
@@ -869,10 +869,10 @@ impl Weapon {
                 weapon.ini_name = "Rambo Bow";
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Bow);
-                weapon.clip_sprite = Some(WeaponSprite::BowS);
+                weapon.sprite = Some(gfx::Weapon::Bow);
+                weapon.clip_sprite = Some(gfx::Weapon::BowS);
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::BowFire);
+                weapon.fire_sprite = Some(gfx::Weapon::BowFire);
 
                 if realistic {
                     weapon.hit_multiply = 12.0;
@@ -916,10 +916,10 @@ impl Weapon {
                 weapon.ini_name = weapon.name;
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Flamer);
-                weapon.clip_sprite = Some(WeaponSprite::Flamer);
+                weapon.sprite = Some(gfx::Weapon::Flamer);
+                weapon.clip_sprite = Some(gfx::Weapon::Flamer);
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::FlamerFire);
+                weapon.fire_sprite = Some(gfx::Weapon::FlamerFire);
 
                 if realistic {
                     weapon.hit_multiply = 12.0;
@@ -963,7 +963,7 @@ impl Weapon {
                 weapon.ini_name = "Stationary Gun";
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Minigun);
+                weapon.sprite = Some(gfx::Weapon::Minigun);
                 weapon.clip_sprite = None;
                 weapon.bullet_sprite = None;
                 weapon.fire_sprite = None;
@@ -1057,10 +1057,10 @@ impl Weapon {
                 weapon.ini_name = "Grenade";
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::FragGrenade);
-                weapon.clip_sprite = Some(WeaponSprite::FragGrenade);
+                weapon.sprite = Some(gfx::Weapon::FragGrenade);
+                weapon.clip_sprite = Some(gfx::Weapon::FragGrenade);
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::Ak74Fire);
+                weapon.fire_sprite = Some(gfx::Weapon::Ak74Fire);
 
                 if realistic {
                     weapon.hit_multiply = 1500.0;
@@ -1104,10 +1104,10 @@ impl Weapon {
                 weapon.ini_name = "";
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::FragGrenade);
-                weapon.clip_sprite = Some(WeaponSprite::FragGrenade);
+                weapon.sprite = Some(gfx::Weapon::FragGrenade);
+                weapon.clip_sprite = Some(gfx::Weapon::FragGrenade);
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::Ak74Fire);
+                weapon.fire_sprite = Some(gfx::Weapon::Ak74Fire);
 
                 if realistic {
                     weapon.hit_multiply = 1500.0;
@@ -1151,10 +1151,10 @@ impl Weapon {
                 weapon.ini_name = "";
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::FragGrenade);
-                weapon.clip_sprite = Some(WeaponSprite::FragGrenade);
+                weapon.sprite = Some(gfx::Weapon::FragGrenade);
+                weapon.clip_sprite = Some(gfx::Weapon::FragGrenade);
                 weapon.bullet_sprite = None;
-                weapon.fire_sprite = Some(WeaponSprite::Ak74Fire);
+                weapon.fire_sprite = Some(gfx::Weapon::Ak74Fire);
 
                 if realistic {
                     weapon.hit_multiply = 1500.0;
@@ -1198,7 +1198,7 @@ impl Weapon {
                 weapon.ini_name = "";
                 weapon.clip_reload = false;
                 weapon.fire_mode = 0;
-                weapon.sprite = Some(WeaponSprite::Knife);
+                weapon.sprite = Some(gfx::Weapon::Knife);
                 weapon.clip_sprite = None;
                 weapon.bullet_sprite = None;
                 weapon.fire_sprite = None;

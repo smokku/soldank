@@ -1,4 +1,5 @@
 use super::*;
+use gfx::SpriteData;
 use shared::state::MainState;
 use shared::soldier::Soldier;
 use shared::mapfile::MapFile;
@@ -91,13 +92,32 @@ impl GameGraphics {
             v.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
         };
 
-        for group in SpriteGroup::values() {
+        for group in gfx::Group::values() {
             match *group {
-                SpriteGroup::Gostek    => Gostek   ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
-                SpriteGroup::Weapon    => Weapon   ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
-                SpriteGroup::Spark     => Spark    ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
-                SpriteGroup::Object    => Object   ::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut main, f)),
-                SpriteGroup::Interface => Interface::values().iter().map(|v| v.filename()).for_each(|f| add_to(&mut intf, f)),
+                gfx::Group::Gostek => gfx::Gostek::values()
+                    .iter()
+                    .map(|v| v.filename())
+                    .for_each(|f| add_to(&mut main, f)),
+
+                gfx::Group::Weapon => gfx::Weapon::values()
+                    .iter()
+                    .map(|v| v.filename())
+                    .for_each(|f| add_to(&mut main, f)),
+
+                gfx::Group::Spark => gfx::Spark::values()
+                    .iter()
+                    .map(|v| v.filename())
+                    .for_each(|f| add_to(&mut main, f)),
+
+                gfx::Group::Object => gfx::Object::values()
+                    .iter()
+                    .map(|v| v.filename())
+                    .for_each(|f| add_to(&mut main, f)),
+
+                gfx::Group::Interface => gfx::Interface::values()
+                    .iter()
+                    .map(|v| v.filename())
+                    .for_each(|f| add_to(&mut intf, f)),
             }
         }
 
@@ -127,28 +147,28 @@ impl GameGraphics {
         let intf = Spritesheet::new(context, 8, FilterMethod::Trilinear, &intf);
 
         self.sprites.clear();
-        self.sprites.resize(SpriteGroup::values().len(), Vec::new());
+        self.sprites.resize(gfx::Group::values().len(), Vec::new());
 
         let mut imain = 0;
         let mut iintf = 0;
 
-        for group in SpriteGroup::values() {
+        for group in gfx::Group::values() {
             let index = group.id();
 
             match *group {
-                SpriteGroup::Gostek => for _ in Gostek::values() {
+                gfx::Group::Gostek => for _ in gfx::Gostek::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
-                SpriteGroup::Weapon => for _ in Weapon::values() {
+                gfx::Group::Weapon => for _ in gfx::Weapon::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
-                SpriteGroup::Spark => for _ in Spark::values() {
+                gfx::Group::Spark => for _ in gfx::Spark::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
-                SpriteGroup::Object => for _ in Object::values() {
+                gfx::Group::Object => for _ in gfx::Object::values() {
                     self.sprites[index].push(main.sprites[imain].clone()); imain += 1;
                 }
-                SpriteGroup::Interface => for _ in Interface::values() {
+                gfx::Group::Interface => for _ in gfx::Interface::values() {
                     self.sprites[index].push(intf.sprites[iintf].clone()); iintf += 1;
                 }
             }

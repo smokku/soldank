@@ -1,4 +1,5 @@
 use super::*;
+use gfx::{GostekPart, SpriteData};
 use shared::soldier::Soldier;
 use ini::Ini;
 use bit_array::BitArray;
@@ -10,8 +11,8 @@ type BitSet = BitArray<u64, U256>;
 #[derive(Debug, Copy, Clone)]
 pub enum GostekSprite {
     None,
-    Gostek(Gostek),
-    Weapon(Weapon),
+    Gostek(gfx::Gostek),
+    Weapon(gfx::Weapon),
 }
 
 impl GostekSprite {
@@ -103,8 +104,11 @@ impl GostekGraphics {
     }
 
     pub fn render(&self, soldier: &Soldier, batch: &mut DrawBatch, sprites: &[Vec<Sprite>], frame_percent: f32) {
+        let sk = &soldier.skeleton;
         let (colors, alpha) = Self::colors_and_alpha(soldier);
         let visible = self.parts_visibility(soldier, alpha[GostekAlpha::Blood as usize] > 0);
+
+        // TODO: team2 offset, dredlock rotation matrix
 
         for (i, part) in self.data.iter().enumerate() {
             if visible[i] && !part.sprite.is_none() {
@@ -112,8 +116,8 @@ impl GostekGraphics {
                 let mut cx = part.center.0;
                 let mut cy = part.center.1;
                 let mut scale = vec2(1.0, 1.0);
-                let p0 = lerp(soldier.skeleton.old_pos[part.point.0], soldier.skeleton.pos[part.point.0], frame_percent);
-                let p1 = lerp(soldier.skeleton.old_pos[part.point.1], soldier.skeleton.pos[part.point.1], frame_percent);
+                let p0 = lerp(sk.old_pos[part.point.0], sk.pos[part.point.0], frame_percent);
+                let p1 = lerp(sk.old_pos[part.point.1], sk.pos[part.point.1], frame_percent);
                 let rot = vec2angle(p1 - p0);
 
                 if soldier.direction != 1 {
@@ -126,7 +130,7 @@ impl GostekGraphics {
                 }
 
                 if part.flexibility > 0.0 {
-                    scale.x = f32::min(1.5, f32::sqrt((p1.x - p0.x).powi(2) + (p1.y - p0.y).powi(2)) / part.flexibility);
+                    scale.x = f32::min(1.5, (p1 - p0).magnitude() / part.flexibility);
                 }
 
                 let color = {
@@ -134,24 +138,26 @@ impl GostekGraphics {
                     rgba(color.r(), color.g(), color.b(), alpha[part.alpha as usize])
                 };
 
-                match part.sprite {
-                    GostekSprite::Gostek(gostek_sprite) => {
-                        let gostek_sprite = gostek_sprite + sprite_index;
-                        let sprite = &sprites[gostek_sprite.group().id()][gostek_sprite.id()];
-                        let (w, h) = (sprite.width, sprite.height);
+                let sprite = match part.sprite {
+                    GostekSprite::Gostek(part_sprite) => {
+                        let group = gfx::Group::Gostek;
+                        let sprite = part_sprite + sprite_index;
+                        &sprites[group.id()][sprite.id()]
+                    }
+                    GostekSprite::Weapon(part_sprite) => {
+                        let group = gfx::Group::Weapon;
+                        let sprite = part_sprite + sprite_index;
+                        &sprites[group.id()][sprite.id()]
+                    }
+                    GostekSprite::None => unreachable!()
+                };
 
-                        batch.add_sprite(sprite, color, Transform::WithPivot {
-                            pivot: vec2(cx * w, cy * h),
-                            pos: vec2(p0.x, p0.y + 1.0),
-                            scale,
-                            rot,
-                        });
-                    }
-                    GostekSprite::Weapon(_weapon_sprite) => {
-                        // TODO: implement...
-                    }
-                    _ => {}
-                }
+                batch.add_sprite(sprite, color, Transform::WithPivot {
+                    pivot: vec2(cx * sprite.width, cy * sprite.height),
+                    pos: vec2(p0.x, p0.y + 1.0),
+                    scale,
+                    rot,
+                });
             }
         }
     }
@@ -221,17 +227,20 @@ impl GostekGraphics {
             visible.set(GostekPart::Vest.id(), true);
         }
 
-        // TODO:    if soldier.tertiary_weapon.num == guns[frag_grenade].num
-        let index = if true {
+        let index = if soldier.tertiary_weapon().kind == WeaponKind::FragGrenade {
             GostekPart::FragGrenade1.id()
         } else {
             GostekPart::ClusterGrenade1.id()
         };
 
-        // TODO: use actual values
         const THROW_ANIM: i32 = 9;
-        let tertiary_ammo_count = 3;
-        let n = i32::min(5, tertiary_ammo_count - iif!(soldier.body_animation.id == THROW_ANIM, 1, 0));
+        let ammo = soldier.tertiary_weapon().ammo_count as i32;
+
+        let n = if soldier.body_animation.id == THROW_ANIM {
+            i32::min(5, ammo - 1)
+        } else {
+            i32::min(5, ammo)
+        };
 
         for i in 0..n {
             visible.set(index + i as usize, true);
@@ -264,8 +273,9 @@ impl GostekGraphics {
             visible.set(GostekPart::HeadDeadDmg.id(), true);
         }
 
-        // TODO: if weapon is bow or fire bow
-        if false {
+        if soldier.primary_weapon().kind == WeaponKind::Bow
+            || soldier.primary_weapon().kind == WeaponKind::FlameBow
+        {
             visible.set(GostekPart::RamboBadge.id(), true);
         } else {
             const ANIM_WIPE: i32 = 28;
@@ -277,13 +287,13 @@ impl GostekGraphics {
             };
 
             if soldier.wear_helmet == 1 {
-                let head_cap = Gostek::Helm; // TODO: Player.HeadCap
+                let head_cap = gfx::Gostek::Helm; // TODO: Player.HeadCap
 
                 match head_cap {
-                    Gostek::Helm if  grabbed => visible.set(GostekPart::GrabbedHelmet.id(), true),
-                    Gostek::Kap  if  grabbed => visible.set(GostekPart::GrabbedHat.id(), true),
-                    Gostek::Helm if !grabbed => visible.set(GostekPart::Helmet.id(), true),
-                    Gostek::Kap  if !grabbed => visible.set(GostekPart::Hat.id(), true),
+                    gfx::Gostek::Helm if  grabbed => visible.set(GostekPart::GrabbedHelmet.id(), true),
+                    gfx::Gostek::Kap  if  grabbed => visible.set(GostekPart::GrabbedHat.id(), true),
+                    gfx::Gostek::Helm if !grabbed => visible.set(GostekPart::Helmet.id(), true),
+                    gfx::Gostek::Kap  if !grabbed => visible.set(GostekPart::Hat.id(), true),
                     _ => {},
                 }
             }
@@ -301,7 +311,75 @@ impl GostekGraphics {
             }
         }
 
-        // TODO: primary/secondary weapons
+        // secondary weapon (on the back)
+
+        let index = soldier.secondary_weapon().kind.index();
+
+        if index >= WeaponKind::DesertEagles.index() && index <= WeaponKind::Flamer.index() {
+            visible.set(GostekPart::SecondaryDeagles.id() + index, true);
+        }
+
+        // primary weapon
+
+        let weapon = soldier.primary_weapon();
+        let ammo = weapon.ammo_count;
+        let reload_count = weapon.reload_time_count;
+
+        if weapon.kind == WeaponKind::Minigun {
+            visible.set(GostekPart::PrimaryMinigun.id(), true);
+
+            if ammo > 0 || (ammo == 0 && weapon.reload_time_count < 65) {
+                visible.set(GostekPart::PrimaryMinigunClip.id(), true);
+            }
+
+            if soldier.fired > 0 {
+                visible.set(GostekPart::PrimaryMinigunFire.id(), true);
+            }
+        } else if weapon.kind == WeaponKind::Bow || weapon.kind == WeaponKind::FlameBow {
+            if ammo == 0 {
+                visible.set(GostekPart::PrimaryBowArrowReload.id(), true);
+            } else {
+                visible.set(GostekPart::PrimaryBowArrow.id(), true);
+            }
+
+            const RELOAD_BOW_ANIM: i32 = 20;
+
+            if soldier.body_animation.id == RELOAD_BOW_ANIM {
+                visible.set(GostekPart::PrimaryBowReload.id(), true);
+                visible.set(GostekPart::PrimaryBowStringReload.id(), true);
+            } else {
+                visible.set(GostekPart::PrimaryBow.id(), true);
+                visible.set(GostekPart::PrimaryBowString.id(), true);
+            }
+
+            if soldier.fired > 0 {
+                visible.set(GostekPart::PrimaryBowFire.id(), true);
+            }
+        } else if !soldier.dead_meat {
+            let first = GostekPart::PrimaryDeagles;
+            let mut index = weapon.kind.index();
+
+            if index >= WeaponKind::DesertEagles.index() && index <= WeaponKind::Flamer.index() {
+                if weapon.kind == WeaponKind::Flamer {
+                    index = GostekPart::PrimaryFlamer.id() - first.id();
+                } else {
+                    index *= 3;
+                }
+
+                visible.set(first.id() + index, true);
+
+                if weapon.clip_sprite.is_some() && (ammo > 0 || ammo == 0
+                    && (reload_count < weapon.clip_in_time
+                        || reload_count > weapon.clip_out_time))
+                {
+                    visible.set(first.id() + index + 1, true);
+                }
+
+                if soldier.fired > 0 {
+                    visible.set(first.id() + 2, true);
+                }
+            }
+        }
 
         visible
     }

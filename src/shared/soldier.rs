@@ -6,6 +6,7 @@ use shared::parts::ParticleSystem;
 use shared::calc::*;
 use shared::control::Control;
 use shared::mapfile::PolyType;
+use shared::weapons::*;
 use glutin;
 
 const SLIDELIMIT: f32 = 0.2;
@@ -54,9 +55,32 @@ pub struct Soldier {
   pub legs_animation: Box<anims::Animation>,
   pub body_animation: Box<anims::Animation>,
   pub control: Control,
+  pub active_weapon: usize,
+  pub weapons: [Weapon; 3],
+  pub fired: u8,
 }
 
 impl Soldier {
+  pub fn primary_weapon(&self) -> &Weapon {
+    &self.weapons[self.active_weapon]
+  }
+
+  pub fn secondary_weapon(&self) -> &Weapon {
+    &self.weapons[(self.active_weapon + 1) % 2]
+  }
+
+  pub fn tertiary_weapon(&self) -> &Weapon {
+    &self.weapons[2]
+  }
+
+  pub fn switch_weapon(&mut self) {
+    let w = (self.active_weapon + 1) % 2;
+    self.active_weapon = w;
+    self.weapons[w].start_up_time_count = self.weapons[w].start_up_time;
+    self.weapons[w].reload_time_prev = self.weapons[w].reload_time_count;
+    // burst_count = 0;
+  }
+
   pub fn update_keys(&mut self, input: &glutin::KeyboardInput) {
     match input.state {
       glutin::ElementState::Pressed => match input.virtual_keycode {
@@ -139,8 +163,16 @@ impl Soldier {
       legs_animation: state.anims.stand.clone(),
       body_animation: state.anims.stand.clone(),
       control,
+      active_weapon: 0,
+      weapons: [
+        Weapon::new(WeaponKind::DesertEagles, false),
+        Weapon::new(WeaponKind::Chainsaw, false),
+        Weapon::new(WeaponKind::FragGrenade, false),
+      ],
+      fired: 0,
     }
   }
+
   pub fn legs_apply_animation(&mut self, anim: Box<Animation>, curr: i32) {
     /*
     if (LegsAnimation.ID = Prone.ID) or
@@ -154,6 +186,7 @@ impl Soldier {
       self.legs_animation.curr_frame = curr;
     }
   }
+
   pub fn body_apply_animation(&mut self, anim: Box<Animation>, curr: i32) {
     if anim.id != self.body_animation.id {
       self.body_animation = anim;

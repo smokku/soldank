@@ -200,9 +200,17 @@ impl Soldier {
     }
 
     // change weapon
-    // sound
-    if (self.body_animation.id == state.anims.change.id) && (self.body_animation.curr_frame == 2) {
-      self.body_animation.curr_frame += 1;
+    if self.body_animation.id == state.anims.change.id {
+      if self.body_animation.curr_frame == 2 {
+        // TODO: play sound
+        self.body_animation.curr_frame += 1;
+      } else if self.body_animation.curr_frame == 25 {
+        self.switch_weapon();
+      } else if (self.body_animation.curr_frame == state.anims.change.num_frames)
+        && (self.primary_weapon().ammo_count == 0)
+      {
+        self.body_apply_animation(state.anims.stand.clone(), 1);
+      }
     }
 
     // Punch!

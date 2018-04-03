@@ -1,6 +1,6 @@
 use super::*;
 
-include!("sprite_data_macro.rs");
+include!("gfx_macro.rs");
 
 // Note: images that have a "2" version go together (opposite gostek direction).
 
