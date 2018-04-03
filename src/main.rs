@@ -1,41 +1,43 @@
-extern crate glutin;
-extern crate gfx2d;
-extern crate byteorder;
-extern crate time;
-extern crate ini;
-extern crate typenum;
 extern crate bit_array;
+extern crate byteorder;
 extern crate clap;
+extern crate gfx2d;
+extern crate glutin;
+extern crate ini;
+extern crate time;
+extern crate typenum;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then } else { $otherwise }));
 
 use glutin::*;
 
-use shared::calc::*;
-use shared::anims::Animation;
-use shared::parts::ParticleSystem;
-use shared::mapfile::MapFile;
-use shared::state::*;
-use shared::soldier::*;
-use shared::render::*;
-use shared::weapons::*;
 use clap::{App, Arg};
+use shared::anims::Animation;
+use shared::calc::*;
+use shared::mapfile::MapFile;
+use shared::parts::ParticleSystem;
+use shared::render::*;
+use shared::soldier::*;
+use shared::state::*;
+use shared::weapons::*;
 
 mod shared;
 
 const GRAV: f32 = 0.06;
 
 fn main() {
-
     let cmd = App::new("Soldank")
-                .about("open source clone of Soldat engine written in rust")
-                .version("0.0.1")
-                .arg(Arg::with_name("map")
-                    .help("name of map to load")
-                    .short("m")
-                    .long("map")
-                    .takes_value(true))
-                .get_matches();
+        .about("open source clone of Soldat engine written in rust")
+        .version("0.0.1")
+        .arg(
+            Arg::with_name("map")
+                .help("name of map to load")
+                .short("m")
+                .long("map")
+                .takes_value(true),
+        )
+        .get_matches();
 
     let anims = AnimsList {
         stand: Animation::load_from_file(&String::from("stoi.poa"), 0, 3, true),
@@ -125,8 +127,15 @@ fn main() {
     // setup window, renderer & main loop
 
     let mut context = gfx2d::Gfx2dContext::initialize("Soldank", W, H);
-    context.wnd.window().set_cursor(glutin::MouseCursor::NoneCursor);
-    context.wnd.window().set_cursor_state(glutin::CursorState::Grab).unwrap();
+    context
+        .wnd
+        .window()
+        .set_cursor(glutin::MouseCursor::NoneCursor);
+    context
+        .wnd
+        .window()
+        .set_cursor_state(glutin::CursorState::Grab)
+        .unwrap();
     context.clear(gfx2d::rgb(0, 0, 0));
     context.present();
 
@@ -151,42 +160,48 @@ fn main() {
         .collect();
 
     while running {
-        context.evt.poll_events(|e| if let Event::WindowEvent{event, ..} = e {
-            match event {
-                WindowEvent::Closed => running = false,
-                WindowEvent::KeyboardInput{input, ..} => {
-                    match input.virtual_keycode {
+        context.evt.poll_events(|e| {
+            if let Event::WindowEvent { event, .. } = e {
+                match event {
+                    WindowEvent::Closed => running = false,
+                    WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode {
                         Some(VirtualKeyCode::Escape) => running = false,
-                        Some(VirtualKeyCode::Add) => zoomin_pressed = match input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        },
-                        Some(VirtualKeyCode::Subtract) => zoomout_pressed = match input.state {
-                            ElementState::Pressed => true,
-                            ElementState::Released => false,
-                        },
+                        Some(VirtualKeyCode::Add) => {
+                            zoomin_pressed = match input.state {
+                                ElementState::Pressed => true,
+                                ElementState::Released => false,
+                            }
+                        }
+                        Some(VirtualKeyCode::Subtract) => {
+                            zoomout_pressed = match input.state {
+                                ElementState::Pressed => true,
+                                ElementState::Released => false,
+                            }
+                        }
                         Some(VirtualKeyCode::Tab) => {
                             if input.state == ElementState::Pressed {
                                 let index = soldier.primary_weapon().kind.index();
                                 let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
                                 soldier.weapons[soldier.active_weapon] = weapons[index];
                             }
-                        },
+                        }
                         _ => soldier.update_keys(&input),
+                    },
+                    WindowEvent::MouseInput { state, button, .. } => {
+                        soldier.update_mouse_button(&(state, button));
                     }
-                },
-                WindowEvent::MouseInput{state, button, ..} => {
-                    soldier.update_mouse_button(&(state, button));
-                },
-                WindowEvent::CursorMoved{position: (x, y), ..} => {
-                    state.mouse.x = x as f32 * state.game_width / W as f32;
-                    state.mouse.y = y as f32 * state.game_height / H as f32;
-                },
-                _ => (),
+                    WindowEvent::CursorMoved {
+                        position: (x, y), ..
+                    } => {
+                        state.mouse.x = x as f32 * state.game_width / W as f32;
+                        state.mouse.y = y as f32 * state.game_height / H as f32;
+                    }
+                    _ => (),
+                }
             }
         });
 
-        let dt = 1.0/60.0;
+        let dt = 1.0 / 60.0;
 
         timecur = current_time();
         timeacc += timecur - timeprv;
@@ -211,7 +226,7 @@ fn main() {
 
                 m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
                     * ((2.0 * 640.0 / state.game_width - 1.0)
-                    + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
+                        + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
                 m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
 
                 let mut cam_v = state.camera;
@@ -229,8 +244,14 @@ fn main() {
             timeprv = timecur;
         }
 
-        let p = f64::min(1.0, f64::max(0.0, timeacc/dt));
-        graphics.render_frame(&mut context, &state, &soldier, timecur - dt*(1.0 - p), p as f32);
+        let p = f64::min(1.0, f64::max(0.0, timeacc / dt));
+        graphics.render_frame(
+            &mut context,
+            &state,
+            &soldier,
+            timecur - dt * (1.0 - p),
+            p as f32,
+        );
         context.present();
 
         // only sleep if no vsync (or if vsync doesn't wait), also needs timeBeginPeriod(1)

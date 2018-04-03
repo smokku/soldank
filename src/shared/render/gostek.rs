@@ -1,10 +1,10 @@
 use super::*;
-use gfx::{GostekPart, SpriteData};
-use shared::soldier::Soldier;
-use ini::Ini;
 use bit_array::BitArray;
-use typenum::U256;
+use gfx::{GostekPart, SpriteData};
+use ini::Ini;
+use shared::soldier::Soldier;
 use std::str::FromStr;
+use typenum::U256;
 
 type BitSet = BitArray<u64, U256>;
 
@@ -65,7 +65,9 @@ impl GostekGraphics {
     pub fn new() -> GostekGraphics {
         GostekGraphics {
             data: GostekPart::data().to_vec(),
-            base_visibility: BitSet::from_fn(|i| GostekPart::data().get(i).map_or(false, |p| p.visible)),
+            base_visibility: BitSet::from_fn(|i| {
+                GostekPart::data().get(i).map_or(false, |p| p.visible)
+            }),
         }
     }
 
@@ -77,7 +79,9 @@ impl GostekGraphics {
 
             let copy_and_insert_underscores = |dest: &mut String, source: &str| {
                 for (i, ch) in source.chars().enumerate() {
-                    if i > 0 && ch.is_uppercase() { dest.push('_') };
+                    if i > 0 && ch.is_uppercase() {
+                        dest.push('_')
+                    };
                     dest.push(ch);
                 }
             };
@@ -103,7 +107,13 @@ impl GostekGraphics {
         }
     }
 
-    pub fn render(&self, soldier: &Soldier, batch: &mut DrawBatch, sprites: &[Vec<Sprite>], frame_percent: f32) {
+    pub fn render(
+        &self,
+        soldier: &Soldier,
+        batch: &mut DrawBatch,
+        sprites: &[Vec<Sprite>],
+        frame_percent: f32,
+    ) {
         let sk = &soldier.skeleton;
         let (colors, alpha) = Self::colors_and_alpha(soldier);
         let visible = self.parts_visibility(soldier, alpha[GostekAlpha::Blood as usize] > 0);
@@ -116,8 +126,16 @@ impl GostekGraphics {
                 let mut cx = part.center.0;
                 let mut cy = part.center.1;
                 let mut scale = vec2(1.0, 1.0);
-                let p0 = lerp(sk.old_pos[part.point.0], sk.pos[part.point.0], frame_percent);
-                let p1 = lerp(sk.old_pos[part.point.1], sk.pos[part.point.1], frame_percent);
+                let p0 = lerp(
+                    sk.old_pos[part.point.0],
+                    sk.pos[part.point.0],
+                    frame_percent,
+                );
+                let p1 = lerp(
+                    sk.old_pos[part.point.1],
+                    sk.pos[part.point.1],
+                    frame_percent,
+                );
                 let rot = vec2angle(p1 - p0);
 
                 if soldier.direction != 1 {
@@ -149,15 +167,19 @@ impl GostekGraphics {
                         let sprite = part_sprite + sprite_index;
                         &sprites[group.id()][sprite.id()]
                     }
-                    GostekSprite::None => unreachable!()
+                    GostekSprite::None => unreachable!(),
                 };
 
-                batch.add_sprite(sprite, color, Transform::WithPivot {
-                    pivot: vec2(cx * sprite.width, cy * sprite.height),
-                    pos: vec2(p0.x, p0.y + 1.0),
-                    scale,
-                    rot,
-                });
+                batch.add_sprite(
+                    sprite,
+                    color,
+                    Transform::WithPivot {
+                        pivot: vec2(cx * sprite.width, cy * sprite.height),
+                        pos: vec2(p0.x, p0.y + 1.0),
+                        scale,
+                        rot,
+                    },
+                );
             }
         }
     }
@@ -166,11 +188,11 @@ impl GostekGraphics {
         let mut alpha_base = soldier.alpha;
         let mut alpha_blood = f32::max(0.0, f32::min(255.0, 200.0 - soldier.health.round())) as u8;
         let mut color_cygar = rgb(255, 255, 255);
-        let color_none      = rgb(255, 255, 255);
-        let color_main      = rgb( 0 ,  0 ,  0 ); // TODO: Player.Color1
-        let color_pants     = rgb( 0 ,  0 ,  0 ); // TODO: Player.Color2
-        let color_skin      = rgb(230, 180, 120); // TODO: Player.SkinColor
-        let color_hair      = rgb( 0 ,  0 ,  0 ); // TODO: Player.HairColor
+        let color_none = rgb(255, 255, 255);
+        let color_main = rgb(0, 0, 0); // TODO: Player.Color1
+        let color_pants = rgb(0, 0, 0); // TODO: Player.Color2
+        let color_skin = rgb(230, 180, 120); // TODO: Player.SkinColor
+        let color_hair = rgb(0, 0, 0); // TODO: Player.HairColor
         let color_headblood = rgb(172, 169, 168);
         let alpha_nades: u8;
 
@@ -194,7 +216,15 @@ impl GostekGraphics {
         alpha_nades = (0.75 * f32::from(alpha_base)).round() as u8;
 
         (
-            [color_none, color_main, color_pants, color_skin, color_hair, color_cygar, color_headblood],
+            [
+                color_none,
+                color_main,
+                color_pants,
+                color_skin,
+                color_hair,
+                color_cygar,
+                color_headblood,
+            ],
             [alpha_base, alpha_blood, alpha_nades],
         )
     }
@@ -253,12 +283,12 @@ impl GostekGraphics {
                 visible.set(GostekPart::SilverLchain.id(), true);
                 visible.set(GostekPart::SilverRchain.id(), true);
                 visible.set(GostekPart::SilverPendant.id(), true);
-            },
+            }
             2 => {
                 visible.set(GostekPart::GoldenLchain.id(), true);
                 visible.set(GostekPart::GoldenRchain.id(), true);
                 visible.set(GostekPart::GoldenPendant.id(), true);
-            },
+            }
             _ => {}
         }
 
@@ -290,11 +320,13 @@ impl GostekGraphics {
                 let head_cap = gfx::Gostek::Helm; // TODO: Player.HeadCap
 
                 match head_cap {
-                    gfx::Gostek::Helm if  grabbed => visible.set(GostekPart::GrabbedHelmet.id(), true),
-                    gfx::Gostek::Kap  if  grabbed => visible.set(GostekPart::GrabbedHat.id(), true),
+                    gfx::Gostek::Helm if grabbed => {
+                        visible.set(GostekPart::GrabbedHelmet.id(), true)
+                    }
+                    gfx::Gostek::Kap if grabbed => visible.set(GostekPart::GrabbedHat.id(), true),
                     gfx::Gostek::Helm if !grabbed => visible.set(GostekPart::Helmet.id(), true),
-                    gfx::Gostek::Kap  if !grabbed => visible.set(GostekPart::Hat.id(), true),
-                    _ => {},
+                    gfx::Gostek::Kap if !grabbed => visible.set(GostekPart::Hat.id(), true),
+                    _ => {}
                 }
             }
 
@@ -302,11 +334,13 @@ impl GostekGraphics {
 
             if grabbed || soldier.wear_helmet != 1 || hair_style == 3 {
                 match hair_style {
-                    1 => for i in 0..6 { visible.set(GostekPart::HairDreadlocks.id() + i, true); },
+                    1 => for i in 0..6 {
+                        visible.set(GostekPart::HairDreadlocks.id() + i, true);
+                    },
                     2 => visible.set(GostekPart::HairPunk.id(), true),
                     3 => visible.set(GostekPart::MrT.id(), true),
                     4 => visible.set(GostekPart::HairNormal.id(), true),
-                    _ => {},
+                    _ => {}
                 }
             }
         }
@@ -368,9 +402,11 @@ impl GostekGraphics {
 
                 visible.set(first.id() + index, true);
 
-                if weapon.clip_sprite.is_some() && (ammo > 0 || ammo == 0
-                    && (reload_count < weapon.clip_in_time
-                        || reload_count > weapon.clip_out_time))
+                if weapon.clip_sprite.is_some()
+                    && (ammo > 0
+                        || ammo == 0
+                            && (reload_count < weapon.clip_in_time
+                                || reload_count > weapon.clip_out_time))
                 {
                     visible.set(first.id() + index + 1, true);
                 }
@@ -402,24 +438,30 @@ impl GostekGraphics {
                 rot: vec2angle(b - a),
             }.matrix();
 
-            batch.add_quad(None, &[
-                vertex(m * vec2(0.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
-                vertex(m * vec2(1.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
-                vertex(m * vec2(1.0,  0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
-                vertex(m * vec2(0.0,  0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
-            ]);
+            batch.add_quad(
+                None,
+                &[
+                    vertex(m * vec2(0.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                    vertex(m * vec2(1.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                    vertex(m * vec2(1.0, 0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                    vertex(m * vec2(0.0, 0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                ],
+            );
         }
 
         for (a, b) in sk.old_pos[1..25].iter().zip(&sk.pos[1..25]) {
             let p = lerp(*a, *b, frame_percent);
             let m = Mat2d::translate(p.x, p.y);
 
-            batch.add_quad(None, &[
-                vertex(m * vec2(-1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
-                vertex(m * vec2( 1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
-                vertex(m * vec2( 1.0 * px,  1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
-                vertex(m * vec2(-1.0 * px,  1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
-            ]);
+            batch.add_quad(
+                None,
+                &[
+                    vertex(m * vec2(-1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                    vertex(m * vec2(1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                    vertex(m * vec2(1.0 * px, 1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                    vertex(m * vec2(-1.0 * px, 1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                ],
+            );
         }
     }
 }

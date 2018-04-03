@@ -3,7 +3,6 @@ use super::*;
 include!("gfx_macro.rs");
 
 // Note: images that have a "2" version go together (opposite gostek direction).
-
 sprites! {
     // The order of the gostek images must match the order of the Team2 versions
     // listed below. Keep both lists together, the range Gostek::Stopa to
@@ -391,7 +390,7 @@ sprites! {
         TitleR             = "interface-gfx/title-r"
     }
 }
-
+#[cfg_attr(rustfmt, rustfmt_skip)]
 gostek_parts! {
     SecondaryDeagles       = Sprite(None),                    Point( 5, 10), Center( 0.300,  0.500), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     SecondaryMp5           = Sprite(Weapon::Mp5),             Point( 5, 10), Center( 0.300,  0.300), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )

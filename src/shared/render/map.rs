@@ -1,6 +1,6 @@
 use super::*;
+use shared::mapfile::{MapFile, MapPolygon, MapProp, PolyType};
 use std::ops::Range;
-use shared::mapfile::{MapFile, MapProp, MapPolygon, PolyType};
 
 pub struct MapGraphics {
     pub batch: DrawBatch,
@@ -26,11 +26,26 @@ fn is_background_poly(poly: &MapPolygon) -> bool {
 fn add_poly(batch: &mut DrawBatch, poly: &MapPolygon, texture: &Texture) {
     let (a, b, c) = (&poly.vertices[0], &poly.vertices[1], &poly.vertices[2]);
 
-    batch.add(Some(texture), &[
-        vertex(vec2(a.x, a.y), vec2(a.u, a.v), rgba(a.color.r, a.color.g, a.color.b, a.color.a)),
-        vertex(vec2(b.x, b.y), vec2(b.u, b.v), rgba(b.color.r, b.color.g, b.color.b, b.color.a)),
-        vertex(vec2(c.x, c.y), vec2(c.u, c.v), rgba(c.color.r, c.color.g, c.color.b, c.color.a)),
-    ]);
+    batch.add(
+        Some(texture),
+        &[
+            vertex(
+                vec2(a.x, a.y),
+                vec2(a.u, a.v),
+                rgba(a.color.r, a.color.g, a.color.b, a.color.a),
+            ),
+            vertex(
+                vec2(b.x, b.y),
+                vec2(b.u, b.v),
+                rgba(b.color.r, b.color.g, b.color.b, b.color.a),
+            ),
+            vertex(
+                vec2(c.x, c.y),
+                vec2(c.u, c.v),
+                rgba(c.color.r, c.color.g, c.color.b, c.color.a),
+            ),
+        ],
+    );
 }
 
 fn add_scenery(batch: &mut DrawBatch, (prop, sprite): (&MapProp, &Sprite)) {
@@ -39,20 +54,36 @@ fn add_scenery(batch: &mut DrawBatch, (prop, sprite): (&MapProp, &Sprite)) {
     sprite.width = prop.width as f32;
     sprite.height = prop.height as f32;
 
-    batch.add_sprite(&sprite, color, Transform::FromOrigin {
-        pos:   vec2(prop.x, prop.y),
-        scale: vec2(prop.scale_x, prop.scale_y),
-        rot:   (-prop.rotation, vec2(0.0, 1.0)),
-    });
+    batch.add_sprite(
+        &sprite,
+        color,
+        Transform::FromOrigin {
+            pos: vec2(prop.x, prop.y),
+            scale: vec2(prop.scale_x, prop.scale_y),
+            rot: (-prop.rotation, vec2(0.0, 1.0)),
+        },
+    );
 }
 
 impl MapGraphics {
-    pub fn background(&mut self)    -> DrawSlice {self.batch.slice(self.background.clone())}
-    pub fn polys_back(&mut self)    -> DrawSlice {self.batch.slice(self.polys_back.clone())}
-    pub fn polys_front(&mut self)   -> DrawSlice {self.batch.slice(self.polys_front.clone())}
-    pub fn scenery_back(&mut self)  -> DrawSlice {self.batch.slice(self.scenery_back.clone())}
-    pub fn scenery_mid(&mut self)   -> DrawSlice {self.batch.slice(self.scenery_mid.clone())}
-    pub fn scenery_front(&mut self) -> DrawSlice {self.batch.slice(self.scenery_front.clone())}
+    pub fn background(&mut self) -> DrawSlice {
+        self.batch.slice(self.background.clone())
+    }
+    pub fn polys_back(&mut self) -> DrawSlice {
+        self.batch.slice(self.polys_back.clone())
+    }
+    pub fn polys_front(&mut self) -> DrawSlice {
+        self.batch.slice(self.polys_front.clone())
+    }
+    pub fn scenery_back(&mut self) -> DrawSlice {
+        self.batch.slice(self.scenery_back.clone())
+    }
+    pub fn scenery_mid(&mut self) -> DrawSlice {
+        self.batch.slice(self.scenery_mid.clone())
+    }
+    pub fn scenery_front(&mut self) -> DrawSlice {
+        self.batch.slice(self.scenery_front.clone())
+    }
 
     pub fn empty() -> MapGraphics {
         MapGraphics {
@@ -70,9 +101,21 @@ impl MapGraphics {
         let texture_file = filename_override("assets/textures", &map.texture_name);
 
         let texture = if texture_file.exists() {
-            Texture::load(context, &texture_file, FilterMethod::Trilinear, WrapMode::Tile, None)
+            Texture::load(
+                context,
+                &texture_file,
+                FilterMethod::Trilinear,
+                WrapMode::Tile,
+                None,
+            )
         } else {
-            Texture::new(context, (1, 1), &[255u8; 4], FilterMethod::Scale, WrapMode::Clamp)
+            Texture::new(
+                context,
+                (1, 1),
+                &[255u8; 4],
+                FilterMethod::Scale,
+                WrapMode::Clamp,
+            )
         };
 
         let (scenery_used, sprite_index) = {
@@ -97,7 +140,9 @@ impl MapGraphics {
         };
 
         let sprites = {
-            let scenery_info: Vec<SpriteInfo> = map.scenery.iter().enumerate()
+            let scenery_info: Vec<SpriteInfo> = map.scenery
+                .iter()
+                .enumerate()
                 .filter(|&(i, _)| scenery_used[i])
                 .map(|(_, s)| {
                     let fname = filename_override("assets/scenery-gfx", &s.filename);
@@ -109,12 +154,13 @@ impl MapGraphics {
                             } else {
                                 None
                             }
-                        },
-                        _ => None
+                        }
+                        _ => None,
                     };
 
                     SpriteInfo::new(fname, vec2(1.0, 1.0), color_key)
-                }).collect();
+                })
+                .collect();
 
             Spritesheet::new(context, 8, FilterMethod::Trilinear, &scenery_info).sprites
         };
@@ -128,7 +174,8 @@ impl MapGraphics {
 
             for prop in &map.props {
                 if is_prop_active(map, prop) {
-                    sorted[prop.level as usize].push((prop, &sprites[sprite_index[prop.style as usize - 1]]));
+                    sorted[prop.level as usize]
+                        .push((prop, &sprites[sprite_index[prop.style as usize - 1]]));
                 }
             }
 
@@ -141,29 +188,44 @@ impl MapGraphics {
             let d = 25.0 * f32::max(map.sectors_division as f32, f32::ceil(0.5 * 480.0 / 25.0));
             let (top, btm) = (map.bg_color_top, map.bg_color_bottom);
 
-            batch.add_quad(None, &[
-                vertex(vec2(0.0, -d), vec2(0.0, 0.0), rgb(top.r, top.g, top.b)),
-                vertex(vec2(1.0, -d), vec2(0.0, 0.0), rgb(top.r, top.g, top.b)),
-                vertex(vec2(1.0,  d), vec2(0.0, 0.0), rgb(btm.r, btm.g, btm.b)),
-                vertex(vec2(0.0,  d), vec2(0.0, 0.0), rgb(btm.r, btm.g, btm.b)),
-            ]);
+            batch.add_quad(
+                None,
+                &[
+                    vertex(vec2(0.0, -d), vec2(0.0, 0.0), rgb(top.r, top.g, top.b)),
+                    vertex(vec2(1.0, -d), vec2(0.0, 0.0), rgb(top.r, top.g, top.b)),
+                    vertex(vec2(1.0, d), vec2(0.0, 0.0), rgb(btm.r, btm.g, btm.b)),
+                    vertex(vec2(0.0, d), vec2(0.0, 0.0), rgb(btm.r, btm.g, btm.b)),
+                ],
+            );
 
             batch.split()
         };
 
-        map.polygons.iter().filter(|&p| is_background_poly(p)).for_each(|poly| add_poly(&mut batch, poly, &texture));
+        map.polygons
+            .iter()
+            .filter(|&p| is_background_poly(p))
+            .for_each(|poly| add_poly(&mut batch, poly, &texture));
         let polys_back = batch.split();
 
-        props[0].iter().for_each(|prop| add_scenery(&mut batch, *prop));
+        props[0]
+            .iter()
+            .for_each(|prop| add_scenery(&mut batch, *prop));
         let scenery_back = batch.split();
 
-        props[1].iter().for_each(|prop| add_scenery(&mut batch, *prop));
+        props[1]
+            .iter()
+            .for_each(|prop| add_scenery(&mut batch, *prop));
         let scenery_mid = batch.split();
 
-        map.polygons.iter().filter(|&p| !is_background_poly(p)).for_each(|poly| add_poly(&mut batch, poly, &texture));
+        map.polygons
+            .iter()
+            .filter(|&p| !is_background_poly(p))
+            .for_each(|poly| add_poly(&mut batch, poly, &texture));
         let polys_front = batch.split();
 
-        props[2].iter().for_each(|prop| add_scenery(&mut batch, *prop));
+        props[2]
+            .iter()
+            .for_each(|prop| add_scenery(&mut batch, *prop));
         let scenery_front = batch.split();
 
         MapGraphics {

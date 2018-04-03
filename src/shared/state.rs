@@ -1,6 +1,6 @@
+use shared::anims::Animation;
 use shared::calc::*;
 use shared::mapfile::MapFile;
-use shared::anims::Animation;
 use shared::parts::ParticleSystem;
 
 pub struct AnimsList {
@@ -47,7 +47,7 @@ pub struct AnimsList {
     pub get_up: Box<Animation>,
     pub prone_move: Box<Animation>,
     pub aim: Box<Animation>,
-    pub hands_up_aim: Box<Animation>
+    pub hands_up_aim: Box<Animation>,
 }
 
 pub struct MainState {
