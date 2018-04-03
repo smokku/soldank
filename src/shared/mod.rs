@@ -9,3 +9,6 @@ pub mod calc;
 pub mod render;
 pub mod update;
 pub mod control;
+
+// commented out until we start using it to avoid warning spam
+// pub mod weapons;
