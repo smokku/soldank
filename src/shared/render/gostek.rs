@@ -263,10 +263,9 @@ impl GostekGraphics {
             GostekPart::ClusterGrenade1.id()
         };
 
-        const THROW_ANIM: i32 = 9;
         let ammo = soldier.tertiary_weapon().ammo_count as i32;
 
-        let n = if soldier.body_animation.id == THROW_ANIM {
+        let n = if soldier.body_animation.id == Anim::Throw {
             i32::min(5, ammo - 1)
         } else {
             i32::min(5, ammo)
@@ -308,11 +307,8 @@ impl GostekGraphics {
         {
             visible.set(GostekPart::RamboBadge.id(), true);
         } else {
-            const ANIM_WIPE: i32 = 28;
-            const ANIM_TAKEOFF: i32 = 33;
-
             let grabbed = match soldier.body_animation.id {
-                ANIM_WIPE | ANIM_TAKEOFF => soldier.body_animation.curr_frame > 4,
+                Anim::Wipe | Anim::TakeOff => soldier.body_animation.frame > 4,
                 _ => false,
             };
 
@@ -376,9 +372,7 @@ impl GostekGraphics {
                 visible.set(GostekPart::PrimaryBowArrow.id(), true);
             }
 
-            const RELOAD_BOW_ANIM: i32 = 20;
-
-            if soldier.body_animation.id == RELOAD_BOW_ANIM {
+            if soldier.body_animation.id == Anim::ReloadBow {
                 visible.set(GostekPart::PrimaryBowReload.id(), true);
                 visible.set(GostekPart::PrimaryBowStringReload.id(), true);
             } else {

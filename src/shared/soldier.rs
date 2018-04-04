@@ -1,6 +1,5 @@
 use glutin;
-use shared::anims;
-use shared::anims::Animation;
+use shared::anims::*;
 use shared::calc::*;
 use shared::control::Control;
 use shared::mapfile::PolyType;
@@ -52,8 +51,8 @@ pub struct Soldier {
     pub collider_distance: u8,
     pub half_dead: bool,
     pub skeleton: parts::ParticleSystem,
-    pub legs_animation: Box<anims::Animation>,
-    pub body_animation: Box<anims::Animation>,
+    pub legs_animation: AnimState,
+    pub body_animation: AnimState,
     pub control: Control,
     pub active_weapon: usize,
     pub weapons: [Weapon; 3],
@@ -121,10 +120,12 @@ impl Soldier {
     pub fn new(state: &mut MainState) -> Soldier {
         let control: Control = Default::default();
         let mut gostek = ParticleSystem::new();
+
         gostek.load_from_file(&String::from("gostek.po"), 4.50);
         gostek.timestep = 1.00;
         gostek.gravity = 1.06 * GRAV;
         gostek.v_damping = 0.9945;
+
         state.soldier_parts.create_part(
             vec2(
                 state.map.spawnpoints[0].x as f32,
@@ -134,6 +135,7 @@ impl Soldier {
             1.00,
             1,
         );
+
         Soldier {
             active: true,
             dead_meat: false,
@@ -160,8 +162,8 @@ impl Soldier {
             collider_distance: 255,
             half_dead: false,
             skeleton: gostek,
-            legs_animation: state.anims.stand.clone(),
-            body_animation: state.anims.stand.clone(),
+            legs_animation: AnimState::new(Anim::Stand),
+            body_animation: AnimState::new(Anim::Stand),
             control,
             active_weapon: 0,
             weapons: [
@@ -173,24 +175,19 @@ impl Soldier {
         }
     }
 
-    pub fn legs_apply_animation(&mut self, anim: Box<Animation>, curr: i32) {
-        /*
-    if (LegsAnimation.ID = Prone.ID) or
-     (LegsAnimation.ID = ProneMove.ID) then
-    */
-        if (self.legs_animation.id == 34) || (self.legs_animation.id == 38) {
-            return;
-        }
-        if anim.id != self.legs_animation.id {
-            self.legs_animation = anim;
-            self.legs_animation.curr_frame = curr;
+    pub fn legs_apply_animation(&mut self, id: Anim, frame: usize) {
+        if !self.legs_animation.is_any(&[Anim::Prone, Anim::ProneMove])
+            && self.legs_animation.id != id
+        {
+            self.legs_animation = AnimState::new(id);
+            self.legs_animation.frame = frame;
         }
     }
 
-    pub fn body_apply_animation(&mut self, anim: Box<Animation>, curr: i32) {
-        if anim.id != self.body_animation.id {
-            self.body_animation = anim;
-            self.body_animation.curr_frame = curr;
+    pub fn body_apply_animation(&mut self, id: Anim, frame: usize) {
+        if self.body_animation.id != id {
+            self.body_animation = AnimState::new(id);
+            self.body_animation.frame = frame;
         }
     }
 
@@ -233,25 +230,25 @@ impl Soldier {
             POS_STAND => body_y = 8.0,
             POS_CROUCH => body_y = 9.0,
             POS_PRONE => {
-                if self.body_animation.id == state.anims.prone.id {
-                    if self.body_animation.curr_frame > 9 {
+                if self.body_animation.id == Anim::Prone {
+                    if self.body_animation.frame > 9 {
                         body_y = -2.0
                     } else {
-                        body_y = 14.0 - self.body_animation.curr_frame as f32;
+                        body_y = 14.0 - self.body_animation.frame as f32;
                     }
                 } else {
                     body_y = 9.0;
                 }
 
-                if self.body_animation.id == state.anims.prone_move.id {
+                if self.body_animation.id == Anim::ProneMove {
                     body_y = 0.0;
                 }
             }
             _ => {}
         }
 
-        if self.body_animation.id == state.anims.get_up.id {
-            if self.body_animation.curr_frame > 18 {
+        if self.body_animation.id == Anim::GetUp {
+            if self.body_animation.frame > 18 {
                 body_y = 8.0;
             } else {
                 body_y = 4.0;
@@ -268,37 +265,27 @@ impl Soldier {
             if self.skeleton.active[i] && !self.dead_meat {
                 self.skeleton.old_pos[i] = self.skeleton.pos[i];
 
+                // legs
                 if !self.half_dead && ((i >= 1 && i <= 6) || (i == 17) || (i == 18)) {
-                    // legs
                     self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
-                        + f32::from(self.direction)
-                            * self.legs_animation.frame[self.legs_animation.curr_frame as usize]
-                                .pos[i]
-                                .x;
-                    self.skeleton.pos[i].y = state.soldier_parts.pos[self.num].y
-                        + self.legs_animation.frame[self.legs_animation.curr_frame as usize].pos[i]
-                            .y;
+                        + f32::from(self.direction) * self.legs_animation.pos(i).x;
+                    self.skeleton.pos[i].y =
+                        state.soldier_parts.pos[self.num].y + self.legs_animation.pos(i).y;
                 }
 
+                // body
                 if i >= 7 && i <= 16 || i == 19 || i == 20 {
                     self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
-                        + f32::from(self.direction)
-                            * self.body_animation.frame[self.body_animation.curr_frame as usize]
-                                .pos[i]
-                                .x;
+                        + f32::from(self.direction) * self.body_animation.pos(i).x;
 
                     if !self.half_dead {
                         self.skeleton.pos[i].y = (self.skeleton.pos[6].y
                             - (state.soldier_parts.pos[self.num].y - body_y))
                             + state.soldier_parts.pos[self.num].y
-                            + self.body_animation.frame[self.body_animation.curr_frame as usize]
-                                .pos[i]
-                                .y;
+                            + self.body_animation.pos(i).y;
                     } else {
                         self.skeleton.pos[i].y = 9.00 + state.soldier_parts.pos[self.num].y
-                            + self.body_animation.frame[self.body_animation.curr_frame as usize]
-                                .pos[i]
-                                .y;
+                            + self.body_animation.pos(i).y;
                     }
                 }
             }
@@ -325,7 +312,32 @@ impl Soldier {
             self.skeleton.pos[23].y = self.skeleton.pos[9].y + f32::from(self.direction) * r_norm.x;
         }
 
-        if self.body_animation.id == state.anims.throw.id {
+        let not_aiming_anims = [
+            Anim::Reload,
+            Anim::ReloadBow,
+            Anim::ClipIn,
+            Anim::ClipOut,
+            Anim::SlideBack,
+            Anim::Change,
+            Anim::ThrowWeapon,
+            Anim::Punch,
+            Anim::Roll,
+            Anim::RollBack,
+            Anim::Cigar,
+            Anim::Match,
+            Anim::Smoke,
+            Anim::Wipe,
+            Anim::TakeOff,
+            Anim::Groin,
+            Anim::Piss,
+            Anim::Mercy,
+            Anim::Mercy2,
+            Anim::Victory,
+            Anim::Own,
+            Anim::Melee,
+        ];
+
+        if self.body_animation.id == Anim::Throw {
             arm_s = -5.00;
         } else {
             arm_s = -7.00;
@@ -333,29 +345,7 @@ impl Soldier {
 
         i = 15;
 
-        if (self.body_animation.id != state.anims.reload.id)
-            && (self.body_animation.id != state.anims.reload_bow.id)
-            && (self.body_animation.id != state.anims.clip_in.id)
-            && (self.body_animation.id != state.anims.clip_out.id)
-            && (self.body_animation.id != state.anims.slide_back.id)
-            && (self.body_animation.id != state.anims.change.id)
-            && (self.body_animation.id != state.anims.throw_weapon.id)
-            && (self.body_animation.id != state.anims.punch.id)
-            && (self.body_animation.id != state.anims.roll.id)
-            && (self.body_animation.id != state.anims.roll_back.id)
-            && (self.body_animation.id != state.anims.cigar.id)
-            && (self.body_animation.id != state.anims.match_.id)
-            && (self.body_animation.id != state.anims.smoke.id)
-            && (self.body_animation.id != state.anims.wipe.id)
-            && (self.body_animation.id != state.anims.take_off.id)
-            && (self.body_animation.id != state.anims.groin.id)
-            && (self.body_animation.id != state.anims.piss.id)
-            && (self.body_animation.id != state.anims.mercy.id)
-            && (self.body_animation.id != state.anims.mercy2.id)
-            && (self.body_animation.id != state.anims.victory.id)
-            && (self.body_animation.id != state.anims.own.id)
-            && (self.body_animation.id != state.anims.melee.id)
-        {
+        if !self.body_animation.is_any(&not_aiming_anims) {
             let p = vec2(self.skeleton.pos[i].x, self.skeleton.pos[i].y);
             let mouse_aim = vec2(
                 self.control.mouse_aim_x as f32,
@@ -370,7 +360,7 @@ impl Soldier {
             self.skeleton.pos[i].y = p.y;
         }
 
-        if self.body_animation.id == state.anims.throw.id {
+        if self.body_animation.id == Anim::Throw {
             arm_s = -6.00;
         } else {
             arm_s = -8.00;
@@ -378,29 +368,7 @@ impl Soldier {
 
         i = 19;
 
-        if (self.body_animation.id != state.anims.reload.id)
-            && (self.body_animation.id != state.anims.reload_bow.id)
-            && (self.body_animation.id != state.anims.clip_in.id)
-            && (self.body_animation.id != state.anims.clip_out.id)
-            && (self.body_animation.id != state.anims.slide_back.id)
-            && (self.body_animation.id != state.anims.change.id)
-            && (self.body_animation.id != state.anims.throw_weapon.id)
-            && (self.body_animation.id != state.anims.punch.id)
-            && (self.body_animation.id != state.anims.roll.id)
-            && (self.body_animation.id != state.anims.roll_back.id)
-            && (self.body_animation.id != state.anims.cigar.id)
-            && (self.body_animation.id != state.anims.match_.id)
-            && (self.body_animation.id != state.anims.smoke.id)
-            && (self.body_animation.id != state.anims.wipe.id)
-            && (self.body_animation.id != state.anims.take_off.id)
-            && (self.body_animation.id != state.anims.groin.id)
-            && (self.body_animation.id != state.anims.piss.id)
-            && (self.body_animation.id != state.anims.mercy.id)
-            && (self.body_animation.id != state.anims.mercy2.id)
-            && (self.body_animation.id != state.anims.victory.id)
-            && (self.body_animation.id != state.anims.own.id)
-            && (self.body_animation.id != state.anims.melee.id)
-        {
+        if !self.body_animation.is_any(&not_aiming_anims) {
             let p = vec2(self.skeleton.pos[i].x, self.skeleton.pos[i].y);
             let mouse_aim = vec2(
                 self.control.mouse_aim_x as f32,
@@ -607,15 +575,15 @@ impl Soldier {
                         }
 
                         if area == 0 {
-                            if (self.legs_animation.id == state.anims.stand.id)
-                                || (self.legs_animation.id == state.anims.crouch.id)
-                                || (self.legs_animation.id == state.anims.prone.id)
-                                || (self.legs_animation.id == state.anims.prone_move.id)
-                                || (self.legs_animation.id == state.anims.get_up.id)
-                                || (self.legs_animation.id == state.anims.fall.id)
-                                || (self.legs_animation.id == state.anims.mercy.id)
-                                || (self.legs_animation.id == state.anims.mercy2.id)
-                                || (self.legs_animation.id == state.anims.own.id)
+                            if (self.legs_animation.id == Anim::Stand)
+                                || (self.legs_animation.id == Anim::Crouch)
+                                || (self.legs_animation.id == Anim::Prone)
+                                || (self.legs_animation.id == Anim::ProneMove)
+                                || (self.legs_animation.id == Anim::GetUp)
+                                || (self.legs_animation.id == Anim::Fall)
+                                || (self.legs_animation.id == Anim::Mercy)
+                                || (self.legs_animation.id == Anim::Mercy2)
+                                || (self.legs_animation.id == Anim::Own)
                             {
                                 if (state.soldier_parts.velocity[self.num].x < SLIDELIMIT)
                                     && (state.soldier_parts.velocity[self.num].x > -SLIDELIMIT)
@@ -629,9 +597,9 @@ impl Soldier {
                                 if (step.y > SLIDELIMIT) && (polytype != PolyType::Ice)
                                     && (polytype != PolyType::Bouncy)
                                 {
-                                    if (self.legs_animation.id == state.anims.stand.id)
-                                        || (self.legs_animation.id == state.anims.fall.id)
-                                        || (self.legs_animation.id == state.anims.crouch.id)
+                                    if (self.legs_animation.id == Anim::Stand)
+                                        || (self.legs_animation.id == Anim::Fall)
+                                        || (self.legs_animation.id == Anim::Crouch)
                                     {
                                         state.soldier_parts.velocity[self.num].x *=
                                             STANDSURFACECOEFX;
@@ -640,8 +608,8 @@ impl Soldier {
 
                                         state.soldier_parts.forces[self.num].x -=
                                             state.soldier_parts.velocity[self.num].x;
-                                    } else if self.legs_animation.id == state.anims.prone.id {
-                                        if self.legs_animation.curr_frame > 24 {
+                                    } else if self.legs_animation.id == Anim::Prone {
+                                        if self.legs_animation.frame > 24 {
                                             if !(self.control.down
                                                 && (self.control.left || self.control.right))
                                             {
@@ -659,18 +627,18 @@ impl Soldier {
                                             state.soldier_parts.velocity[self.num].y *=
                                                 SURFACECOEFY;
                                         }
-                                    } else if self.legs_animation.id == state.anims.get_up.id {
+                                    } else if self.legs_animation.id == Anim::GetUp {
                                         state.soldier_parts.velocity[self.num].x *= SURFACECOEFX;
                                         state.soldier_parts.velocity[self.num].y *= SURFACECOEFY;
-                                    } else if self.legs_animation.id == state.anims.prone_move.id {
+                                    } else if self.legs_animation.id == Anim::ProneMove {
                                         state.soldier_parts.velocity[self.num].x *=
                                             STANDSURFACECOEFX;
                                         state.soldier_parts.velocity[self.num].y *=
                                             STANDSURFACECOEFY;
                                     }
                                 }
-                            } else if (self.legs_animation.id == state.anims.crouch_run.id)
-                                || (self.legs_animation.id == state.anims.crouch_run_back.id)
+                            } else if (self.legs_animation.id == Anim::CrouchRun)
+                                || (self.legs_animation.id == Anim::CrouchRunBack)
                             {
                                 state.soldier_parts.velocity[self.num].x *= CROUCHMOVESURFACECOEFX;
                                 state.soldier_parts.velocity[self.num].y *= CROUCHMOVESURFACECOEFY;

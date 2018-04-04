@@ -1,3 +1,4 @@
+use shared::anims::*;
 use shared::soldier::*;
 use shared::state::MainState;
 
@@ -55,11 +56,11 @@ impl Soldier {
 
         /*
     println!(
-      "curr_frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
-      self.body_animation.curr_frame,
+      "frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
+      self.body_animation.frame,
       self.body_animation.id,
       self.body_animation.id,
-      self.body_animation.num_frames,
+      self.body_animation.num_frames(),
       self.direction
     );
     */
@@ -145,13 +146,13 @@ impl Soldier {
             .round() as i32;
 
         if self.control.jets
-            && (((self.legs_animation.id == state.anims.jump_side.id)
+            && (((self.legs_animation.id == Anim::JumpSide)
                 && (((self.direction == -1) && cright) || ((self.direction == 1) && cleft)
                     || player_pressed_left_right))
-                || ((self.legs_animation.id == state.anims.roll_back.id) && self.control.up))
+                || ((self.legs_animation.id == Anim::RollBack) && self.control.up))
         {
-            self.body_apply_animation(state.anims.roll_back.clone(), 1);
-            self.legs_apply_animation(state.anims.roll_back.clone(), 1);
+            self.body_apply_animation(Anim::RollBack, 1);
+            self.legs_apply_animation(Anim::RollBack, 1);
         } else if self.control.jets && (self.jets_count > 0) {
             let force = &mut state.soldier_parts.forces[self.num];
 
@@ -164,91 +165,81 @@ impl Soldier {
                     * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity);
             }
 
-            if (self.legs_animation.id != state.anims.get_up.id)
-                && (self.body_animation.id != state.anims.roll.id)
-                && (self.body_animation.id != state.anims.roll_back.id)
+            if (self.legs_animation.id != Anim::GetUp) && (self.body_animation.id != Anim::Roll)
+                && (self.body_animation.id != Anim::RollBack)
             {
-                self.legs_apply_animation(state.anims.fall.clone(), 1);
+                self.legs_apply_animation(Anim::Fall, 1);
             }
 
             self.jets_count -= 1;
         }
 
         // FIRE!!!!
-        if (self.body_animation.id != state.anims.roll.id)
-            && (self.body_animation.id != state.anims.roll_back.id)
-            && (self.body_animation.id != state.anims.melee.id)
-            && (self.body_animation.id != state.anims.change.id)
+        if (self.body_animation.id != Anim::Roll) && (self.body_animation.id != Anim::RollBack)
+            && (self.body_animation.id != Anim::Melee)
+            && (self.body_animation.id != Anim::Change)
         {
-            if ((self.body_animation.id == state.anims.hands_up_aim.id)
-                && (self.body_animation.curr_frame == 11))
-                || (self.body_animation.id != state.anims.hands_up_aim.id)
+            if ((self.body_animation.id == Anim::HandsUpAim) && (self.body_animation.frame == 11))
+                || (self.body_animation.id != Anim::HandsUpAim)
             {
                 if self.control.fire
                 // and (SpriteC.CeaseFireCounter < 0) */
                 {
-                    self.body_apply_animation(state.anims.punch.clone(), 1);
+                    self.body_apply_animation(Anim::Punch, 1);
                 }
             }
         }
 
         // change weapon animation
-        if (self.body_animation.id != state.anims.roll.id)
-            && (self.body_animation.id != state.anims.roll_back.id)
-        {
+        if (self.body_animation.id != Anim::Roll) && (self.body_animation.id != Anim::RollBack) {
             if self.control.change {
-                self.body_apply_animation(state.anims.change.clone(), 1);
+                self.body_apply_animation(Anim::Change, 1);
             }
         }
 
         // change weapon
-        if self.body_animation.id == state.anims.change.id {
-            if self.body_animation.curr_frame == 2 {
+        if self.body_animation.id == Anim::Change {
+            if self.body_animation.frame == 2 {
                 // TODO: play sound
-                self.body_animation.curr_frame += 1;
-            } else if self.body_animation.curr_frame == 25 {
+                self.body_animation.frame += 1;
+            } else if self.body_animation.frame == 25 {
                 self.switch_weapon();
-            } else if (self.body_animation.curr_frame == state.anims.change.num_frames)
+            } else if (self.body_animation.frame == Anim::Change.num_frames())
                 && (self.primary_weapon().ammo_count == 0)
             {
-                self.body_apply_animation(state.anims.stand.clone(), 1);
+                self.body_apply_animation(Anim::Stand, 1);
             }
         }
 
         // Punch!
         if !self.dead_meat {
-            if (self.body_animation.id == state.anims.punch.id)
-                && (self.body_animation.curr_frame == 11)
-            {
-                self.body_animation.curr_frame += 1;
+            if (self.body_animation.id == Anim::Punch) && (self.body_animation.frame == 11) {
+                self.body_animation.frame += 1;
             }
         }
 
         // Buttstock!
         if self.dead_meat {
-            if (self.body_animation.id == state.anims.melee.id)
-                && (self.body_animation.curr_frame == 12)
-            {
+            if (self.body_animation.id == Anim::Melee) && (self.body_animation.frame == 12) {
                 // weapons
             }
         }
 
-        if self.body_animation.id == state.anims.melee.id && self.body_animation.curr_frame > 20 {
-            self.body_apply_animation(state.anims.stand.clone(), 1);
+        if self.body_animation.id == Anim::Melee && self.body_animation.frame > 20 {
+            self.body_apply_animation(Anim::Stand, 1);
         }
 
         // Prone
         if self.control.prone {
-            if (self.legs_animation.id != state.anims.get_up.id)
-                && (self.legs_animation.id != state.anims.prone.id)
-                && (self.legs_animation.id != state.anims.prone_move.id)
+            if (self.legs_animation.id != Anim::GetUp) && (self.legs_animation.id != Anim::Prone)
+                && (self.legs_animation.id != Anim::ProneMove)
             {
-                self.legs_apply_animation(state.anims.prone.clone(), 1);
-                if (self.body_animation.id != state.anims.reload.id)
-                    && (self.body_animation.id != state.anims.change.id)
-                    && (self.body_animation.id != state.anims.throw_weapon.id)
+                self.legs_apply_animation(Anim::Prone, 1);
+                if (self.body_animation.id != Anim::Reload)
+                    && (self.body_animation.id != Anim::Change)
+                    && (self.body_animation.id != Anim::ThrowWeapon)
                 {
-                    self.body_apply_animation(state.anims.prone.clone(), 1);
+                    self.body_apply_animation(Anim::Prone, 1);
                 }
                 self.old_direction = self.direction;
                 self.control.prone = false;
@@ -258,20 +249,19 @@ impl Soldier {
         // Get up
         if self.position == POS_PRONE {
             if self.control.prone || (self.direction != self.old_direction) {
-                if ((self.legs_animation.id == state.anims.prone.id)
-                    && (self.legs_animation.curr_frame > 23))
-                    || (self.legs_animation.id == state.anims.prone_move.id)
+                if ((self.legs_animation.id == Anim::Prone) && (self.legs_animation.frame > 23))
+                    || (self.legs_animation.id == Anim::ProneMove)
                 {
-                    if self.legs_animation.id != state.anims.get_up.id {
-                        self.legs_animation = state.anims.get_up.clone();
-                        self.legs_animation.curr_frame = 9;
+                    if self.legs_animation.id != Anim::GetUp {
+                        self.legs_animation = AnimState::new(Anim::GetUp);
+                        self.legs_animation.frame = 9;
                         self.control.prone = false;
                     }
-                    if (self.body_animation.id != state.anims.reload.id)
-                        && (self.body_animation.id != state.anims.change.id)
-                        && (self.body_animation.id != state.anims.throw_weapon.id)
+                    if (self.body_animation.id != Anim::Reload)
+                        && (self.body_animation.id != Anim::Change)
+                        && (self.body_animation.id != Anim::ThrowWeapon)
                     {
-                        self.body_apply_animation(state.anims.get_up.clone(), 9);
+                        self.body_apply_animation(Anim::GetUp, 9);
                     }
                 }
             }
@@ -280,35 +270,32 @@ impl Soldier {
         let mut unprone = false;
         // Immediately switch from unprone to jump/sidejump, because the end of the unprone
         // animation can be seen as the "wind up" for the jump
-        if (self.legs_animation.id == state.anims.get_up.id)
-            && (self.legs_animation.curr_frame > 23 - (4 - 1)) && self.on_ground
-            && self.control.up && (cright || cleft)
+        if (self.legs_animation.id == Anim::GetUp) && (self.legs_animation.frame > 23 - (4 - 1))
+            && self.on_ground && self.control.up && (cright || cleft)
         {
             // Set sidejump frame 1 to 4 depending on which unprone frame we're in
-            let id = self.legs_animation.curr_frame - (23 - (4 - 1));
-            self.legs_apply_animation(state.anims.jump_side.clone(), id);
+            let id = self.legs_animation.frame - (23 - (4 - 1));
+            self.legs_apply_animation(Anim::JumpSide, id);
             unprone = true;
-        } else if (self.legs_animation.id == state.anims.get_up.id)
-            && (self.legs_animation.curr_frame > 23 - (4 - 1)) && self.on_ground
+        } else if (self.legs_animation.id == Anim::GetUp)
+            && (self.legs_animation.frame > 23 - (4 - 1)) && self.on_ground
             && self.control.up && !(cright || cleft)
         {
             // Set jump frame 6 to 9 depending on which unprone frame we're in
-            let id = self.legs_animation.curr_frame - (23 - (9 - 1));
-            self.legs_apply_animation(state.anims.jump.clone(), id);
+            let id = self.legs_animation.frame - (23 - (9 - 1));
+            self.legs_apply_animation(Anim::Jump, id);
             unprone = true;
-        } else if (self.legs_animation.id == state.anims.get_up.id)
-            && (self.legs_animation.curr_frame > 23)
-        {
+        } else if (self.legs_animation.id == Anim::GetUp) && (self.legs_animation.frame > 23) {
             if cright || cleft {
                 if (self.direction == 1) ^ cleft {
-                    self.legs_apply_animation(state.anims.run.clone(), 1);
+                    self.legs_apply_animation(Anim::Run, 1);
                 } else {
-                    self.legs_apply_animation(state.anims.run_back.clone(), 1);
+                    self.legs_apply_animation(Anim::RunBack, 1);
                 }
             } else if !self.on_ground && self.control.up {
-                self.legs_apply_animation(state.anims.run.clone(), 1);
+                self.legs_apply_animation(Anim::Run, 1);
             } else {
-                self.legs_apply_animation(state.anims.stand.clone(), 1);
+                self.legs_apply_animation(Anim::Stand, 1);
             }
             unprone = true;
         }
@@ -316,18 +303,16 @@ impl Soldier {
         if unprone {
             self.position = POS_STAND;
 
-            if (self.body_animation.id != state.anims.reload.id)
-                && (self.body_animation.id != state.anims.change.id)
-                && (self.body_animation.id != state.anims.throw_weapon.id)
+            if (self.body_animation.id != Anim::Reload) && (self.body_animation.id != Anim::Change)
+                && (self.body_animation.id != Anim::ThrowWeapon)
             {
-                self.body_apply_animation(state.anims.stand.clone(), 1);
+                self.body_apply_animation(Anim::Stand, 1);
             }
         }
 
         if true {
             // self.stat == 0 {
-            if ((self.body_animation.id == state.anims.stand.id)
-                && (self.legs_animation.id == state.anims.stand.id)
+            if ((self.body_animation.id == Anim::Stand) && (self.legs_animation.id == Anim::Stand)
                 && !self.dead_meat && (self.idle_time > 0))
                 || (self.idle_time > DEFAULT_IDLETIME)
             {
@@ -340,19 +325,17 @@ impl Soldier {
 
             if self.idle_random == 0 {
                 if self.idle_time == 0 {
-                    self.body_apply_animation(state.anims.smoke.clone(), 1);
+                    self.body_apply_animation(Anim::Smoke, 1);
                     self.idle_time = DEFAULT_IDLETIME;
                 }
 
-                if (self.body_animation.id == state.anims.smoke.id)
-                    && (self.body_animation.curr_frame == 17)
-                {
-                    self.body_animation.curr_frame += 1;
+                if (self.body_animation.id == Anim::Smoke) && (self.body_animation.frame == 17) {
+                    self.body_animation.frame += 1;
                 }
 
                 if !self.dead_meat {
-                    if (self.idle_time == 1) && (self.body_animation.id != state.anims.smoke.id)
-                        && (self.legs_animation.id == state.anims.stand.id)
+                    if (self.idle_time == 1) && (self.body_animation.id != Anim::Smoke)
+                        && (self.legs_animation.id == Anim::Stand)
                     {
                         self.idle_time = DEFAULT_IDLETIME;
                         self.idle_random = -1;
@@ -362,21 +345,21 @@ impl Soldier {
 
             // *CHEAT*
             if self.legs_animation.speed > 1 {
-                if (self.legs_animation.id == state.anims.jump.id)
-                    || (self.legs_animation.id == state.anims.jump_side.id)
-                    || (self.legs_animation.id == state.anims.roll.id)
-                    || (self.legs_animation.id == state.anims.roll_back.id)
-                    || (self.legs_animation.id == state.anims.prone.id)
-                    || (self.legs_animation.id == state.anims.run.id)
-                    || (self.legs_animation.id == state.anims.run_back.id)
+                if (self.legs_animation.id == Anim::Jump)
+                    || (self.legs_animation.id == Anim::JumpSide)
+                    || (self.legs_animation.id == Anim::Roll)
+                    || (self.legs_animation.id == Anim::RollBack)
+                    || (self.legs_animation.id == Anim::Prone)
+                    || (self.legs_animation.id == Anim::Run)
+                    || (self.legs_animation.id == Anim::RunBack)
                 {
                     state.soldier_parts.velocity[self.num].x /= self.legs_animation.speed as f32;
                     state.soldier_parts.velocity[self.num].y /= self.legs_animation.speed as f32;
                 }
 
                 if self.legs_animation.speed > 2 {
-                    if (self.legs_animation.id == state.anims.prone_move.id)
-                        || (self.legs_animation.id == state.anims.crouch_run.id)
+                    if (self.legs_animation.id == Anim::ProneMove)
+                        || (self.legs_animation.id == Anim::CrouchRun)
                     {
                         state.soldier_parts.velocity[self.num].x /=
                             self.legs_animation.speed as f32;
@@ -390,11 +373,10 @@ impl Soldier {
 
             // TODO if targetmode > freecontrols
             // End any ongoing idle animations if a key is pressed
-            if (self.body_animation.id == state.anims.cigar.id)
-                || (self.body_animation.id == state.anims.match_.id)
-                || (self.body_animation.id == state.anims.smoke.id)
-                || (self.body_animation.id == state.anims.wipe.id)
-                || (self.body_animation.id == state.anims.groin.id)
+            if (self.body_animation.id == Anim::Cigar) || (self.body_animation.id == Anim::Match)
+                || (self.body_animation.id == Anim::Smoke)
+                || (self.body_animation.id == Anim::Wipe)
+                || (self.body_animation.id == Anim::Groin)
             {
                 if cleft || cright || self.control.up || self.control.down || self.control.fire
                     || self.control.jets || self.control.grenade
@@ -402,23 +384,22 @@ impl Soldier {
                     || self.control.throw || self.control.reload
                     || self.control.prone
                 {
-                    self.body_animation.curr_frame = self.body_animation.num_frames;
+                    self.body_animation.frame = self.body_animation.num_frames();
                 }
             }
 
             // make anims out of controls
             // rolling
-            if (self.body_animation.id != state.anims.take_off.id)
-                && (self.body_animation.id != state.anims.piss.id)
-                && (self.body_animation.id != state.anims.mercy.id)
-                && (self.body_animation.id != state.anims.mercy2.id)
-                && (self.body_animation.id != state.anims.victory.id)
-                && (self.body_animation.id != state.anims.own.id)
+            if (self.body_animation.id != Anim::TakeOff) && (self.body_animation.id != Anim::Piss)
+                && (self.body_animation.id != Anim::Mercy)
+                && (self.body_animation.id != Anim::Mercy2)
+                && (self.body_animation.id != Anim::Victory)
+                && (self.body_animation.id != Anim::Own)
             {
-                if (self.body_animation.id == state.anims.roll.id)
-                    || (self.body_animation.id == state.anims.roll_back.id)
+                if (self.body_animation.id == Anim::Roll)
+                    || (self.body_animation.id == Anim::RollBack)
                 {
-                    if self.legs_animation.id == state.anims.roll.id {
+                    if self.legs_animation.id == Anim::Roll {
                         if self.on_ground {
                             state.soldier_parts.forces[self.num].x =
                                 f32::from(self.direction) * ROLLSPEED;
@@ -426,7 +407,7 @@ impl Soldier {
                             state.soldier_parts.forces[self.num].x =
                                 f32::from(self.direction) * 2.0 * FLYSPEED;
                         }
-                    } else if self.legs_animation.id == state.anims.roll_back.id {
+                    } else if self.legs_animation.id == Anim::RollBack {
                         if self.on_ground {
                             state.soldier_parts.forces[self.num].x =
                                 -f32::from(self.direction) * ROLLSPEED;
@@ -435,9 +416,7 @@ impl Soldier {
                                 -f32::from(self.direction) * 2.0 * FLYSPEED;
                         }
                         // if appropriate frames to move
-                        if (self.legs_animation.curr_frame > 1)
-                            && (self.legs_animation.curr_frame < 8)
-                        {
+                        if (self.legs_animation.frame > 1) && (self.legs_animation.frame < 8) {
                             if self.control.up {
                                 state.soldier_parts.forces[self.num].y -= JUMPDIRSPEED * 1.5;
                                 state.soldier_parts.forces[self.num].x *= 0.5;
@@ -449,45 +428,45 @@ impl Soldier {
                 } else if (cright) && (self.control.down) {
                     if self.on_ground {
                         // roll to the side
-                        if (self.legs_animation.id == state.anims.run.id)
-                            || (self.legs_animation.id == state.anims.run_back.id)
-                            || (self.legs_animation.id == state.anims.fall.id)
-                            || (self.legs_animation.id == state.anims.prone_move.id)
-                            || ((self.legs_animation.id == state.anims.prone.id)
-                                && (self.legs_animation.curr_frame >= 24))
+                        if (self.legs_animation.id == Anim::Run)
+                            || (self.legs_animation.id == Anim::RunBack)
+                            || (self.legs_animation.id == Anim::Fall)
+                            || (self.legs_animation.id == Anim::ProneMove)
+                            || ((self.legs_animation.id == Anim::Prone)
+                                && (self.legs_animation.frame >= 24))
                         {
-                            if (self.legs_animation.id == state.anims.prone_move.id)
-                                || ((self.legs_animation.id == state.anims.prone.id)
-                                    && (self.legs_animation.curr_frame
-                                        == self.legs_animation.num_frames))
+                            if (self.legs_animation.id == Anim::ProneMove)
+                                || ((self.legs_animation.id == Anim::Prone)
+                                    && (self.legs_animation.frame
+                                        == self.legs_animation.num_frames()))
                             {
                                 self.control.prone = false;
                                 self.position = POS_STAND;
                             }
 
                             if self.direction == 1 {
-                                self.body_apply_animation(state.anims.roll.clone(), 1);
-                                self.legs_animation = state.anims.roll.clone();
-                                self.legs_animation.curr_frame = 1;
+                                self.body_apply_animation(Anim::Roll, 1);
+                                self.legs_animation = AnimState::new(Anim::Roll);
+                                self.legs_animation.frame = 1;
                             } else {
-                                self.body_apply_animation(state.anims.roll_back.clone(), 1);
-                                self.legs_animation = state.anims.roll_back.clone();
-                                self.legs_animation.curr_frame = 1;
+                                self.body_apply_animation(Anim::RollBack, 1);
+                                self.legs_animation = AnimState::new(Anim::RollBack);
+                                self.legs_animation.frame = 1;
                             }
                         } else {
                             if self.direction == 1 {
-                                self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
+                                self.legs_apply_animation(Anim::CrouchRun, 1);
                             } else {
-                                self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
+                                self.legs_apply_animation(Anim::CrouchRunBack, 1);
                             }
                         }
 
-                        if (self.legs_animation.id == state.anims.crouch_run.id)
-                            || (self.legs_animation.id == state.anims.crouch_run_back.id)
+                        if (self.legs_animation.id == Anim::CrouchRun)
+                            || (self.legs_animation.id == Anim::CrouchRunBack)
                         {
                             state.soldier_parts.forces[self.num].x = CROUCHRUNSPEED;
-                        } else if (self.legs_animation.id == state.anims.roll.id)
-                            || (self.legs_animation.id == state.anims.roll_back.id)
+                        } else if (self.legs_animation.id == Anim::Roll)
+                            || (self.legs_animation.id == Anim::RollBack)
                         {
                             state.soldier_parts.forces[self.num].x = 2.0 * CROUCHRUNSPEED;
                         }
@@ -496,60 +475,60 @@ impl Soldier {
                 } else if cleft && self.control.down {
                     if self.on_ground {
                         // roll to the side
-                        if (self.legs_animation.id == state.anims.run.id)
-                            || (self.legs_animation.id == state.anims.run_back.id)
-                            || (self.legs_animation.id == state.anims.fall.id)
-                            || (self.legs_animation.id == state.anims.prone_move.id)
-                            || ((self.legs_animation.id == state.anims.prone.id)
-                                && (self.legs_animation.curr_frame >= 24))
+                        if (self.legs_animation.id == Anim::Run)
+                            || (self.legs_animation.id == Anim::RunBack)
+                            || (self.legs_animation.id == Anim::Fall)
+                            || (self.legs_animation.id == Anim::ProneMove)
+                            || ((self.legs_animation.id == Anim::Prone)
+                                && (self.legs_animation.frame >= 24))
                         {
-                            if (self.legs_animation.id == state.anims.prone_move.id)
-                                || ((self.legs_animation.id == state.anims.prone.id)
-                                    && (self.legs_animation.curr_frame
-                                        == self.legs_animation.num_frames))
+                            if (self.legs_animation.id == Anim::ProneMove)
+                                || ((self.legs_animation.id == Anim::Prone)
+                                    && (self.legs_animation.frame
+                                        == self.legs_animation.num_frames()))
                             {
                                 self.control.prone = false;
                                 self.position = POS_STAND;
                             }
 
                             if self.direction == 1 {
-                                self.body_apply_animation(state.anims.roll_back.clone(), 1);
-                                self.legs_animation = state.anims.roll_back.clone();
-                                self.legs_animation.curr_frame = 1;
+                                self.body_apply_animation(Anim::RollBack, 1);
+                                self.legs_animation = AnimState::new(Anim::RollBack);
+                                self.legs_animation.frame = 1;
                             } else {
-                                self.body_apply_animation(state.anims.roll.clone(), 1);
-                                self.legs_animation = state.anims.roll.clone();
-                                self.legs_animation.curr_frame = 1;
+                                self.body_apply_animation(Anim::Roll, 1);
+                                self.legs_animation = AnimState::new(Anim::Roll);
+                                self.legs_animation.frame = 1;
                             }
                         } else {
                             if self.direction == 1 {
-                                self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
+                                self.legs_apply_animation(Anim::CrouchRunBack, 1);
                             } else {
-                                self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
+                                self.legs_apply_animation(Anim::CrouchRun, 1);
                             }
                         }
 
-                        if (self.legs_animation.id == state.anims.crouch_run.id)
-                            || (self.legs_animation.id == state.anims.crouch_run_back.id)
+                        if (self.legs_animation.id == Anim::CrouchRun)
+                            || (self.legs_animation.id == Anim::CrouchRunBack)
                         {
                             state.soldier_parts.forces[self.num].x = -CROUCHRUNSPEED;
                         }
                     }
                 // Proning
-                } else if (self.legs_animation.id == state.anims.prone.id)
-                    || (self.legs_animation.id == state.anims.prone_move.id)
-                    || ((self.legs_animation.id == state.anims.get_up.id)
-                        && (self.body_animation.id != state.anims.throw.id)
-                        && (self.body_animation.id != state.anims.punch.id))
+                } else if (self.legs_animation.id == Anim::Prone)
+                    || (self.legs_animation.id == Anim::ProneMove)
+                    || ((self.legs_animation.id == Anim::GetUp)
+                        && (self.body_animation.id != Anim::Throw)
+                        && (self.body_animation.id != Anim::Punch))
                 {
                     if self.on_ground {
-                        if ((self.legs_animation.id == state.anims.prone.id)
-                            && (self.legs_animation.curr_frame > 25))
-                            || (self.legs_animation.id == state.anims.prone_move.id)
+                        if ((self.legs_animation.id == Anim::Prone)
+                            && (self.legs_animation.frame > 25))
+                            || (self.legs_animation.id == Anim::ProneMove)
                         {
                             if cleft || cright {
-                                if (self.legs_animation.curr_frame < 4)
-                                    || (self.legs_animation.curr_frame > 14)
+                                if (self.legs_animation.frame < 4)
+                                    || (self.legs_animation.frame > 14)
                                 {
                                     state.soldier_parts.forces[self.num].x = {
                                         if cleft {
@@ -560,137 +539,131 @@ impl Soldier {
                                     }
                                 }
 
-                                self.legs_apply_animation(state.anims.prone_move.clone(), 1);
+                                self.legs_apply_animation(Anim::ProneMove, 1);
 
-                                if (self.body_animation.id != state.anims.clip_in.id)
-                                    && (self.body_animation.id != state.anims.clip_out.id)
-                                    && (self.body_animation.id != state.anims.slide_back.id)
-                                    && (self.body_animation.id != state.anims.reload.id)
-                                    && (self.body_animation.id != state.anims.change.id)
-                                    && (self.body_animation.id != state.anims.throw.id)
-                                    && (self.body_animation.id != state.anims.throw_weapon.id)
+                                if (self.body_animation.id != Anim::ClipIn)
+                                    && (self.body_animation.id != Anim::ClipOut)
+                                    && (self.body_animation.id != Anim::SlideBack)
+                                    && (self.body_animation.id != Anim::Reload)
+                                    && (self.body_animation.id != Anim::Change)
+                                    && (self.body_animation.id != Anim::Throw)
+                                    && (self.body_animation.id != Anim::ThrowWeapon)
                                 {
-                                    self.body_apply_animation(state.anims.prone_move.clone(), 1);
+                                    self.body_apply_animation(Anim::ProneMove, 1);
                                 }
 
-                                if self.legs_animation.id != state.anims.prone_move.id {
-                                    self.legs_animation = state.anims.prone_move.clone();
+                                if self.legs_animation.id != Anim::ProneMove {
+                                    self.legs_animation = AnimState::new(Anim::ProneMove);
                                 }
                             } else {
-                                if self.legs_animation.id != state.anims.prone.id {
-                                    self.legs_animation = state.anims.prone.clone();
+                                if self.legs_animation.id != Anim::Prone {
+                                    self.legs_animation = AnimState::new(Anim::Prone);
                                 }
-                                self.legs_animation.curr_frame = 26;
+                                self.legs_animation.frame = 26;
                             }
                         }
                     }
                 } else if cright && self.control.up {
                     if self.on_ground {
-                        if (self.legs_animation.id == state.anims.run.id)
-                            || (self.legs_animation.id == state.anims.run_back.id)
-                            || (self.legs_animation.id == state.anims.stand.id)
-                            || (self.legs_animation.id == state.anims.crouch.id)
-                            || (self.legs_animation.id == state.anims.crouch_run.id)
-                            || (self.legs_animation.id == state.anims.crouch_run_back.id)
+                        if (self.legs_animation.id == Anim::Run)
+                            || (self.legs_animation.id == Anim::RunBack)
+                            || (self.legs_animation.id == Anim::Stand)
+                            || (self.legs_animation.id == Anim::Crouch)
+                            || (self.legs_animation.id == Anim::CrouchRun)
+                            || (self.legs_animation.id == Anim::CrouchRunBack)
                         {
-                            self.legs_apply_animation(state.anims.jump_side.clone(), 1);
+                            self.legs_apply_animation(Anim::JumpSide, 1);
                         }
 
-                        if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-                            self.legs_apply_animation(state.anims.run.clone(), 1);
+                        if self.legs_animation.frame == self.legs_animation.num_frames() {
+                            self.legs_apply_animation(Anim::Run, 1);
                         }
-                    } else if (self.legs_animation.id == state.anims.roll.id)
-                        || (self.legs_animation.id == state.anims.roll_back.id)
+                    } else if (self.legs_animation.id == Anim::Roll)
+                        || (self.legs_animation.id == Anim::RollBack)
                     {
                         if self.direction == 1 {
-                            self.legs_apply_animation(state.anims.run.clone(), 1);
+                            self.legs_apply_animation(Anim::Run, 1);
                         } else {
-                            self.legs_apply_animation(state.anims.run_back.clone(), 1);
+                            self.legs_apply_animation(Anim::RunBack, 1);
                         }
                     }
-                    if self.legs_animation.id == state.anims.jump.id {
-                        if self.legs_animation.curr_frame < 10 {
-                            self.legs_apply_animation(state.anims.jump_side.clone(), 1);
+                    if self.legs_animation.id == Anim::Jump {
+                        if self.legs_animation.frame < 10 {
+                            self.legs_apply_animation(Anim::JumpSide, 1);
                         }
                     }
 
-                    if self.legs_animation.id == state.anims.jump_side.id {
-                        if (self.legs_animation.curr_frame > 3)
-                            && (self.legs_animation.curr_frame < 11)
-                        {
+                    if self.legs_animation.id == Anim::JumpSide {
+                        if (self.legs_animation.frame > 3) && (self.legs_animation.frame < 11) {
                             state.soldier_parts.forces[self.num].x = JUMPDIRSPEED;
                             state.soldier_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
                         }
                     }
                 } else if cleft && self.control.up {
                     if self.on_ground {
-                        if (self.legs_animation.id == state.anims.run.id)
-                            || (self.legs_animation.id == state.anims.run_back.id)
-                            || (self.legs_animation.id == state.anims.stand.id)
-                            || (self.legs_animation.id == state.anims.crouch.id)
-                            || (self.legs_animation.id == state.anims.crouch_run.id)
-                            || (self.legs_animation.id == state.anims.crouch_run_back.id)
+                        if (self.legs_animation.id == Anim::Run)
+                            || (self.legs_animation.id == Anim::RunBack)
+                            || (self.legs_animation.id == Anim::Stand)
+                            || (self.legs_animation.id == Anim::Crouch)
+                            || (self.legs_animation.id == Anim::CrouchRun)
+                            || (self.legs_animation.id == Anim::CrouchRunBack)
                         {
-                            self.legs_apply_animation(state.anims.jump_side.clone(), 1);
+                            self.legs_apply_animation(Anim::JumpSide, 1);
                         }
 
-                        if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-                            self.legs_apply_animation(state.anims.run.clone(), 1);
+                        if self.legs_animation.frame == self.legs_animation.num_frames() {
+                            self.legs_apply_animation(Anim::Run, 1);
                         }
-                    } else if (self.legs_animation.id == state.anims.roll.id)
-                        || (self.legs_animation.id == state.anims.roll_back.id)
+                    } else if (self.legs_animation.id == Anim::Roll)
+                        || (self.legs_animation.id == Anim::RollBack)
                     {
                         if self.direction == -1 {
-                            self.legs_apply_animation(state.anims.run.clone(), 1);
+                            self.legs_apply_animation(Anim::Run, 1);
                         } else {
-                            self.legs_apply_animation(state.anims.run_back.clone(), 1);
+                            self.legs_apply_animation(Anim::RunBack, 1);
                         }
                     }
 
-                    if self.legs_animation.id == state.anims.jump.id {
-                        if self.legs_animation.curr_frame < 10 {
-                            self.legs_apply_animation(state.anims.jump_side.clone(), 1);
+                    if self.legs_animation.id == Anim::Jump {
+                        if self.legs_animation.frame < 10 {
+                            self.legs_apply_animation(Anim::JumpSide, 1);
                         }
                     }
 
-                    if self.legs_animation.id == state.anims.jump_side.id {
-                        if (self.legs_animation.curr_frame > 3)
-                            && (self.legs_animation.curr_frame < 11)
-                        {
+                    if self.legs_animation.id == Anim::JumpSide {
+                        if (self.legs_animation.frame > 3) && (self.legs_animation.frame < 11) {
                             state.soldier_parts.forces[self.num].x = -JUMPDIRSPEED;
                             state.soldier_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
                         }
                     }
                 } else if self.control.up {
                     if self.on_ground {
-                        if self.legs_animation.id != state.anims.jump.id {
-                            self.legs_apply_animation(state.anims.jump.clone(), 1);
+                        if self.legs_animation.id != Anim::Jump {
+                            self.legs_apply_animation(Anim::Jump, 1);
                         }
-                        if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-                            self.legs_apply_animation(state.anims.stand.clone(), 1);
+                        if self.legs_animation.frame == self.legs_animation.num_frames() {
+                            self.legs_apply_animation(Anim::Stand, 1);
                         }
                     }
-                    if self.legs_animation.id == state.anims.jump.id {
-                        if (self.legs_animation.curr_frame > 8)
-                            && (self.legs_animation.curr_frame < 15)
-                        {
+                    if self.legs_animation.id == Anim::Jump {
+                        if (self.legs_animation.frame > 8) && (self.legs_animation.frame < 15) {
                             state.soldier_parts.forces[self.num].y = -JUMPSPEED;
                         }
-                        if self.legs_animation.curr_frame == self.legs_animation.num_frames {
-                            self.legs_apply_animation(state.anims.fall.clone(), 1);
+                        if self.legs_animation.frame == self.legs_animation.num_frames() {
+                            self.legs_apply_animation(Anim::Fall, 1);
                         }
                     }
                 } else if self.control.down {
                     if self.on_ground {
-                        self.legs_apply_animation(state.anims.crouch.clone(), 1);
+                        self.legs_apply_animation(Anim::Crouch, 1);
                     }
                 } else if cright {
                     if true {
                         // if self.para = 0
                         if self.direction == 1 {
-                            self.legs_apply_animation(state.anims.run.clone(), 1);
+                            self.legs_apply_animation(Anim::Run, 1);
                         } else {
-                            self.legs_apply_animation(state.anims.run_back.clone(), 1);
+                            self.legs_apply_animation(Anim::RunBack, 1);
                         }
                     }
 
@@ -704,9 +677,9 @@ impl Soldier {
                     if true {
                         // if self.para = 0
                         if self.direction == -1 {
-                            self.legs_apply_animation(state.anims.run.clone(), 1);
+                            self.legs_apply_animation(Anim::Run, 1);
                         } else {
-                            self.legs_apply_animation(state.anims.run_back.clone(), 1);
+                            self.legs_apply_animation(Anim::RunBack, 1);
                         }
                     }
 
@@ -718,159 +691,154 @@ impl Soldier {
                     }
                 } else {
                     if self.on_ground {
-                        self.legs_apply_animation(state.anims.stand.clone(), 1);
+                        self.legs_apply_animation(Anim::Stand, 1);
                     } else {
-                        self.legs_apply_animation(state.anims.fall.clone(), 1);
+                        self.legs_apply_animation(Anim::Fall, 1);
                     }
                 }
             }
             // Body animations
 
-            if (self.legs_animation.id == state.anims.roll.id)
-                && (self.body_animation.id != state.anims.roll.id)
-            {
-                self.body_apply_animation(state.anims.roll.clone(), 1)
+            if (self.legs_animation.id == Anim::Roll) && (self.body_animation.id != Anim::Roll) {
+                self.body_apply_animation(Anim::Roll, 1)
             }
-            if (self.body_animation.id == state.anims.roll.id)
-                && (self.legs_animation.id != state.anims.roll.id)
-            {
-                self.legs_apply_animation(state.anims.roll.clone(), 1)
+            if (self.body_animation.id == Anim::Roll) && (self.legs_animation.id != Anim::Roll) {
+                self.legs_apply_animation(Anim::Roll, 1)
             }
-            if (self.legs_animation.id == state.anims.roll_back.id)
-                && (self.body_animation.id != state.anims.roll_back.id)
+            if (self.legs_animation.id == Anim::RollBack)
+                && (self.body_animation.id != Anim::RollBack)
             {
-                self.body_apply_animation(state.anims.roll_back.clone(), 1)
+                self.body_apply_animation(Anim::RollBack, 1)
             }
-            if (self.body_animation.id == state.anims.roll_back.id)
-                && (self.legs_animation.id != state.anims.roll_back.id)
+            if (self.body_animation.id == Anim::RollBack)
+                && (self.legs_animation.id != Anim::RollBack)
             {
-                self.legs_apply_animation(state.anims.roll_back.clone(), 1)
+                self.legs_apply_animation(Anim::RollBack, 1)
             }
 
-            if (self.body_animation.id == state.anims.roll.id)
-                || (self.body_animation.id == state.anims.roll_back.id)
+            if (self.body_animation.id == Anim::Roll) || (self.body_animation.id == Anim::RollBack)
             {
-                if self.legs_animation.curr_frame != self.body_animation.curr_frame {
-                    if self.legs_animation.curr_frame > self.body_animation.curr_frame {
-                        self.body_animation.curr_frame = self.legs_animation.curr_frame;
+                if self.legs_animation.frame != self.body_animation.frame {
+                    if self.legs_animation.frame > self.body_animation.frame {
+                        self.body_animation.frame = self.legs_animation.frame;
                     } else {
-                        self.legs_animation.curr_frame = self.body_animation.curr_frame;
+                        self.legs_animation.frame = self.body_animation.frame;
                     }
                 }
             }
 
             // Gracefully end a roll animation
-            if ((self.body_animation.id == state.anims.roll.id)
-                || (self.body_animation.id == state.anims.roll_back.id))
-                && (self.body_animation.curr_frame == self.body_animation.num_frames)
+            if ((self.body_animation.id == Anim::Roll)
+                || (self.body_animation.id == Anim::RollBack))
+                && (self.body_animation.frame == self.body_animation.num_frames())
             {
                 // Was probably a roll
                 if self.on_ground {
                     if self.control.down {
                         if cleft || cright {
-                            if self.body_animation.id == state.anims.roll.id {
-                                self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
+                            if self.body_animation.id == Anim::Roll {
+                                self.legs_apply_animation(Anim::CrouchRun, 1);
                             } else {
-                                self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
+                                self.legs_apply_animation(Anim::CrouchRunBack, 1);
                             }
                         } else {
-                            self.legs_apply_animation(state.anims.crouch.clone(), 15);
+                            self.legs_apply_animation(Anim::Crouch, 15);
                         }
                     }
                 // Was probably a backflip
-                } else if (self.body_animation.id == state.anims.roll_back.id) && self.control.up {
+                } else if (self.body_animation.id == Anim::RollBack) && self.control.up {
                     if cleft || cright {
                         // Run back or forward depending on facing direction and direction key pressed
                         if (self.direction == 1) ^ (cleft) {
-                            self.legs_apply_animation(state.anims.run.clone(), 1);
+                            self.legs_apply_animation(Anim::Run, 1);
                         } else {
-                            self.legs_apply_animation(state.anims.run_back.clone(), 1);
+                            self.legs_apply_animation(Anim::RunBack, 1);
                         }
                     } else {
-                        self.legs_apply_animation(state.anims.fall.clone(), 1);
+                        self.legs_apply_animation(Anim::Fall, 1);
                     }
                 // Was probably a roll (that ended mid-air)
                 } else if self.control.down {
                     if cleft || cright {
-                        if self.body_animation.id == state.anims.roll.id {
-                            self.legs_apply_animation(state.anims.crouch_run.clone(), 1);
+                        if self.body_animation.id == Anim::Roll {
+                            self.legs_apply_animation(Anim::CrouchRun, 1);
                         } else {
-                            self.legs_apply_animation(state.anims.crouch_run_back.clone(), 1);
+                            self.legs_apply_animation(Anim::CrouchRunBack, 1);
                         }
                     } else {
-                        self.legs_apply_animation(state.anims.crouch.clone(), 15);
+                        self.legs_apply_animation(Anim::Crouch, 15);
                     }
                 }
-                self.body_apply_animation(state.anims.stand.clone(), 1);
+                self.body_apply_animation(Anim::Stand, 1);
             }
 
-            if (!self.control.grenade && (self.body_animation.id != state.anims.recoil.id)
-                && (self.body_animation.id != state.anims.small_recoil.id)
-                && (self.body_animation.id != state.anims.aim_recoil.id)
-                && (self.body_animation.id != state.anims.hands_up_recoil.id)
-                && (self.body_animation.id != state.anims.shotgun.id)
-                && (self.body_animation.id != state.anims.barret.id)
-                && (self.body_animation.id != state.anims.change.id)
-                && (self.body_animation.id != state.anims.throw_weapon.id)
-                && (self.body_animation.id != state.anims.weapon_none.id)
-                && (self.body_animation.id != state.anims.punch.id)
-                && (self.body_animation.id != state.anims.roll.id)
-                && (self.body_animation.id != state.anims.roll_back.id)
-                && (self.body_animation.id != state.anims.reload_bow.id)
-                && (self.body_animation.id != state.anims.cigar.id)
-                && (self.body_animation.id != state.anims.match_.id)
-                && (self.body_animation.id != state.anims.smoke.id)
-                && (self.body_animation.id != state.anims.wipe.id)
-                && (self.body_animation.id != state.anims.take_off.id)
-                && (self.body_animation.id != state.anims.groin.id)
-                && (self.body_animation.id != state.anims.piss.id)
-                && (self.body_animation.id != state.anims.mercy.id)
-                && (self.body_animation.id != state.anims.mercy2.id)
-                && (self.body_animation.id != state.anims.victory.id)
-                && (self.body_animation.id != state.anims.own.id)
-                && (self.body_animation.id != state.anims.reload.id)
-                && (self.body_animation.id != state.anims.prone.id)
-                && (self.body_animation.id != state.anims.get_up.id)
-                && (self.body_animation.id != state.anims.prone_move.id)
-                && (self.body_animation.id != state.anims.melee.id))
-                || ((self.body_animation.curr_frame == self.body_animation.num_frames)
-                    && (self.body_animation.id != state.anims.prone.id))
+            if (!self.control.grenade && (self.body_animation.id != Anim::Recoil)
+                && (self.body_animation.id != Anim::SmallRecoil)
+                && (self.body_animation.id != Anim::AimRecoil)
+                && (self.body_animation.id != Anim::HandsUpRecoil)
+                && (self.body_animation.id != Anim::Shotgun)
+                && (self.body_animation.id != Anim::Barret)
+                && (self.body_animation.id != Anim::Change)
+                && (self.body_animation.id != Anim::ThrowWeapon)
+                && (self.body_animation.id != Anim::WeaponNone)
+                && (self.body_animation.id != Anim::Punch)
+                && (self.body_animation.id != Anim::Roll)
+                && (self.body_animation.id != Anim::RollBack)
+                && (self.body_animation.id != Anim::ReloadBow)
+                && (self.body_animation.id != Anim::Cigar)
+                && (self.body_animation.id != Anim::Match)
+                && (self.body_animation.id != Anim::Smoke)
+                && (self.body_animation.id != Anim::Wipe)
+                && (self.body_animation.id != Anim::TakeOff)
+                && (self.body_animation.id != Anim::Groin)
+                && (self.body_animation.id != Anim::Piss)
+                && (self.body_animation.id != Anim::Mercy)
+                && (self.body_animation.id != Anim::Mercy2)
+                && (self.body_animation.id != Anim::Victory)
+                && (self.body_animation.id != Anim::Own)
+                && (self.body_animation.id != Anim::Reload)
+                && (self.body_animation.id != Anim::Prone)
+                && (self.body_animation.id != Anim::GetUp)
+                && (self.body_animation.id != Anim::ProneMove)
+                && (self.body_animation.id != Anim::Melee))
+                || ((self.body_animation.frame == self.body_animation.num_frames())
+                    && (self.body_animation.id != Anim::Prone))
             {
                 if self.position != POS_PRONE {
                     if self.position == POS_STAND {
-                        self.body_apply_animation(state.anims.stand.clone(), 1);
+                        self.body_apply_animation(Anim::Stand, 1);
                     }
 
                     if self.position == POS_CROUCH {
                         if self.collider_distance < 255 {
-                            if self.body_animation.id == state.anims.hands_up_recoil.id {
-                                self.body_apply_animation(state.anims.hands_up_aim.clone(), 11);
+                            if self.body_animation.id == Anim::HandsUpRecoil {
+                                self.body_apply_animation(Anim::HandsUpAim, 11);
                             } else {
-                                self.body_apply_animation(state.anims.hands_up_aim.clone(), 1);
+                                self.body_apply_animation(Anim::HandsUpAim, 1);
                             }
                         } else {
-                            if self.body_animation.id == state.anims.aim_recoil.id {
-                                self.body_apply_animation(state.anims.aim.clone(), 6);
+                            if self.body_animation.id == Anim::AimRecoil {
+                                self.body_apply_animation(Anim::Aim, 6);
                             } else {
-                                self.body_apply_animation(state.anims.aim.clone(), 1);
+                                self.body_apply_animation(Anim::Aim, 1);
                             }
                         }
                     }
                 } else {
-                    self.body_apply_animation(state.anims.prone.clone(), 26);
+                    self.body_apply_animation(Anim::Prone, 26);
                 }
             }
 
-            if (self.legs_animation.id == state.anims.crouch.id)
-                || (self.legs_animation.id == state.anims.crouch_run.id)
-                || (self.legs_animation.id == state.anims.crouch_run_back.id)
+            if (self.legs_animation.id == Anim::Crouch)
+                || (self.legs_animation.id == Anim::CrouchRun)
+                || (self.legs_animation.id == Anim::CrouchRunBack)
             {
                 self.position = POS_CROUCH;
             } else {
                 self.position = POS_STAND;
             }
-            if (self.legs_animation.id == state.anims.prone.id)
-                || (self.legs_animation.id == state.anims.prone_move.id)
+            if (self.legs_animation.id == Anim::Prone)
+                || (self.legs_animation.id == Anim::ProneMove)
             {
                 self.position = POS_PRONE;
             }
