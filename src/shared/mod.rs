@@ -4,7 +4,7 @@ pub mod anims;
 pub mod calc;
 pub mod control;
 pub mod mapfile;
-pub mod parts;
+pub mod particles;
 pub mod render;
 pub mod soldier;
 pub mod state;

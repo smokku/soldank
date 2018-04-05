@@ -1,12 +1,5 @@
+use super::*;
 use glutin;
-use shared::anims::*;
-use shared::calc::*;
-use shared::control::Control;
-use shared::mapfile::PolyType;
-use shared::parts;
-use shared::parts::ParticleSystem;
-use shared::state::MainState;
-use shared::weapons::*;
 
 const SLIDELIMIT: f32 = 0.2;
 const GRAV: f32 = 0.06;
@@ -23,6 +16,11 @@ const POS_PRONE: u8 = 3;
 
 const MAX_VELOCITY: f32 = 11.0;
 const SOLDIER_COL_RADIUS: f32 = 3.0;
+
+lazy_static! {
+    static ref SOLDIER_SKELETON: ParticleSystem =
+        ParticleSystem::load_from_file("gostek.po", 4.5, 1.0, 1.06 * GRAV, 0.0, 0.9945);
+}
 
 #[allow(dead_code)]
 pub struct Soldier {
@@ -50,16 +48,21 @@ pub struct Soldier {
     pub on_fire: u8,
     pub collider_distance: u8,
     pub half_dead: bool,
-    pub skeleton: parts::ParticleSystem,
+    pub skeleton: ParticleSystem,
     pub legs_animation: AnimState,
     pub body_animation: AnimState,
     pub control: Control,
     pub active_weapon: usize,
     pub weapons: [Weapon; 3],
     pub fired: u8,
+    pub particle: Particle,
 }
 
 impl Soldier {
+    pub fn initialize() {
+        lazy_static::initialize(&SOLDIER_SKELETON);
+    }
+
     pub fn primary_weapon(&self) -> &Weapon {
         &self.weapons[self.active_weapon]
     }
@@ -117,24 +120,23 @@ impl Soldier {
         }
     }
 
-    pub fn new(state: &mut MainState) -> Soldier {
-        let control: Control = Default::default();
-        let mut gostek = ParticleSystem::new();
+    pub fn new(spawn: &MapSpawnpoint) -> Soldier {
+        let particle = Particle {
+            active: true,
+            pos: vec2(spawn.x as f32, spawn.y as f32),
+            old_pos: vec2(spawn.x as f32, spawn.y as f32),
+            one_over_mass: 1.0,
+            timestep: 1.0,
+            gravity: GRAV,
+            e_damping: 0.99,
+            ..Default::default()
+        };
 
-        gostek.load_from_file(&String::from("gostek.po"), 4.50);
-        gostek.timestep = 1.00;
-        gostek.gravity = 1.06 * GRAV;
-        gostek.v_damping = 0.9945;
-
-        state.soldier_parts.create_part(
-            vec2(
-                state.map.spawnpoints[0].x as f32,
-                state.map.spawnpoints[0].y as f32,
-            ),
-            vec2(0.0f32, 0.0f32),
-            1.00,
-            1,
-        );
+        let weapons = [
+            Weapon::new(WeaponKind::DesertEagles, false),
+            Weapon::new(WeaponKind::Chainsaw, false),
+            Weapon::new(WeaponKind::FragGrenade, false),
+        ];
 
         Soldier {
             active: true,
@@ -161,17 +163,14 @@ impl Soldier {
             on_fire: 0,
             collider_distance: 255,
             half_dead: false,
-            skeleton: gostek,
+            skeleton: SOLDIER_SKELETON.clone(),
             legs_animation: AnimState::new(Anim::Stand),
             body_animation: AnimState::new(Anim::Stand),
-            control,
+            control: Default::default(),
             active_weapon: 0,
-            weapons: [
-                Weapon::new(WeaponKind::DesertEagles, false),
-                Weapon::new(WeaponKind::Chainsaw, false),
-                Weapon::new(WeaponKind::FragGrenade, false),
-            ],
+            weapons,
             fired: 0,
+            particle,
         }
     }
 
@@ -191,39 +190,33 @@ impl Soldier {
         }
     }
 
-    pub fn handle_special_polytypes(
-        &mut self,
-        state: &mut MainState,
-        polytype: PolyType,
-        _pos: Vec2,
-    ) {
+    pub fn handle_special_polytypes(&mut self, map: &MapFile, polytype: PolyType, _pos: Vec2) {
         if polytype == PolyType::Deadly || polytype == PolyType::BloodyDeadly
             || polytype == PolyType::Explosive
         {
-            state.soldier_parts.pos[self.num] = vec2(
-                state.map.spawnpoints[0].x as f32,
-                state.map.spawnpoints[0].y as f32,
-            );
+            self.particle.pos = vec2(map.spawnpoints[0].x as f32, map.spawnpoints[0].y as f32);
         }
     }
 
-    pub fn update(&mut self, state: &mut MainState) {
+    pub fn update(&mut self, state: &MainState) {
+        let map = &state.map;
         let mut body_y = 0.0;
         let mut arm_s;
 
+        self.particle.euler();
         self.control(state);
 
-        self.skeleton.old_pos[21] = self.skeleton.pos[21];
-        self.skeleton.old_pos[23] = self.skeleton.pos[23];
-        self.skeleton.old_pos[25] = self.skeleton.pos[25];
-        self.skeleton.pos[21] = self.skeleton.pos[9];
-        self.skeleton.pos[23] = self.skeleton.pos[12];
-        self.skeleton.pos[25] = self.skeleton.pos[5];
+        *self.skeleton.old_pos_mut(21) = self.skeleton.pos(21);
+        *self.skeleton.old_pos_mut(23) = self.skeleton.pos(23);
+        // *self.skeleton.old_pos_mut(25) = self.skeleton.pos(25);
+        *self.skeleton.pos_mut(21) = self.skeleton.pos(9);
+        *self.skeleton.pos_mut(23) = self.skeleton.pos(12);
+        // *self.skeleton.pos_mut(25) = self.skeleton.pos(5);
 
         if !self.dead_meat {
-            self.skeleton.pos[21] += state.soldier_parts.velocity[self.num];
-            self.skeleton.pos[23] += state.soldier_parts.velocity[self.num];
-            self.skeleton.pos[25] += state.soldier_parts.velocity[self.num];
+            *self.skeleton.pos_mut(21) = self.skeleton.pos(21) + self.particle.velocity;
+            *self.skeleton.pos_mut(23) = self.skeleton.pos(23) + self.particle.velocity;
+            // *self.skeleton.pos_mut(25) = self.skeleton.pos(25) + self.particle.velocity;
         }
 
         match self.position {
@@ -255,61 +248,51 @@ impl Soldier {
             }
         }
 
-        if self.control.mouse_aim_x as f32 >= state.soldier_parts.pos[self.num].x {
+        if self.control.mouse_aim_x as f32 >= self.particle.pos.x {
             self.direction = 1;
         } else {
             self.direction = -1;
         }
 
         for i in 1..21 {
-            if self.skeleton.active[i] && !self.dead_meat {
-                self.skeleton.old_pos[i] = self.skeleton.pos[i];
+            if self.skeleton.active(i) && !self.dead_meat {
+                let mut pos = Vec2::zero();
+                *self.skeleton.old_pos_mut(i) = self.skeleton.pos(i);
 
-                // legs
                 if !self.half_dead && ((i >= 1 && i <= 6) || (i == 17) || (i == 18)) {
-                    self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
-                        + f32::from(self.direction) * self.legs_animation.pos(i).x;
-                    self.skeleton.pos[i].y =
-                        state.soldier_parts.pos[self.num].y + self.legs_animation.pos(i).y;
+                    let anim_pos = self.legs_animation.pos(i);
+                    pos.x = self.particle.pos.x + anim_pos.x * f32::from(self.direction);
+                    pos.y = self.particle.pos.y + anim_pos.y;
                 }
 
-                // body
                 if i >= 7 && i <= 16 || i == 19 || i == 20 {
-                    self.skeleton.pos[i].x = state.soldier_parts.pos[self.num].x
-                        + f32::from(self.direction) * self.body_animation.pos(i).x;
+                    let anim_pos = self.body_animation.pos(i);
+                    pos.x = self.particle.pos.x + anim_pos.x * f32::from(self.direction);
+                    pos.y = self.particle.pos.y + anim_pos.y;
 
-                    if !self.half_dead {
-                        self.skeleton.pos[i].y = (self.skeleton.pos[6].y
-                            - (state.soldier_parts.pos[self.num].y - body_y))
-                            + state.soldier_parts.pos[self.num].y
-                            + self.body_animation.pos(i).y;
+                    if self.half_dead {
+                        pos.y += 9.0;
                     } else {
-                        self.skeleton.pos[i].y = 9.00 + state.soldier_parts.pos[self.num].y
-                            + self.body_animation.pos(i).y;
-                    }
+                        pos.y += self.skeleton.pos(6).y - (self.particle.pos.y - body_y);
+                    };
                 }
+
+                *self.skeleton.pos_mut(i) = pos;
             }
         }
 
-        let mut i = 12;
+        let aim = vec2(
+            self.control.mouse_aim_x as f32,
+            self.control.mouse_aim_y as f32,
+        );
 
         if !self.dead_meat {
-            let p = vec2(self.skeleton.pos[i].x, self.skeleton.pos[i].y);
+            let pos = self.skeleton.pos(9);
+            let r_norm = 0.1 * vec2normalize(self.skeleton.pos(12) - aim);
+            let dir = f32::from(self.direction);
 
-            let mouse_aim = vec2(
-                self.control.mouse_aim_x as f32,
-                self.control.mouse_aim_y as f32,
-            );
-            let mut r_norm = p - mouse_aim;
-            r_norm = vec2normalize(r_norm, r_norm);
-            r_norm *= 0.1;
-            self.skeleton.pos[i].x = self.skeleton.pos[9].x - f32::from(self.direction) * r_norm.y;
-            self.skeleton.pos[i].y = self.skeleton.pos[9].y + f32::from(self.direction) * r_norm.x;
-
-            r_norm *= 50.0;
-
-            self.skeleton.pos[23].x = self.skeleton.pos[9].x - f32::from(self.direction) * r_norm.y;
-            self.skeleton.pos[23].y = self.skeleton.pos[9].y + f32::from(self.direction) * r_norm.x;
+            *self.skeleton.pos_mut(12) = pos + vec2(-dir * r_norm.y, dir * r_norm.x);
+            *self.skeleton.pos_mut(23) = pos + vec2(-dir * r_norm.y, dir * r_norm.x) * 50.0;
         }
 
         let not_aiming_anims = [
@@ -343,21 +326,9 @@ impl Soldier {
             arm_s = -7.00;
         }
 
-        i = 15;
-
         if !self.body_animation.is_any(&not_aiming_anims) {
-            let p = vec2(self.skeleton.pos[i].x, self.skeleton.pos[i].y);
-            let mouse_aim = vec2(
-                self.control.mouse_aim_x as f32,
-                self.control.mouse_aim_y as f32,
-            );
-            let mut r_norm = p - mouse_aim;
-            r_norm = vec2normalize(r_norm, r_norm);
-            r_norm *= arm_s;
-            let m = vec2(self.skeleton.pos[16].x, self.skeleton.pos[16].y);
-            let p = m + r_norm;
-            self.skeleton.pos[i].x = p.x;
-            self.skeleton.pos[i].y = p.y;
+            let r_norm = arm_s * vec2normalize(self.skeleton.pos(15) - aim);
+            *self.skeleton.pos_mut(15) = self.skeleton.pos(16) + r_norm;
         }
 
         if self.body_animation.id == Anim::Throw {
@@ -366,31 +337,15 @@ impl Soldier {
             arm_s = -8.00;
         }
 
-        i = 19;
-
         if !self.body_animation.is_any(&not_aiming_anims) {
-            let p = vec2(self.skeleton.pos[i].x, self.skeleton.pos[i].y);
-            let mouse_aim = vec2(
-                self.control.mouse_aim_x as f32,
-                self.control.mouse_aim_y as f32,
-            );
-            let mut r_norm = p - mouse_aim;
-            r_norm = vec2normalize(r_norm, r_norm);
-            r_norm *= arm_s;
-            let m = vec2(self.skeleton.pos[16].x, self.skeleton.pos[16].y - 4.0);
-            let p = m + r_norm;
-            self.skeleton.pos[i].x = p.x;
-            self.skeleton.pos[i].y = p.y;
+            let r_norm = arm_s * vec2normalize(self.skeleton.pos(19) - aim);
+            *self.skeleton.pos_mut(19) = self.skeleton.pos(16) - vec2(0.0, 4.0) + r_norm;
         }
 
         for i in 1..21 {
             if (self.dead_meat || self.half_dead) && (i < 17) && (i != 7) && (i != 8) {
-                let mut position = vec2(
-                    state.soldier_parts.pos[self.num].x,
-                    state.soldier_parts.pos[self.num].y,
-                );
-                self.on_ground =
-                    self.check_skeleton_map_collision(state, i, position.x, position.y);
+                let (x, y) = self.particle.pos.into();
+                self.on_ground = self.check_skeleton_map_collision(map, i, x, y);
                 println!("ok");
             }
         }
@@ -401,17 +356,11 @@ impl Soldier {
 
             self.on_ground = false;
 
-            let position = vec2(
-                state.soldier_parts.pos[self.num].x,
-                state.soldier_parts.pos[self.num].y,
-            );
+            let (x, y) = self.particle.pos.into();
+            self.check_map_collision(map, x - 3.5, y - 12.0, 1);
 
-            self.check_map_collision(state, position.x - 3.5, position.y - 12.0, 1);
-            let mut position = vec2(
-                state.soldier_parts.pos[self.num].x,
-                state.soldier_parts.pos[self.num].y,
-            );
-            self.check_map_collision(state, position.x + 3.5, position.y - 12.0, 1);
+            let (x, y) = self.particle.pos.into();
+            self.check_map_collision(map, x + 3.5, y - 12.0, 1);
 
             body_y = 0.0;
             arm_s = 0.0;
@@ -429,8 +378,8 @@ impl Soldier {
             // BodyY, this is there to not lose contact to ground on slope polygons
             if body_y == 0.0 {
                 //let leg_vector = vec2(
-                //  state.soldier_parts.pos[self.num].x + 2.0,
-                //  state.soldier_parts.pos[self.num].y + 1.9,
+                //  self.particle.pos.x + 2.0,
+                //  self.particle.pos.y + 1.9,
                 //);
                 //    if Map.RayCast(LegVector, LegVector, LegDistance, 10) {
                 body_y = 0.25;
@@ -438,45 +387,35 @@ impl Soldier {
             }
             if arm_s == 0.0 {
                 //let leg_vector = vec2(
-                //  state.soldier_parts.pos[self.num].x - 2.0,
-                //  state.soldier_parts.pos[self.num].y + 1.9,
+                //  self.particle.pos.x - 2.0,
+                //  self.particle.pos.y + 1.9,
                 //);
                 //    if Map.RayCast(LegVector, LegVector, LegDistance, 10) {
                 arm_s = 0.25;
                 // }
             }
-            position = vec2(
-                state.soldier_parts.pos[self.num].x,
-                state.soldier_parts.pos[self.num].y,
-            );
-            self.on_ground =
-                self.check_map_collision(state, position.x + 2.0, position.y + 2.0 - body_y, 0);
-            position = vec2(
-                state.soldier_parts.pos[self.num].x,
-                state.soldier_parts.pos[self.num].y,
-            );
-            self.on_ground = self.on_ground
-                || self.check_map_collision(state, position.x - 2.0, position.y + 2.0 - arm_s, 0);
-            position = vec2(
-                state.soldier_parts.pos[self.num].x,
-                state.soldier_parts.pos[self.num].y,
-            );
-            let grounded = self.on_ground;
-            self.on_ground_for_law =
-                self.check_radius_map_collision(state, position.x, position.y, grounded);
 
+            let (x, y) = self.particle.pos.into();
+            self.on_ground = self.check_map_collision(map, x + 2.0, y + 2.0 - body_y, 0);
+
+            let (x, y) = self.particle.pos.into();
+            self.on_ground |= self.check_map_collision(map, x - 2.0, y + 2.0 - arm_s, 0);
+
+            let (x, y) = self.particle.pos.into();
+            let grounded = self.on_ground;
+            self.on_ground_for_law = self.check_radius_map_collision(map, x, y - 1.0, grounded);
+
+            let (x, y) = self.particle.pos.into();
             let grounded = self.on_ground || self.on_ground_for_law;
-            self.on_ground =
-                self.check_map_vertices_collision(state, position.x, position.y, 3.00, grounded)
-                    || self.on_ground;
-            //    OnGround or OnGroundForLaw) or OnGround;
+            self.on_ground |= self.check_map_vertices_collision(map, x, y, 3.0, grounded);
+
             if !(self.on_ground ^ self.on_ground_last_frame) {
                 self.on_ground_permanent = self.on_ground;
             }
 
             self.on_ground_last_frame = self.on_ground;
 
-            if (self.jets_count < state.map.start_jet) && !(self.control.jets) {
+            if (self.jets_count < map.start_jet) && !(self.control.jets) {
                 //if self.on_ground
                 /* (MainTickCounter mod 2 = 0) */
                 {
@@ -492,86 +431,68 @@ impl Soldier {
 
         if self.dead_meat {
             self.skeleton.do_verlet_timestep();
-
-            state.soldier_parts.pos[self.num] = self.skeleton.pos[12];
-
+            self.particle.pos = self.skeleton.pos(12);
             //CheckSkeletonOutOfBounds;
         }
 
-        if state.soldier_parts.velocity[self.num].x > MAX_VELOCITY {
-            state.soldier_parts.velocity[self.num].x = MAX_VELOCITY;
+        if self.particle.velocity.x > MAX_VELOCITY {
+            self.particle.velocity.x = MAX_VELOCITY;
         }
-        if state.soldier_parts.velocity[self.num].x < -MAX_VELOCITY {
-            state.soldier_parts.velocity[self.num].x = -MAX_VELOCITY;
+        if self.particle.velocity.x < -MAX_VELOCITY {
+            self.particle.velocity.x = -MAX_VELOCITY;
         }
-        if state.soldier_parts.velocity[self.num].y > MAX_VELOCITY {
-            state.soldier_parts.velocity[self.num].y = MAX_VELOCITY;
+        if self.particle.velocity.y > MAX_VELOCITY {
+            self.particle.velocity.y = MAX_VELOCITY;
         }
-        if state.soldier_parts.velocity[self.num].y < -MAX_VELOCITY {
-            state.soldier_parts.velocity[self.num].y = MAX_VELOCITY;
+        if self.particle.velocity.y < -MAX_VELOCITY {
+            self.particle.velocity.y = MAX_VELOCITY;
         }
     }
 
-    pub fn check_map_collision(
-        &mut self,
-        state: &mut MainState,
-        x: f32,
-        y: f32,
-        area: i32,
-    ) -> bool {
-        let s_pos = vec2(x, y);
+    pub fn check_map_collision(&mut self, map: &MapFile, x: f32, y: f32, area: i32) -> bool {
+        let pos = vec2(x, y) + self.particle.velocity;
+        let rx = ((pos.x / map.sectors_division as f32).round()) as i32 + 25;
+        let ry = ((pos.y / map.sectors_division as f32).round()) as i32 + 25;
 
-        let pos = vec2(
-            s_pos.x + state.soldier_parts.velocity[self.num].x,
-            s_pos.y + state.soldier_parts.velocity[self.num].y,
-        );
-        let rx = ((pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
-        let ry = ((pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
-
-        if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
-            && (ry < state.map.sectors_num + 25)
-        {
-            for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-                let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
-                let polytype = state.map.polygons[poly].polytype;
+        if (rx > 0) && (rx < map.sectors_num + 25) && (ry > 0) && (ry < map.sectors_num + 25) {
+            for j in 0..map.sectors_poly[rx as usize][ry as usize].polys.len() {
+                let poly = map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+                let polytype = map.polygons[poly].polytype;
 
                 if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
-                    let mut polygons = state.map.polygons[poly];
-                    if state.map.point_in_poly(pos, &mut polygons) {
-                        self.handle_special_polytypes(state, polytype, pos);
+                    let mut polygons = map.polygons[poly];
+                    if map.point_in_poly(pos, &mut polygons) {
+                        self.handle_special_polytypes(map, polytype, pos);
 
                         let mut dist = 0.0;
                         let mut k = 0;
 
                         let mut perp =
-                            state
-                                .map
-                                .closest_perpendicular(poly as i32, pos, &mut dist, &mut k);
+                            map.closest_perpendicular(poly as i32, pos, &mut dist, &mut k);
 
                         let step = perp;
 
-                        perp = vec2normalize(perp, perp);
+                        perp = vec2normalize(perp);
                         perp *= dist;
-                        dist = vec2length(state.soldier_parts.velocity[self.num]);
+                        dist = vec2length(self.particle.velocity);
 
                         if vec2length(perp) > dist {
-                            perp = vec2normalize(perp, perp);
+                            perp = vec2normalize(perp);
                             perp *= dist;
                         }
                         if (area == 0)
                             || ((area == 1)
-                                && ((state.soldier_parts.velocity[self.num].y < 0.0)
-                                    || (state.soldier_parts.velocity[self.num].x > SLIDELIMIT)
-                                    || (state.soldier_parts.velocity[self.num].x < -SLIDELIMIT)))
+                                && ((self.particle.velocity.y < 0.0)
+                                    || (self.particle.velocity.x > SLIDELIMIT)
+                                    || (self.particle.velocity.x < -SLIDELIMIT)))
                         {
-                            state.soldier_parts.old_pos[self.num] =
-                                state.soldier_parts.pos[self.num];
-                            state.soldier_parts.pos[self.num] -= perp;
-                            if state.map.polygons[poly].polytype == PolyType::Bouncy {
-                                perp = vec2normalize(perp, perp);
-                                perp *= state.map.polygons[poly].bounciness * dist;
+                            self.particle.old_pos = self.particle.pos;
+                            self.particle.pos -= perp;
+                            if map.polygons[poly].polytype == PolyType::Bouncy {
+                                perp = vec2normalize(perp);
+                                perp *= map.polygons[poly].bounciness * dist;
                             }
-                            state.soldier_parts.velocity[self.num] -= perp;
+                            self.particle.velocity -= perp;
                         }
 
                         if area == 0 {
@@ -585,13 +506,12 @@ impl Soldier {
                                 || (self.legs_animation.id == Anim::Mercy2)
                                 || (self.legs_animation.id == Anim::Own)
                             {
-                                if (state.soldier_parts.velocity[self.num].x < SLIDELIMIT)
-                                    && (state.soldier_parts.velocity[self.num].x > -SLIDELIMIT)
+                                if (self.particle.velocity.x < SLIDELIMIT)
+                                    && (self.particle.velocity.x > -SLIDELIMIT)
                                     && (step.y > SLIDELIMIT)
                                 {
-                                    state.soldier_parts.pos[self.num] =
-                                        state.soldier_parts.old_pos[self.num];
-                                    state.soldier_parts.forces[self.num].y -= GRAV;
+                                    self.particle.pos = self.particle.old_pos;
+                                    self.particle.force.y -= GRAV;
                                 }
 
                                 if (step.y > SLIDELIMIT) && (polytype != PolyType::Ice)
@@ -601,50 +521,40 @@ impl Soldier {
                                         || (self.legs_animation.id == Anim::Fall)
                                         || (self.legs_animation.id == Anim::Crouch)
                                     {
-                                        state.soldier_parts.velocity[self.num].x *=
-                                            STANDSURFACECOEFX;
-                                        state.soldier_parts.velocity[self.num].y *=
-                                            STANDSURFACECOEFY;
+                                        self.particle.velocity.x *= STANDSURFACECOEFX;
+                                        self.particle.velocity.y *= STANDSURFACECOEFY;
 
-                                        state.soldier_parts.forces[self.num].x -=
-                                            state.soldier_parts.velocity[self.num].x;
+                                        self.particle.force.x -= self.particle.velocity.x;
                                     } else if self.legs_animation.id == Anim::Prone {
                                         if self.legs_animation.frame > 24 {
                                             if !(self.control.down
                                                 && (self.control.left || self.control.right))
                                             {
-                                                state.soldier_parts.velocity[self.num].x *=
-                                                    STANDSURFACECOEFX;
-                                                state.soldier_parts.velocity[self.num].y *=
-                                                    STANDSURFACECOEFY;
+                                                self.particle.velocity.x *= STANDSURFACECOEFX;
+                                                self.particle.velocity.y *= STANDSURFACECOEFY;
 
-                                                state.soldier_parts.forces[self.num].x -=
-                                                    state.soldier_parts.velocity[self.num].x;
+                                                self.particle.force.x -= self.particle.velocity.x;
                                             }
                                         } else {
-                                            state.soldier_parts.velocity[self.num].x *=
-                                                SURFACECOEFX;
-                                            state.soldier_parts.velocity[self.num].y *=
-                                                SURFACECOEFY;
+                                            self.particle.velocity.x *= SURFACECOEFX;
+                                            self.particle.velocity.y *= SURFACECOEFY;
                                         }
                                     } else if self.legs_animation.id == Anim::GetUp {
-                                        state.soldier_parts.velocity[self.num].x *= SURFACECOEFX;
-                                        state.soldier_parts.velocity[self.num].y *= SURFACECOEFY;
+                                        self.particle.velocity.x *= SURFACECOEFX;
+                                        self.particle.velocity.y *= SURFACECOEFY;
                                     } else if self.legs_animation.id == Anim::ProneMove {
-                                        state.soldier_parts.velocity[self.num].x *=
-                                            STANDSURFACECOEFX;
-                                        state.soldier_parts.velocity[self.num].y *=
-                                            STANDSURFACECOEFY;
+                                        self.particle.velocity.x *= STANDSURFACECOEFX;
+                                        self.particle.velocity.y *= STANDSURFACECOEFY;
                                     }
                                 }
                             } else if (self.legs_animation.id == Anim::CrouchRun)
                                 || (self.legs_animation.id == Anim::CrouchRunBack)
                             {
-                                state.soldier_parts.velocity[self.num].x *= CROUCHMOVESURFACECOEFX;
-                                state.soldier_parts.velocity[self.num].y *= CROUCHMOVESURFACECOEFY;
+                                self.particle.velocity.x *= CROUCHMOVESURFACECOEFX;
+                                self.particle.velocity.y *= CROUCHMOVESURFACECOEFY;
                             } else {
-                                state.soldier_parts.velocity[self.num].x *= SURFACECOEFX;
-                                state.soldier_parts.velocity[self.num].y *= SURFACECOEFY;
+                                self.particle.velocity.x *= SURFACECOEFX;
+                                self.particle.velocity.y *= SURFACECOEFY;
                             }
                         }
 
@@ -659,43 +569,36 @@ impl Soldier {
 
     pub fn check_map_vertices_collision(
         &mut self,
-        state: &mut MainState,
+        map: &MapFile,
         x: f32,
         y: f32,
         r: f32,
         has_collided: bool,
     ) -> bool {
-        let s_pos = vec2(x, y);
+        let pos = vec2(x, y) + self.particle.velocity;
+        let rx = ((pos.x / map.sectors_division as f32).round()) as i32 + 25;
+        let ry = ((pos.y / map.sectors_division as f32).round()) as i32 + 25;
 
-        let pos = vec2(
-            s_pos.x + state.soldier_parts.velocity[self.num].x,
-            s_pos.y + state.soldier_parts.velocity[self.num].y,
-        );
-        let rx = ((pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
-        let ry = ((pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
-
-        if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
-            && (ry < state.map.sectors_num + 25)
-        {
-            for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-                let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
-                let polytype = state.map.polygons[poly].polytype;
+        if (rx > 0) && (rx < map.sectors_num + 25) && (ry > 0) && (ry < map.sectors_num + 25) {
+            for j in 0..map.sectors_poly[rx as usize][ry as usize].polys.len() {
+                let poly = map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+                let polytype = map.polygons[poly].polytype;
 
                 if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
                     for i in 0..3 {
                         let vert = vec2(
-                            state.map.polygons[poly].vertices[i].x,
-                            state.map.polygons[poly].vertices[i].y,
+                            map.polygons[poly].vertices[i].x,
+                            map.polygons[poly].vertices[i].y,
                         );
 
                         let dist = distance(vert, pos);
                         if dist < r {
                             if !has_collided {
-                                self.handle_special_polytypes(state, polytype, pos);
+                                self.handle_special_polytypes(map, polytype, pos);
                             }
                             let mut dir = pos - vert;
-                            dir = vec2normalize(dir, dir);
-                            state.soldier_parts.pos[self.num] += dir;
+                            dir = vec2normalize(dir);
+                            self.particle.pos += dir;
                             return true;
                         }
                     }
@@ -707,86 +610,78 @@ impl Soldier {
 
     pub fn check_radius_map_collision(
         &mut self,
-        state: &mut MainState,
+        map: &MapFile,
         x: f32,
         y: f32,
         has_collided: bool,
     ) -> bool {
         let mut s_pos = vec2(x, y - 3.0);
 
-        let mut det_acc = vec2length(state.soldier_parts.velocity[self.num]).trunc() as i32;
+        let mut det_acc = vec2length(self.particle.velocity).trunc() as i32;
         if det_acc == 0 {
             det_acc = 1;
         }
 
-        let step = state.soldier_parts.velocity[self.num] * (1 / det_acc) as f32;
+        let step = self.particle.velocity * (1 / det_acc) as f32;
 
         for _z in 0..det_acc {
-            s_pos.x += step.x;
-            s_pos.y += step.y;
+            s_pos += step;
 
-            let rx = ((s_pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
-            let ry = ((s_pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
+            let rx = ((s_pos.x / map.sectors_division as f32).round()) as i32 + 25;
+            let ry = ((s_pos.y / map.sectors_division as f32).round()) as i32 + 25;
 
-            if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
-                && (ry < state.map.sectors_num + 25)
-            {
-                for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-                    let poly =
-                        state.map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
-                    let polytype = state.map.polygons[poly].polytype;
+            if (rx > 0) && (rx < map.sectors_num + 25) && (ry > 0) && (ry < map.sectors_num + 25) {
+                for j in 0..map.sectors_poly[rx as usize][ry as usize].polys.len() {
+                    let poly = map.sectors_poly[rx as usize][ry as usize].polys[j] as usize - 1;
+                    let polytype = map.polygons[poly].polytype;
 
                     if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
                         for k in 0..2 {
-                            let mut norm = state.map.perps[poly][k];
+                            let mut norm = map.perps[poly][k];
                             norm *= -SOLDIER_COL_RADIUS;
 
                             let mut pos = s_pos + norm;
 
-                            if state.map.point_in_poly_edges(pos.x, pos.y, poly as i32) {
+                            if map.point_in_poly_edges(pos.x, pos.y, poly as i32) {
                                 if !has_collided {
-                                    self.handle_special_polytypes(state, polytype, pos);
+                                    self.handle_special_polytypes(map, polytype, pos);
                                 }
                                 let mut d = 0.0;
                                 let mut b = 0;
-                                let mut perp = state.map.closest_perpendicular(
-                                    poly as i32,
-                                    pos,
-                                    &mut d,
-                                    &mut b,
-                                );
+                                let mut perp =
+                                    map.closest_perpendicular(poly as i32, pos, &mut d, &mut b);
 
                                 let mut p1 = vec2(0.0, 0.0);
                                 let mut p2 = vec2(0.0, 0.0);
                                 match b {
                                     1 => {
                                         p1 = vec2(
-                                            state.map.polygons[poly].vertices[0].x,
-                                            state.map.polygons[poly].vertices[0].y,
+                                            map.polygons[poly].vertices[0].x,
+                                            map.polygons[poly].vertices[0].y,
                                         );
                                         p2 = vec2(
-                                            state.map.polygons[poly].vertices[1].x,
-                                            state.map.polygons[poly].vertices[1].y,
+                                            map.polygons[poly].vertices[1].x,
+                                            map.polygons[poly].vertices[1].y,
                                         );
                                     }
                                     2 => {
                                         p1 = vec2(
-                                            state.map.polygons[poly].vertices[1].x,
-                                            state.map.polygons[poly].vertices[1].y,
+                                            map.polygons[poly].vertices[1].x,
+                                            map.polygons[poly].vertices[1].y,
                                         );
                                         p2 = vec2(
-                                            state.map.polygons[poly].vertices[2].x,
-                                            state.map.polygons[poly].vertices[2].y,
+                                            map.polygons[poly].vertices[2].x,
+                                            map.polygons[poly].vertices[2].y,
                                         );
                                     }
                                     3 => {
                                         p1 = vec2(
-                                            state.map.polygons[poly].vertices[2].x,
-                                            state.map.polygons[poly].vertices[2].y,
+                                            map.polygons[poly].vertices[2].x,
+                                            map.polygons[poly].vertices[2].y,
                                         );
                                         p2 = vec2(
-                                            state.map.polygons[poly].vertices[0].x,
-                                            state.map.polygons[poly].vertices[0].y,
+                                            map.polygons[poly].vertices[0].x,
+                                            map.polygons[poly].vertices[0].y,
                                         );
                                     }
                                     _ => {}
@@ -796,10 +691,8 @@ impl Soldier {
                                 let d = point_line_distance(p1, p2, p3);
                                 perp *= d;
 
-                                state.soldier_parts.pos[self.num] =
-                                    state.soldier_parts.old_pos[self.num];
-                                state.soldier_parts.velocity[self.num] =
-                                    state.soldier_parts.forces[self.num] - perp;
+                                self.particle.pos = self.particle.old_pos;
+                                self.particle.velocity = self.particle.force - perp;
 
                                 return true;
                             }
@@ -814,34 +707,29 @@ impl Soldier {
 
     pub fn check_skeleton_map_collision(
         &mut self,
-        state: &mut MainState,
-        i: i32,
+        map: &MapFile,
+        i: usize,
         x: f32,
         y: f32,
     ) -> bool {
         let mut result = false;
         let pos = vec2(x - 1.0, y + 4.0);
-        let rx = ((pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
-        let ry = ((pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
+        let rx = ((pos.x / map.sectors_division as f32).round()) as i32 + 25;
+        let ry = ((pos.y / map.sectors_division as f32).round()) as i32 + 25;
 
-        if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
-            && (ry < state.map.sectors_num + 25)
-        {
-            for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-                let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+        if (rx > 0) && (rx < map.sectors_num + 25) && (ry > 0) && (ry < map.sectors_num + 25) {
+            for j in 0..map.sectors_poly[rx as usize][ry as usize].polys.len() {
+                let poly = map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
 
-                if state.map.point_in_poly_edges(pos.x, pos.y, i32::from(poly)) {
+                if map.point_in_poly_edges(pos.x, pos.y, i32::from(poly)) {
                     let mut dist = 0.0;
                     let mut b = 0;
                     let mut perp =
-                        state
-                            .map
-                            .closest_perpendicular(i32::from(poly), pos, &mut dist, &mut b);
-                    perp = vec2normalize(perp, perp);
+                        map.closest_perpendicular(i32::from(poly), pos, &mut dist, &mut b);
+                    perp = vec2normalize(perp);
                     perp *= dist;
 
-                    self.skeleton.pos[i as usize] = self.skeleton.old_pos[i as usize];
-                    self.skeleton.pos[i as usize] -= perp;
+                    *self.skeleton.pos_mut(i) = self.skeleton.old_pos(i) - perp;
                     result = true;
                 }
             }
@@ -849,29 +737,22 @@ impl Soldier {
 
         if result {
             let pos = vec2(x, y + 1.0);
-            let rx = ((pos.x / state.map.sectors_division as f32).round()) as i32 + 25;
-            let ry = ((pos.y / state.map.sectors_division as f32).round()) as i32 + 25;
+            let rx = ((pos.x / map.sectors_division as f32).round()) as i32 + 25;
+            let ry = ((pos.y / map.sectors_division as f32).round()) as i32 + 25;
 
-            if (rx > 0) && (rx < state.map.sectors_num + 25) && (ry > 0)
-                && (ry < state.map.sectors_num + 25)
-            {
-                for j in 0..state.map.sectors_poly[rx as usize][ry as usize].polys.len() {
-                    let poly = state.map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
+            if (rx > 0) && (rx < map.sectors_num + 25) && (ry > 0) && (ry < map.sectors_num + 25) {
+                for j in 0..map.sectors_poly[rx as usize][ry as usize].polys.len() {
+                    let poly = map.sectors_poly[rx as usize][ry as usize].polys[j] - 1;
                     //if (Map.PolyType[poly] <> POLY_TYPE_DOESNT) and (Map.PolyType[poly] <> POLY_TYPE_ONLY_BULLETS) then
-                    if state.map.point_in_poly_edges(pos.x, pos.y, i32::from(poly)) {
+                    if map.point_in_poly_edges(pos.x, pos.y, i32::from(poly)) {
                         let mut dist = 0.0;
                         let mut b = 0;
-                        let mut perp = state.map.closest_perpendicular(
-                            i32::from(poly),
-                            pos,
-                            &mut dist,
-                            &mut b,
-                        );
-                        perp = vec2normalize(perp, perp);
+                        let mut perp =
+                            map.closest_perpendicular(i32::from(poly), pos, &mut dist, &mut b);
+                        perp = vec2normalize(perp);
                         perp *= dist;
 
-                        self.skeleton.pos[i as usize] = self.skeleton.old_pos[i as usize];
-                        self.skeleton.pos[i as usize] -= perp;
+                        *self.skeleton.pos_mut(i) = self.skeleton.old_pos(i) - perp;
                         result = true;
                     }
                 }

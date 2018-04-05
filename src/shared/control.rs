@@ -1,6 +1,4 @@
-use shared::anims::*;
-use shared::soldier::*;
-use shared::state::MainState;
+use super::*;
 
 const POS_STAND: u8 = 1;
 const POS_CROUCH: u8 = 2;
@@ -45,11 +43,13 @@ pub struct Control {
 }
 
 impl Soldier {
-    pub fn control(&mut self, state: &mut MainState) {
+    pub fn control(&mut self, state: &MainState) {
         let mut player_pressed_left_right = false;
+
         if self.legs_animation.speed < 1 {
             self.legs_animation.speed = 1;
         }
+
         if self.body_animation.speed < 1 {
             self.body_animation.speed = 1;
         }
@@ -138,12 +138,10 @@ impl Soldier {
         }
 
         //self.fired = 0;
-        self.control.mouse_aim_x = (self.control.mouse_aim_x as f32
-            + state.soldier_parts.velocity[self.num].x)
-            .round() as i32;
-        self.control.mouse_aim_y = (self.control.mouse_aim_y as f32
-            + state.soldier_parts.velocity[self.num].y)
-            .round() as i32;
+        self.control.mouse_aim_x =
+            (self.control.mouse_aim_x as f32 + self.particle.velocity.x).round() as i32;
+        self.control.mouse_aim_y =
+            (self.control.mouse_aim_y as f32 + self.particle.velocity.y).round() as i32;
 
         if self.control.jets
             && (((self.legs_animation.id == Anim::JumpSide)
@@ -154,14 +152,13 @@ impl Soldier {
             self.body_apply_animation(Anim::RollBack, 1);
             self.legs_apply_animation(Anim::RollBack, 1);
         } else if self.control.jets && (self.jets_count > 0) {
-            let force = &mut state.soldier_parts.forces[self.num];
-
             if self.on_ground {
-                force.y = -2.5 * iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
+                self.particle.force.y =
+                    -2.5 * iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
             } else if self.position != POS_PRONE {
-                force.y -= iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
+                self.particle.force.y -= iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
             } else {
-                force.x += f32::from(self.direction)
+                self.particle.force.x += f32::from(self.direction)
                     * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity);
             }
 
@@ -353,18 +350,16 @@ impl Soldier {
                     || (self.legs_animation.id == Anim::Run)
                     || (self.legs_animation.id == Anim::RunBack)
                 {
-                    state.soldier_parts.velocity[self.num].x /= self.legs_animation.speed as f32;
-                    state.soldier_parts.velocity[self.num].y /= self.legs_animation.speed as f32;
+                    self.particle.velocity.x /= self.legs_animation.speed as f32;
+                    self.particle.velocity.y /= self.legs_animation.speed as f32;
                 }
 
                 if self.legs_animation.speed > 2 {
                     if (self.legs_animation.id == Anim::ProneMove)
                         || (self.legs_animation.id == Anim::CrouchRun)
                     {
-                        state.soldier_parts.velocity[self.num].x /=
-                            self.legs_animation.speed as f32;
-                        state.soldier_parts.velocity[self.num].y /=
-                            self.legs_animation.speed as f32;
+                        self.particle.velocity.x /= self.legs_animation.speed as f32;
+                        self.particle.velocity.y /= self.legs_animation.speed as f32;
                     }
                 }
             }
@@ -401,26 +396,22 @@ impl Soldier {
                 {
                     if self.legs_animation.id == Anim::Roll {
                         if self.on_ground {
-                            state.soldier_parts.forces[self.num].x =
-                                f32::from(self.direction) * ROLLSPEED;
+                            self.particle.force.x = f32::from(self.direction) * ROLLSPEED;
                         } else {
-                            state.soldier_parts.forces[self.num].x =
-                                f32::from(self.direction) * 2.0 * FLYSPEED;
+                            self.particle.force.x = f32::from(self.direction) * 2.0 * FLYSPEED;
                         }
                     } else if self.legs_animation.id == Anim::RollBack {
                         if self.on_ground {
-                            state.soldier_parts.forces[self.num].x =
-                                -f32::from(self.direction) * ROLLSPEED;
+                            self.particle.force.x = -f32::from(self.direction) * ROLLSPEED;
                         } else {
-                            state.soldier_parts.forces[self.num].x =
-                                -f32::from(self.direction) * 2.0 * FLYSPEED;
+                            self.particle.force.x = -f32::from(self.direction) * 2.0 * FLYSPEED;
                         }
                         // if appropriate frames to move
                         if (self.legs_animation.frame > 1) && (self.legs_animation.frame < 8) {
                             if self.control.up {
-                                state.soldier_parts.forces[self.num].y -= JUMPDIRSPEED * 1.5;
-                                state.soldier_parts.forces[self.num].x *= 0.5;
-                                state.soldier_parts.velocity[self.num].x *= 0.8;
+                                self.particle.force.y -= JUMPDIRSPEED * 1.5;
+                                self.particle.force.x *= 0.5;
+                                self.particle.velocity.x *= 0.8;
                             }
                         }
                     }
@@ -464,11 +455,11 @@ impl Soldier {
                         if (self.legs_animation.id == Anim::CrouchRun)
                             || (self.legs_animation.id == Anim::CrouchRunBack)
                         {
-                            state.soldier_parts.forces[self.num].x = CROUCHRUNSPEED;
+                            self.particle.force.x = CROUCHRUNSPEED;
                         } else if (self.legs_animation.id == Anim::Roll)
                             || (self.legs_animation.id == Anim::RollBack)
                         {
-                            state.soldier_parts.forces[self.num].x = 2.0 * CROUCHRUNSPEED;
+                            self.particle.force.x = 2.0 * CROUCHRUNSPEED;
                         }
                     }
                 // downleft
@@ -511,7 +502,7 @@ impl Soldier {
                         if (self.legs_animation.id == Anim::CrouchRun)
                             || (self.legs_animation.id == Anim::CrouchRunBack)
                         {
-                            state.soldier_parts.forces[self.num].x = -CROUCHRUNSPEED;
+                            self.particle.force.x = -CROUCHRUNSPEED;
                         }
                     }
                 // Proning
@@ -530,7 +521,7 @@ impl Soldier {
                                 if (self.legs_animation.frame < 4)
                                     || (self.legs_animation.frame > 14)
                                 {
-                                    state.soldier_parts.forces[self.num].x = {
+                                    self.particle.force.x = {
                                         if cleft {
                                             -PRONESPEED
                                         } else {
@@ -595,8 +586,8 @@ impl Soldier {
 
                     if self.legs_animation.id == Anim::JumpSide {
                         if (self.legs_animation.frame > 3) && (self.legs_animation.frame < 11) {
-                            state.soldier_parts.forces[self.num].x = JUMPDIRSPEED;
-                            state.soldier_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
+                            self.particle.force.x = JUMPDIRSPEED;
+                            self.particle.force.y = -JUMPDIRSPEED / 1.2;
                         }
                     }
                 } else if cleft && self.control.up {
@@ -632,8 +623,8 @@ impl Soldier {
 
                     if self.legs_animation.id == Anim::JumpSide {
                         if (self.legs_animation.frame > 3) && (self.legs_animation.frame < 11) {
-                            state.soldier_parts.forces[self.num].x = -JUMPDIRSPEED;
-                            state.soldier_parts.forces[self.num].y = -JUMPDIRSPEED / 1.2;
+                            self.particle.force.x = -JUMPDIRSPEED;
+                            self.particle.force.y = -JUMPDIRSPEED / 1.2;
                         }
                     }
                 } else if self.control.up {
@@ -647,7 +638,7 @@ impl Soldier {
                     }
                     if self.legs_animation.id == Anim::Jump {
                         if (self.legs_animation.frame > 8) && (self.legs_animation.frame < 15) {
-                            state.soldier_parts.forces[self.num].y = -JUMPSPEED;
+                            self.particle.force.y = -JUMPSPEED;
                         }
                         if self.legs_animation.frame == self.legs_animation.num_frames() {
                             self.legs_apply_animation(Anim::Fall, 1);
@@ -668,10 +659,10 @@ impl Soldier {
                     }
 
                     if self.on_ground {
-                        state.soldier_parts.forces[self.num].x = RUNSPEED;
-                        state.soldier_parts.forces[self.num].y = -RUNSPEEDUP;
+                        self.particle.force.x = RUNSPEED;
+                        self.particle.force.y = -RUNSPEEDUP;
                     } else {
-                        state.soldier_parts.forces[self.num].x = FLYSPEED;
+                        self.particle.force.x = FLYSPEED;
                     }
                 } else if cleft {
                     if true {
@@ -684,10 +675,10 @@ impl Soldier {
                     }
 
                     if self.on_ground {
-                        state.soldier_parts.forces[self.num].x = -RUNSPEED;
-                        state.soldier_parts.forces[self.num].y = -RUNSPEEDUP;
+                        self.particle.force.x = -RUNSPEED;
+                        self.particle.force.y = -RUNSPEEDUP;
                     } else {
-                        state.soldier_parts.forces[self.num].x = -FLYSPEED;
+                        self.particle.force.x = -FLYSPEED;
                     }
                 } else {
                     if self.on_ground {

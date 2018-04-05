@@ -1,5 +1,4 @@
 use super::*;
-use shared::mapfile::{MapFile, MapPolygon, MapProp, PolyType};
 use std::ops::Range;
 
 pub struct MapGraphics {

@@ -2,7 +2,6 @@ use super::*;
 use bit_array::BitArray;
 use gfx::{GostekPart, SpriteData};
 use ini::Ini;
-use shared::soldier::Soldier;
 use std::str::FromStr;
 use typenum::U256;
 
@@ -126,16 +125,9 @@ impl GostekGraphics {
                 let mut cx = part.center.0;
                 let mut cy = part.center.1;
                 let mut scale = vec2(1.0, 1.0);
-                let p0 = lerp(
-                    sk.old_pos[part.point.0],
-                    sk.pos[part.point.0],
-                    frame_percent,
-                );
-                let p1 = lerp(
-                    sk.old_pos[part.point.1],
-                    sk.pos[part.point.1],
-                    frame_percent,
-                );
+                let (p0, p1) = part.point;
+                let p0 = lerp(sk.old_pos(p0), sk.pos(p0), frame_percent);
+                let p1 = lerp(sk.old_pos(p1), sk.pos(p1), frame_percent);
                 let rot = vec2angle(p1 - p0);
 
                 if soldier.direction != 1 {
@@ -416,14 +408,13 @@ impl GostekGraphics {
 
     pub fn render_skeleton(soldier: &Soldier, batch: &mut DrawBatch, px: f32, frame_percent: f32) {
         let sk = &soldier.skeleton;
-        let n = sk.constraint_count as usize;
 
-        for constraint in &soldier.skeleton.constraints[1..n + 1] {
-            let pa = constraint.part_a as usize;
-            let pb = constraint.part_b as usize;
+        for constraint in sk.constraints() {
+            let pa = constraint.particle_num.0 as usize;
+            let pb = constraint.particle_num.1 as usize;
 
-            let a = lerp(sk.old_pos[pa], sk.pos[pa], frame_percent);
-            let b = lerp(sk.old_pos[pb], sk.pos[pb], frame_percent);
+            let a = lerp(sk.old_pos(pa), sk.pos(pa), frame_percent);
+            let b = lerp(sk.old_pos(pb), sk.pos(pb), frame_percent);
 
             let m = Transform::WithPivot {
                 pos: a,
@@ -443,8 +434,8 @@ impl GostekGraphics {
             );
         }
 
-        for (a, b) in sk.old_pos[1..25].iter().zip(&sk.pos[1..25]) {
-            let p = lerp(*a, *b, frame_percent);
+        for particle in sk.particles() {
+            let p = lerp(particle.old_pos, particle.pos, frame_percent);
             let m = Mat2d::translate(p.x, p.y);
 
             batch.add_quad(

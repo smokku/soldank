@@ -1,11 +1,7 @@
-use shared::calc::*;
-use shared::mapfile::MapFile;
-use shared::parts::ParticleSystem;
+use super::*;
 
 pub struct MainState {
     pub map: MapFile,
-    pub soldier_parts: ParticleSystem,
-    pub gostek_skeleton: ParticleSystem,
     pub camera: Vec2,
     pub camera_prev: Vec2,
     pub mouse: Vec2,

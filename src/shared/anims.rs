@@ -1,5 +1,5 @@
+use super::*;
 use lazy_static;
-use shared::calc::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
@@ -180,7 +180,7 @@ impl AnimData {
             }
 
             line.clear();
-            buf.read_line(&mut line);
+            buf.read_line(&mut line).ok();
         }
 
         add_frame(&mut frames, &positions);

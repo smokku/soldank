@@ -1,20 +1,16 @@
 pub use gfx2d::math::*;
 
 pub fn distance(p1: Vec2, p2: Vec2) -> f32 {
-    ((p1.x - p2.x).powi(2) + (p1.y - p2.y).powi(2)).sqrt()
+    (p2 - p1).magnitude()
 }
 
 pub fn vec2length(v: Vec2) -> f32 {
-    ((v.x).powi(2) + (v.y).powi(2)).sqrt()
+    v.magnitude()
 }
 
-pub fn vec2normalize(v_out: Vec2, v: Vec2) -> Vec2 {
-    let len = vec2length(v);
-    if (len < 0.001) && (len > -0.001) {
-        vec2(0.0, 0.0)
-    } else {
-        vec2(v_out.x / len, v_out.y / len)
-    }
+pub fn vec2normalize(v: Vec2) -> Vec2 {
+    let magnitude = v.magnitude();
+    iif!(magnitude < 0.001, Vec2::zero(), v / magnitude)
 }
 
 pub fn vec2angle(v: Vec2) -> Rad {

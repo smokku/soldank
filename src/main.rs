@@ -12,13 +12,14 @@ extern crate typenum;
 #[cfg_attr(rustfmt, rustfmt_skip)]
 macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then } else { $otherwise }));
 
+use clap::{App, Arg};
 use glutin::*;
 
-use clap::{App, Arg};
 use shared::anims::*;
 use shared::calc::*;
-use shared::mapfile::MapFile;
-use shared::parts::ParticleSystem;
+use shared::control::*;
+use shared::mapfile::*;
+use shared::particles::*;
 use shared::render::*;
 use shared::soldier::*;
 use shared::state::*;
@@ -42,17 +43,7 @@ fn main() {
         .get_matches();
 
     AnimData::initialize();
-
-    let mut gostek = ParticleSystem::new();
-    gostek.load_from_file(&String::from("gostek.po"), 4.50);
-    gostek.timestep = 1.00;
-    gostek.gravity = 1.06 * GRAV;
-    gostek.v_damping = 0.9945;
-
-    let mut soldier_parts = ParticleSystem::new();
-    soldier_parts.timestep = 1.0;
-    soldier_parts.gravity = GRAV;
-    soldier_parts.e_damping = 0.99;
+    Soldier::initialize();
 
     let mut map_name = cmd.value_of("map").unwrap_or("ctf_Ash").to_owned();
     map_name.push_str(".pms");
@@ -64,8 +55,6 @@ fn main() {
 
     let mut state = MainState {
         map,
-        soldier_parts,
-        gostek_skeleton: gostek,
         game_width: W as f32 * (480.0 / H as f32),
         game_height: 480.0,
         camera: Vec2::zero(),
@@ -76,8 +65,8 @@ fn main() {
         zoom: 0.0,
     };
 
-    let mut soldier = Soldier::new(&mut state);
-    state.camera = state.soldier_parts.pos[1];
+    let mut soldier = Soldier::new(&state.map.spawnpoints[0]);
+    state.camera = soldier.particle.pos;
 
     // setup window, renderer & main loop
 
@@ -165,8 +154,7 @@ fn main() {
         while timeacc >= dt {
             timeacc -= dt;
 
-            state.soldier_parts.do_eurler_timestep_for(1);
-            soldier.update(&mut state);
+            soldier.update(&state);
 
             state.camera_prev = state.camera;
             state.mouse_prev = state.mouse;
@@ -185,8 +173,7 @@ fn main() {
                 m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
 
                 let mut cam_v = state.camera;
-
-                let p = vec2(state.soldier_parts.pos[1].x, state.soldier_parts.pos[1].y);
+                let p = soldier.particle.pos;
                 let norm = p - cam_v;
                 let s = norm * 0.14;
                 cam_v += s;

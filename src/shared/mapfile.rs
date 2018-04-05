@@ -1,6 +1,5 @@
+use super::*;
 use byteorder::{LittleEndian, ReadBytesExt};
-
-use shared::calc::*;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -235,9 +234,9 @@ impl MapFile {
                 vec2(normals[2].x, normals[2].y),
             ];
 
-            perp[0] = vec2normalize(perp[0], perp[0]);
-            perp[1] = vec2normalize(perp[1], perp[1]);
-            perp[2] = vec2normalize(perp[2], perp[2]);
+            perp[0] = vec2normalize(perp[0]);
+            perp[1] = vec2normalize(perp[1]);
+            perp[2] = vec2normalize(perp[2]);
 
             perps.push(perp);
         }
@@ -385,7 +384,7 @@ impl MapFile {
         }
     }
 
-    pub fn point_in_poly(&mut self, p: Vec2, poly: &mut MapPolygon) -> bool {
+    pub fn point_in_poly(&self, p: Vec2, poly: &MapPolygon) -> bool {
         let a = &poly.vertices[0];
         let b = &poly.vertices[1];
         let c = &poly.vertices[2];
@@ -406,7 +405,7 @@ impl MapFile {
         true
     }
 
-    pub fn point_in_poly_edges(&mut self, x: f32, y: f32, i: i32) -> bool {
+    pub fn point_in_poly_edges(&self, x: f32, y: f32, i: i32) -> bool {
         let u_x = x - self.polygons[i as usize].vertices[0].x;
         let u_y = y - self.polygons[i as usize].vertices[0].y;
         let d = self.perps[i as usize][0].x * u_x + self.perps[i as usize][0].y * u_y;
@@ -431,7 +430,7 @@ impl MapFile {
         true
     }
 
-    pub fn closest_perpendicular(&mut self, j: i32, pos: Vec2, d: &mut f32, n: &mut i32) -> Vec2 {
+    pub fn closest_perpendicular(&self, j: i32, pos: Vec2, d: &mut f32, n: &mut i32) -> Vec2 {
         let px: [f32; 3] = [
             self.polygons[j as usize].vertices[0].x,
             self.polygons[j as usize].vertices[1].x,

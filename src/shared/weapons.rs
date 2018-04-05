@@ -1,4 +1,4 @@
-use shared::render::gfx;
+use super::*;
 
 const SECOND: u16 = 60;
 const BULLET_TIMEOUT: u16 = SECOND * 7;
@@ -7,6 +7,7 @@ const M2BULLET_TIMEOUT: u16 = SECOND;
 const FLAMER_TIMEOUT: u16 = SECOND * 32;
 const MELEE_TIMEOUT: u16 = 1;
 
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum WeaponGroup {
     Primary,
@@ -82,6 +83,7 @@ impl WeaponKind {
         VALUES
     }
 
+    #[allow(dead_code)]
     pub fn group(&self) -> WeaponGroup {
         match *self {
             WeaponKind::DesertEagles => WeaponGroup::Primary,

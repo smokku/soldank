@@ -1,9 +1,6 @@
 use super::*;
 use gfx::SpriteData;
 use ini::Ini;
-use shared::mapfile::MapFile;
-use shared::soldier::Soldier;
-use shared::state::MainState;
 use std::str::FromStr;
 
 pub struct GameGraphics {
