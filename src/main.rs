@@ -9,23 +9,32 @@ extern crate ini;
 extern crate time;
 extern crate typenum;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
-macro_rules! iif(($cond:expr, $then:expr, $otherwise:expr) => (if $cond { $then } else { $otherwise }));
+macro_rules! iif(
+    ($cond:expr, $then:expr, $else:expr) => (if $cond { $then } else { $else })
+);
+
+mod anims;
+mod calc;
+mod control;
+mod mapfile;
+mod particles;
+mod render;
+mod soldier;
+mod state;
+mod weapons;
+
+use anims::*;
+use calc::*;
+use control::*;
+use mapfile::*;
+use particles::*;
+use render::*;
+use soldier::*;
+use state::*;
+use weapons::*;
 
 use clap::{App, Arg};
 use glutin::*;
-
-use shared::anims::*;
-use shared::calc::*;
-use shared::control::*;
-use shared::mapfile::*;
-use shared::particles::*;
-use shared::render::*;
-use shared::soldier::*;
-use shared::state::*;
-use shared::weapons::*;
-
-mod shared;
 
 const GRAV: f32 = 0.06;
 
