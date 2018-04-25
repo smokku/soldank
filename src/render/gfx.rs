@@ -5,10 +5,10 @@ include!("gfx_macro.rs");
 // Note: images that have a "2" version go together (opposite gostek direction).
 sprites! {
     // The order of the gostek images must match the order of the Team2 versions
-    // listed below. Keep both lists together, the range Gostek::Stopa to
-    // Gostek::Team2Lecistopa2 is checked for a size restriction.
+    // listed below. Keep both lists together, the range Soldier::Stopa to
+    // Soldier::Team2Lecistopa2 is checked for a size restriction.
 
-    Gostek {
+    Soldier {
         Stopa              = "gostek-gfx/stopa"
         Stopa2             = "gostek-gfx/stopa2"
         Noga               = "gostek-gfx/noga"
@@ -69,7 +69,7 @@ sprites! {
         Lecistopa          = "gostek-gfx/lecistopa"
         Lecistopa2         = "gostek-gfx/lecistopa2"
 
-        // Gostek Team2 list. Keep it next to the non-team2 list.
+        // Soldier Team2 list. Keep it next to the non-team2 list.
 
         Team2Stopa         = "gostek-gfx/team2/stopa"
         Team2Stopa2        = "gostek-gfx/team2/stopa2"
@@ -391,7 +391,7 @@ sprites! {
     }
 }
 #[cfg_attr(rustfmt, rustfmt_skip)]
-gostek_parts! {
+soldier_parts! {
     SecondaryDeagles       = Sprite(None),                    Point( 5, 10), Center( 0.300,  0.500), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     SecondaryMp5           = Sprite(Weapon::Mp5),             Point( 5, 10), Center( 0.300,  0.300), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     SecondaryAk74          = Sprite(Weapon::Ak74),            Point( 5, 10), Center( 0.300,  0.250), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
@@ -409,53 +409,53 @@ gostek_parts! {
     SecondaryFlamebow      = Sprite(None),                    Point( 5, 10), Center( 0.300,  0.500), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     SecondaryBow           = Sprite(None),                    Point( 5, 10), Center( 0.300,  0.500), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     SecondaryFlamer        = Sprite(Weapon::Flamer),          Point( 5, 10), Center( 0.300,  0.300), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
-    LeftThigh              = Sprite(Gostek::Udo),             Point( 6,  3), Center( 0.200,  0.500), Show(true),  Flip(true),  Team(true),  Flex(5.0), Color(Pants),     Alpha(Base )
-    LeftThighDmg           = Sprite(Gostek::RannyUdo),        Point( 6,  3), Center( 0.200,  0.500), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
-    LeftFoot               = Sprite(Gostek::Stopa),           Point( 2, 18), Center( 0.350,  0.350), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    LeftJetfoot            = Sprite(Gostek::Lecistopa),       Point( 2, 18), Center( 0.350,  0.350), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    LeftLowerleg           = Sprite(Gostek::Noga),            Point( 3,  2), Center( 0.150,  0.550), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Pants),     Alpha(Base )
-    LeftLowerlegDmg        = Sprite(Gostek::RannyNoga),       Point( 3,  2), Center( 0.150,  0.550), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
-    LeftArm                = Sprite(Gostek::Ramie),           Point(11, 14), Center( 0.000,  0.500), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    LeftArmDmg             = Sprite(Gostek::RannyRamie),      Point(11, 14), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
-    LeftForearm            = Sprite(Gostek::Reka),            Point(14, 15), Center( 0.000,  0.500), Show(true),  Flip(false), Team(true),  Flex(5.0), Color(Main),      Alpha(Base )
-    LeftForearmDmg         = Sprite(Gostek::RannyReka),       Point(14, 15), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
-    LeftHand               = Sprite(Gostek::Dlon),            Point(15, 19), Center( 0.000,  0.400), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
-    GrabbedHelmet          = Sprite(Gostek::Helm),            Point(15, 19), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    GrabbedHat             = Sprite(Gostek::Kap),             Point(15, 19), Center( 0.100,  0.400), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    RightThigh             = Sprite(Gostek::Udo),             Point( 5,  4), Center( 0.200,  0.650), Show(true),  Flip(true),  Team(true),  Flex(5.0), Color(Pants),     Alpha(Base )
-    RightThighDmg          = Sprite(Gostek::RannyUdo),        Point( 5,  4), Center( 0.200,  0.650), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
-    RightFoot              = Sprite(Gostek::Stopa),           Point( 1, 17), Center( 0.350,  0.350), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    RightJetfoot           = Sprite(Gostek::Lecistopa),       Point( 1, 17), Center( 0.350,  0.350), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    RightLowerleg          = Sprite(Gostek::Noga),            Point( 4,  1), Center( 0.150,  0.550), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Pants),     Alpha(Base )
-    RightLowerlegDmg       = Sprite(Gostek::RannyNoga),       Point( 4,  1), Center( 0.150,  0.550), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
-    Chest                  = Sprite(Gostek::Klata),           Point(10, 11), Center( 0.100,  0.300), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    Vest                   = Sprite(Gostek::Kamizelka),       Point(10, 11), Center( 0.100,  0.300), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    ChestDmg               = Sprite(Gostek::RannyKlata),      Point(10, 11), Center( 0.100,  0.300), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
-    Hip                    = Sprite(Gostek::Biodro),          Point( 5,  6), Center( 0.250,  0.600), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    HipDmg                 = Sprite(Gostek::RannyBiodro),     Point( 5,  6), Center( 0.250,  0.600), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
-    Head                   = Sprite(Gostek::Morda),           Point( 9, 12), Center( 0.000,  0.500), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
-    HeadDmg                = Sprite(Gostek::RannyMorda),      Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Headblood), Alpha(Blood)
-    HeadDead               = Sprite(Gostek::Morda),           Point( 9, 12), Center( 0.500,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
-    HeadDeadDmg            = Sprite(Gostek::RannyMorda),      Point( 9, 12), Center( 0.500,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Headblood), Alpha(Blood)
-    MrT                    = Sprite(Gostek::Hair3),           Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    Helmet                 = Sprite(Gostek::Helm),            Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    Hat                    = Sprite(Gostek::Kap),             Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    RamboBadge             = Sprite(Gostek::Badge),           Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    HairDreadlocks         = Sprite(Gostek::Hair1),           Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    HairDreadlock1         = Sprite(Gostek::Dred),            Point(23, 24), Center( 0.000,  1.220), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    HairDreadlock2         = Sprite(Gostek::Dred),            Point(23, 24), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    HairDreadlock3         = Sprite(Gostek::Dred),            Point(23, 24), Center( 0.040, -0.300), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    HairDreadlock4         = Sprite(Gostek::Dred),            Point(23, 24), Center( 0.000, -0.900), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    HairDreadlock5         = Sprite(Gostek::Dred),            Point(23, 24), Center(-0.200, -1.350), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    HairPunk               = Sprite(Gostek::Hair2),           Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    HairNormal             = Sprite(Gostek::Hair4),           Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
-    Cigar                  = Sprite(Gostek::Cygaro),          Point( 9, 12), Center(-0.125,  0.400), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Cygar),     Alpha(Base )
-    SilverLchain           = Sprite(Gostek::Lancuch),         Point(10, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    SilverRchain           = Sprite(Gostek::Lancuch),         Point(11, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    SilverPendant          = Sprite(Gostek::Metal),           Point(22, 21), Center( 0.500,  0.700), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    GoldenLchain           = Sprite(Gostek::Zlotylancuch),    Point(10, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    GoldenRchain           = Sprite(Gostek::Zlotylancuch),    Point(11, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
-    GoldenPendant          = Sprite(Gostek::Zloto),           Point(22, 21), Center( 0.500,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    LeftThigh              = Sprite(Soldier::Udo),            Point( 6,  3), Center( 0.200,  0.500), Show(true),  Flip(true),  Team(true),  Flex(5.0), Color(Pants),     Alpha(Base )
+    LeftThighDmg           = Sprite(Soldier::RannyUdo),       Point( 6,  3), Center( 0.200,  0.500), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
+    LeftFoot               = Sprite(Soldier::Stopa),          Point( 2, 18), Center( 0.350,  0.350), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    LeftJetfoot            = Sprite(Soldier::Lecistopa),      Point( 2, 18), Center( 0.350,  0.350), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    LeftLowerleg           = Sprite(Soldier::Noga),           Point( 3,  2), Center( 0.150,  0.550), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Pants),     Alpha(Base )
+    LeftLowerlegDmg        = Sprite(Soldier::RannyNoga),      Point( 3,  2), Center( 0.150,  0.550), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
+    LeftArm                = Sprite(Soldier::Ramie),          Point(11, 14), Center( 0.000,  0.500), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    LeftArmDmg             = Sprite(Soldier::RannyRamie),     Point(11, 14), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
+    LeftForearm            = Sprite(Soldier::Reka),           Point(14, 15), Center( 0.000,  0.500), Show(true),  Flip(false), Team(true),  Flex(5.0), Color(Main),      Alpha(Base )
+    LeftForearmDmg         = Sprite(Soldier::RannyReka),      Point(14, 15), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
+    LeftHand               = Sprite(Soldier::Dlon),           Point(15, 19), Center( 0.000,  0.400), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
+    GrabbedHelmet          = Sprite(Soldier::Helm),           Point(15, 19), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    GrabbedHat             = Sprite(Soldier::Kap),            Point(15, 19), Center( 0.100,  0.400), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    RightThigh             = Sprite(Soldier::Udo),            Point( 5,  4), Center( 0.200,  0.650), Show(true),  Flip(true),  Team(true),  Flex(5.0), Color(Pants),     Alpha(Base )
+    RightThighDmg          = Sprite(Soldier::RannyUdo),       Point( 5,  4), Center( 0.200,  0.650), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
+    RightFoot              = Sprite(Soldier::Stopa),          Point( 1, 17), Center( 0.350,  0.350), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    RightJetfoot           = Sprite(Soldier::Lecistopa),      Point( 1, 17), Center( 0.350,  0.350), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    RightLowerleg          = Sprite(Soldier::Noga),           Point( 4,  1), Center( 0.150,  0.550), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Pants),     Alpha(Base )
+    RightLowerlegDmg       = Sprite(Soldier::RannyNoga),      Point( 4,  1), Center( 0.150,  0.550), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
+    Chest                  = Sprite(Soldier::Klata),          Point(10, 11), Center( 0.100,  0.300), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    Vest                   = Sprite(Soldier::Kamizelka),      Point(10, 11), Center( 0.100,  0.300), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    ChestDmg               = Sprite(Soldier::RannyKlata),     Point(10, 11), Center( 0.100,  0.300), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
+    Hip                    = Sprite(Soldier::Biodro),         Point( 5,  6), Center( 0.250,  0.600), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    HipDmg                 = Sprite(Soldier::RannyBiodro),    Point( 5,  6), Center( 0.250,  0.600), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
+    Head                   = Sprite(Soldier::Morda),          Point( 9, 12), Center( 0.000,  0.500), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
+    HeadDmg                = Sprite(Soldier::RannyMorda),     Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Headblood), Alpha(Blood)
+    HeadDead               = Sprite(Soldier::Morda),          Point( 9, 12), Center( 0.500,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
+    HeadDeadDmg            = Sprite(Soldier::RannyMorda),     Point( 9, 12), Center( 0.500,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Headblood), Alpha(Blood)
+    MrT                    = Sprite(Soldier::Hair3),          Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    Helmet                 = Sprite(Soldier::Helm),           Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    Hat                    = Sprite(Soldier::Kap),            Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    RamboBadge             = Sprite(Soldier::Badge),          Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    HairDreadlocks         = Sprite(Soldier::Hair1),          Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    HairDreadlock1         = Sprite(Soldier::Dred),           Point(23, 24), Center( 0.000,  1.220), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    HairDreadlock2         = Sprite(Soldier::Dred),           Point(23, 24), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    HairDreadlock3         = Sprite(Soldier::Dred),           Point(23, 24), Center( 0.040, -0.300), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    HairDreadlock4         = Sprite(Soldier::Dred),           Point(23, 24), Center( 0.000, -0.900), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    HairDreadlock5         = Sprite(Soldier::Dred),           Point(23, 24), Center(-0.200, -1.350), Show(false), Flip(false), Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    HairPunk               = Sprite(Soldier::Hair2),          Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    HairNormal             = Sprite(Soldier::Hair4),          Point( 9, 12), Center( 0.000,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Hair),      Alpha(Base )
+    Cigar                  = Sprite(Soldier::Cygaro),         Point( 9, 12), Center(-0.125,  0.400), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(Cygar),     Alpha(Base )
+    SilverLchain           = Sprite(Soldier::Lancuch),        Point(10, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    SilverRchain           = Sprite(Soldier::Lancuch),        Point(11, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    SilverPendant          = Sprite(Soldier::Metal),          Point(22, 21), Center( 0.500,  0.700), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    GoldenLchain           = Sprite(Soldier::Zlotylancuch),   Point(10, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    GoldenRchain           = Sprite(Soldier::Zlotylancuch),   Point(11, 22), Center( 0.100,  0.500), Show(false), Flip(false), Team(true),  Flex(0.0), Color(None),      Alpha(Base )
+    GoldenPendant          = Sprite(Soldier::Zloto),          Point(22, 21), Center( 0.500,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Base )
     FragGrenade1           = Sprite(Weapon::FragGrenade),     Point( 5,  6), Center( 0.500,  0.100), Show(false), Flip(false), Team(false), Flex(0.0), Color(None),      Alpha(Nades)
     FragGrenade2           = Sprite(Weapon::FragGrenade),     Point( 5,  6), Center( 0.500,  0.100), Show(false), Flip(false), Team(false), Flex(0.0), Color(None),      Alpha(Nades)
     FragGrenade3           = Sprite(Weapon::FragGrenade),     Point( 5,  6), Center( 0.500,  0.100), Show(false), Flip(false), Team(false), Flex(0.0), Color(None),      Alpha(Nades)
@@ -518,9 +518,9 @@ gostek_parts! {
     PrimaryFlamer          = Sprite(Weapon::Flamer),          Point(16, 15), Center( 0.200,  0.700), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     PrimaryFlamerClip      = Sprite(None),                    Point(16, 15), Center( 0.000,  0.000), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     PrimaryFlamerFire      = Sprite(Weapon::FlamerFire),      Point(16, 15), Center( 0.000,  0.000), Show(false), Flip(false), Team(false), Flex(0.0), Color(None),      Alpha(Base )
-    RightArm               = Sprite(Gostek::Ramie),           Point(10, 13), Center( 0.000,  0.600), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
-    RightArmDmg            = Sprite(Gostek::RannyRamie),      Point(10, 13), Center(-0.100,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
-    RightForearm           = Sprite(Gostek::Reka),            Point(13, 16), Center( 0.000,  0.600), Show(true),  Flip(false), Team(true),  Flex(5.0), Color(Main),      Alpha(Base )
-    RightForearmDmg        = Sprite(Gostek::RannyReka),       Point(13, 16), Center( 0.000,  0.600), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
-    RightHand              = Sprite(Gostek::Dlon),            Point(16, 20), Center( 0.000,  0.500), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
+    RightArm               = Sprite(Soldier::Ramie),          Point(10, 13), Center( 0.000,  0.600), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Main),      Alpha(Base )
+    RightArmDmg            = Sprite(Soldier::RannyRamie),     Point(10, 13), Center(-0.100,  0.500), Show(false), Flip(true),  Team(true),  Flex(0.0), Color(None),      Alpha(Blood)
+    RightForearm           = Sprite(Soldier::Reka),           Point(13, 16), Center( 0.000,  0.600), Show(true),  Flip(false), Team(true),  Flex(5.0), Color(Main),      Alpha(Base )
+    RightForearmDmg        = Sprite(Soldier::RannyReka),      Point(13, 16), Center( 0.000,  0.600), Show(false), Flip(true),  Team(true),  Flex(5.0), Color(None),      Alpha(Blood)
+    RightHand              = Sprite(Soldier::Dlon),           Point(16, 20), Center( 0.000,  0.500), Show(true),  Flip(true),  Team(true),  Flex(0.0), Color(Skin),      Alpha(Base )
 }

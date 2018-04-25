@@ -1,14 +1,16 @@
 use super::*;
 
+pub mod bullets;
 pub mod game;
 pub mod gfx;
-pub mod gostek;
 pub mod map;
+pub mod soldiers;
 
 pub use self::game::GameGraphics;
 
-use self::gostek::*;
+use self::bullets::*;
 use self::map::*;
+use self::soldiers::*;
 use gfx2d::*;
 
 fn filename_override(prefix: &str, fname: &str) -> ::std::path::PathBuf {

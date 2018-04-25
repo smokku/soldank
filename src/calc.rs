@@ -1,4 +1,5 @@
 pub use gfx2d::math::*;
+use std::ops::{Add, Mul, Sub};
 
 pub fn distance(p1: Vec2, p2: Vec2) -> f32 {
     (p2 - p1).magnitude()
@@ -27,6 +28,9 @@ pub fn point_line_distance(p1: Vec2, p2: Vec2, p3: Vec2) -> f32 {
     ((x - p3.x).powi(2) + (y - p3.y).powi(2)).sqrt()
 }
 
-pub fn lerp(a: Vec2, b: Vec2, t: f32) -> Vec2 {
+pub fn lerp<T>(a: T, b: T, t: f32) -> T
+where
+    T: Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T> + Copy + Clone,
+{
     a + (b - a) * t
 }

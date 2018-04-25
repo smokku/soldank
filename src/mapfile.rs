@@ -32,8 +32,8 @@ pub enum PolyType {
     Lava,
     AlphaBullets,
     AlphaPlayers,
-    BlueBullets,
-    BluePlayers,
+    BravoBullets,
+    BravoPlayers,
     CharlieBullets,
     CharliePlayers,
     DeltaBullets,
@@ -120,28 +120,50 @@ pub struct MapSpawnpoint {
 
 #[allow(dead_code)]
 pub struct MapFile {
-    filename: String,
-    version: i32,
-    mapname: String,
+    pub filename: String,
+    pub version: i32,
+    pub mapname: String,
     pub texture_name: String,
     pub bg_color_top: MapColor,
     pub bg_color_bottom: MapColor,
     pub start_jet: i32,
-    grenade_packs: u8,
-    medikits: u8,
-    weather: u8,
-    steps: u8,
-    random_id: i32,
+    pub grenade_packs: u8,
+    pub medikits: u8,
+    pub weather: u8,
+    pub steps: u8,
+    pub random_id: i32,
     pub polygons: Vec<MapPolygon>,
     pub sectors_division: i32,
     pub sectors_num: i32,
-    sectors: Vec<MapSector>,
+    pub sectors: Vec<MapSector>,
     pub props: Vec<MapProp>,
     pub scenery: Vec<MapScenery>,
-    colliders: Vec<MapCollider>,
+    pub colliders: Vec<MapCollider>,
     pub spawnpoints: Vec<MapSpawnpoint>,
     pub sectors_poly: Vec<Vec<MapSector>>,
     pub perps: Vec<[Vec2; 3]>,
+}
+
+impl MapPolygon {
+    pub fn bullet_collides(&self, team: Team) -> bool {
+        match self.polytype {
+            PolyType::AlphaBullets => team == Team::Alpha,
+            PolyType::BravoBullets => team == Team::Bravo,
+            PolyType::CharlieBullets => team == Team::Charlie,
+            PolyType::DeltaBullets => team == Team::Delta,
+            PolyType::AlphaPlayers => false,
+            PolyType::BravoPlayers => false,
+            PolyType::CharliePlayers => false,
+            PolyType::DeltaPlayers => false,
+            PolyType::OnlyPlayersCollide => false,
+            PolyType::NoCollide => false,
+            PolyType::OnlyFlaggers => false,
+            PolyType::NotFlaggers => false,
+            PolyType::Background => false,
+            PolyType::BackgroundTransition => false,
+            _ => true,
+        }
+    }
 }
 
 impl MapFile {
@@ -201,8 +223,8 @@ impl MapFile {
                     9 => PolyType::Lava,
                     10 => PolyType::AlphaBullets,
                     11 => PolyType::AlphaPlayers,
-                    12 => PolyType::BlueBullets,
-                    13 => PolyType::BluePlayers,
+                    12 => PolyType::BravoBullets,
+                    13 => PolyType::BravoPlayers,
                     14 => PolyType::CharlieBullets,
                     15 => PolyType::CharliePlayers,
                     16 => PolyType::DeltaBullets,
@@ -270,7 +292,7 @@ impl MapFile {
         let mut k = 0;
         let sector = MapSector { polys: Vec::new() };
         let sectores = vec![sector.clone(); 51];
-        let mut sectored = vec![sectores.clone(); 71];
+        let mut sectored = vec![sectores.clone(); 51];
 
         for sec_i in sectored.iter_mut().take(51) {
             for sec_ij in sec_i.iter_mut().take(51) {
@@ -496,6 +518,19 @@ impl MapFile {
         }
 
         vec2(0.0f32, 0.0f32)
+    }
+
+    pub fn sector_polys(&self, pos: Vec2) -> &[u16] {
+        let num = self.sectors_num;
+        let kx = f32::floor(pos.x / self.sectors_division as f32) as i32;
+        let ky = f32::floor(pos.y / self.sectors_division as f32) as i32;
+
+        if kx >= -num && kx <= num && ky >= -num && ky <= num {
+            let i = (kx + num) * (2 * num + 1) + (ky + num);
+            &self.sectors[i as usize].polys
+        } else {
+            &self.sectors[0].polys[0..0]
+        }
     }
 }
 

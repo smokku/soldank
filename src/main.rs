@@ -14,6 +14,7 @@ macro_rules! iif(
 );
 
 mod anims;
+mod bullet;
 mod calc;
 mod control;
 mod mapfile;
@@ -24,6 +25,7 @@ mod state;
 mod weapons;
 
 use anims::*;
+use bullet::*;
 use calc::*;
 use control::*;
 use mapfile::*;
@@ -72,10 +74,13 @@ fn main() {
         mouse_prev: Vec2::zero(),
         gravity: GRAV,
         zoom: 0.0,
+        bullets: vec![],
     };
 
     let mut soldier = Soldier::new(&state.map.spawnpoints[0]);
     state.camera = soldier.particle.pos;
+
+    let mut emitter: Vec<EmitterItem> = Vec::new();
 
     // setup window, renderer & main loop
 
@@ -163,7 +168,36 @@ fn main() {
         while timeacc >= dt {
             timeacc -= dt;
 
-            soldier.update(&state);
+            // remove inactive bullets
+
+            let mut i = 0;
+            while i < state.bullets.len() {
+                if !state.bullets[i].active {
+                    state.bullets.swap_remove(i);
+                } else {
+                    i += 1;
+                }
+            }
+
+            // update soldiers
+
+            soldier.update(&state, &mut emitter);
+
+            // update bullets
+
+            for bullet in state.bullets.iter_mut() {
+                bullet.update(&state.map);
+            }
+
+            // create emitted objects
+
+            for item in emitter.drain(..) {
+                match item {
+                    EmitterItem::Bullet(params) => state.bullets.push(Bullet::new(&params)),
+                };
+            }
+
+            // update camera
 
             state.camera_prev = state.camera;
             state.mouse_prev = state.mouse;
@@ -196,6 +230,7 @@ fn main() {
         }
 
         let p = f64::min(1.0, f64::max(0.0, timeacc / dt));
+
         graphics.render_frame(
             &mut context,
             &state,
@@ -203,6 +238,7 @@ fn main() {
             timecur - dt * (1.0 - p),
             p as f32,
         );
+
         context.present();
 
         // only sleep if no vsync (or if vsync doesn't wait), also needs timeBeginPeriod(1)

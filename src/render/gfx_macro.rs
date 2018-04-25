@@ -64,12 +64,12 @@ macro_rules! sprites {
     }
 }
 
-macro_rules! gostek_parts_sprite {
-    ( None ) => ( GostekSprite::None );
-    ( $group:ident::$id:ident ) => ( GostekSprite::$group($group::$id) );
+macro_rules! soldier_parts_sprite {
+    ( None ) => ( SoldierSprite::None );
+    ( $group:ident::$id:ident ) => ( SoldierSprite::$group($group::$id) );
 }
 
-macro_rules! gostek_parts {
+macro_rules! soldier_parts {
     (
         $(
             $id:ident =
@@ -85,31 +85,31 @@ macro_rules! gostek_parts {
         )+
     ) => {
         #[derive(Debug, Copy, Clone)]
-        pub enum GostekPart {
+        pub enum SoldierPart {
             $($id,)+
         }
 
-        impl GostekPart {
+        impl SoldierPart {
             pub fn id(&self) -> usize { *self as usize }
 
-            pub fn values() -> &'static [GostekPart] {
-                static VALUES: &[GostekPart] = &[$(GostekPart::$id,)+];
+            pub fn values() -> &'static [SoldierPart] {
+                static VALUES: &[SoldierPart] = &[$(SoldierPart::$id,)+];
                 VALUES
             }
 
-            pub fn data() -> &'static [GostekPartInfo] {
-                static DATA: &[GostekPartInfo] = &[
+            pub fn data() -> &'static [SoldierPartInfo] {
+                static DATA: &[SoldierPartInfo] = &[
                     $(
-                        GostekPartInfo {
+                        SoldierPartInfo {
                             name: stringify!($id),
-                            sprite: gostek_parts_sprite!($($sprite)+),
+                            sprite: soldier_parts_sprite!($($sprite)+),
                             point: ($p1, $p2),
                             center: ($cx, $cy),
                             flexibility: $flex,
                             flip: $flip,
                             team: $team,
-                            color: GostekColor::$color,
-                            alpha: GostekAlpha::$alpha,
+                            color: SoldierColor::$color,
+                            alpha: SoldierAlpha::$alpha,
                             visible: $show,
                         },
                     )+
@@ -119,23 +119,23 @@ macro_rules! gostek_parts {
             }
         }
 
-        impl ::std::convert::From<usize> for GostekPart {
-            fn from(id: usize) -> GostekPart {
-                match GostekPart::values().get(id as usize) {
+        impl ::std::convert::From<usize> for SoldierPart {
+            fn from(id: usize) -> SoldierPart {
+                match SoldierPart::values().get(id as usize) {
                     Some(&v) => v,
                     _ => panic!("Invalid sprite identifier."),
                 }
             }
         }
 
-        impl ::std::ops::Add<usize> for GostekPart {
-            type Output = GostekPart;
-            fn add(self, x: usize) -> GostekPart { GostekPart::from(self.id() + x) }
+        impl ::std::ops::Add<usize> for SoldierPart {
+            type Output = SoldierPart;
+            fn add(self, x: usize) -> SoldierPart { SoldierPart::from(self.id() + x) }
         }
 
-        impl ::std::ops::Sub<usize> for GostekPart {
-            type Output = GostekPart;
-            fn sub(self, x: usize) -> GostekPart { GostekPart::from(self.id() - x) }
+        impl ::std::ops::Sub<usize> for SoldierPart {
+            type Output = SoldierPart;
+            fn sub(self, x: usize) -> SoldierPart { SoldierPart::from(self.id() - x) }
         }
     }
 }

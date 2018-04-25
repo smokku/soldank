@@ -43,7 +43,7 @@ pub struct Control {
 }
 
 impl Soldier {
-    pub fn control(&mut self, state: &MainState) {
+    pub fn control(&mut self, state: &MainState, emitter: &mut Vec<EmitterItem>) {
         let mut player_pressed_left_right = false;
 
         if self.legs_animation.speed < 1 {
@@ -53,17 +53,6 @@ impl Soldier {
         if self.body_animation.speed < 1 {
             self.body_animation.speed = 1;
         }
-
-        /*
-    println!(
-      "frame: {}, animation_id: {}, body_animation_id: {}, num_frames: {} direction: {}",
-      self.body_animation.frame,
-      self.body_animation.id,
-      self.body_animation.id,
-      self.body_animation.num_frames(),
-      self.direction
-    );
-    */
 
         self.control.mouse_aim_x =
             (state.mouse.x - state.game_width as f32 / 2.0 + state.camera.x).round() as i32;
@@ -172,9 +161,10 @@ impl Soldier {
         }
 
         // FIRE!!!!
-        if (self.body_animation.id != Anim::Roll) && (self.body_animation.id != Anim::RollBack)
-            && (self.body_animation.id != Anim::Melee)
-            && (self.body_animation.id != Anim::Change)
+        if self.primary_weapon().kind == WeaponKind::Chainsaw
+            || (self.body_animation.id != Anim::Roll) && (self.body_animation.id != Anim::RollBack)
+                && (self.body_animation.id != Anim::Melee)
+                && (self.body_animation.id != Anim::Change)
         {
             if ((self.body_animation.id == Anim::HandsUpAim) && (self.body_animation.frame == 11))
                 || (self.body_animation.id != Anim::HandsUpAim)
@@ -182,7 +172,14 @@ impl Soldier {
                 if self.control.fire
                 // and (SpriteC.CeaseFireCounter < 0) */
                 {
-                    self.body_apply_animation(Anim::Punch, 1);
+                    if self.primary_weapon().kind == WeaponKind::NoWeapon
+                        || self.primary_weapon().kind == WeaponKind::Knife
+                    {
+                        self.body_apply_animation(Anim::Punch, 1);
+                    } else {
+                        self.fire(emitter);
+                        self.control.fire = false;
+                    }
                 }
             }
         }

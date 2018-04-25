@@ -1,5 +1,19 @@
 use super::*;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum Team {
+    None,
+    Alpha,
+    Bravo,
+    Charlie,
+    Delta,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum EmitterItem {
+    Bullet(BulletParams),
+}
+
 pub struct MainState {
     pub map: MapFile,
     pub camera: Vec2,
@@ -10,4 +24,11 @@ pub struct MainState {
     pub game_height: f32,
     pub gravity: f32,
     pub zoom: f32,
+    pub bullets: Vec<Bullet>,
+}
+
+impl Default for Team {
+    fn default() -> Team {
+        Team::None
+    }
 }

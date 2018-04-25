@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 pub struct GameGraphics {
     map: MapGraphics,
-    gostek: GostekGraphics,
+    soldier_graphics: SoldierGraphics,
     sprites: Vec<Vec<Sprite>>,
     batch: DrawBatch,
 }
@@ -14,7 +14,7 @@ impl GameGraphics {
     pub fn new(_context: &mut Gfx2dContext) -> GameGraphics {
         GameGraphics {
             map: MapGraphics::empty(),
-            gostek: GostekGraphics::new(),
+            soldier_graphics: SoldierGraphics::new(),
             sprites: Vec::new(),
             batch: DrawBatch::new(),
         }
@@ -25,7 +25,7 @@ impl GameGraphics {
         context: &mut Gfx2dContext,
         state: &MainState,
         soldier: &Soldier,
-        _elapsed: f64,
+        elapsed: f64,
         frame_percent: f32,
     ) {
         let zoom = f32::exp(state.zoom);
@@ -33,21 +33,35 @@ impl GameGraphics {
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
         let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
+        let transform_bg = Transform::ortho(0.0, 1.0, dy, dy + h).matrix();
 
         self.batch.clear();
-        self.gostek
-            .render(soldier, &mut self.batch, &self.sprites, frame_percent);
+
+        render_soldier(
+            soldier,
+            &self.soldier_graphics,
+            &self.sprites,
+            &mut self.batch,
+            frame_percent,
+        );
 
         if false {
             let px = h / context.wnd.get_inner_size().unwrap().1 as f32;
-            GostekGraphics::render_skeleton(soldier, &mut self.batch, px, frame_percent);
+            render_skeleton(soldier, &mut self.batch, px, frame_percent);
+        }
+
+        for bullet in &state.bullets {
+            render_bullet(
+                bullet,
+                &self.sprites,
+                &mut self.batch,
+                elapsed,
+                frame_percent,
+            );
         }
 
         context.clear(rgb(0, 0, 0));
-        context.draw(
-            &mut self.map.background(),
-            &Transform::ortho(0.0, 1.0, dy, dy + h).matrix(),
-        );
+        context.draw(&mut self.map.background(), &transform_bg);
         context.draw(&mut self.map.polys_back(), &transform);
         context.draw(&mut self.map.scenery_back(), &transform);
         context.draw(&mut self.batch.all(), &transform);
@@ -106,7 +120,7 @@ impl GameGraphics {
 
         for group in gfx::Group::values() {
             match *group {
-                gfx::Group::Gostek => gfx::Gostek::values()
+                gfx::Group::Soldier => gfx::Soldier::values()
                     .iter()
                     .map(|v| v.filename())
                     .for_each(|f| add_to(&mut main, f)),
@@ -134,7 +148,7 @@ impl GameGraphics {
         }
 
         if let Ok(cfg) = Ini::load_from_file("assets/mod.ini") {
-            self.gostek.load_data(&cfg);
+            self.soldier_graphics.load_data(&cfg);
 
             if let Some(data) = cfg.section(Some("SCALE".to_owned())) {
                 let default_scale = match data.get("DefaultScale") {
@@ -173,7 +187,7 @@ impl GameGraphics {
             let index = group.id();
 
             match *group {
-                gfx::Group::Gostek => for _ in gfx::Gostek::values() {
+                gfx::Group::Soldier => for _ in gfx::Soldier::values() {
                     self.sprites[index].push(main.sprites[imain].clone());
                     imain += 1;
                 },

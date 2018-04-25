@@ -198,13 +198,13 @@ impl Soldier {
         }
     }
 
-    pub fn update(&mut self, state: &MainState) {
+    pub fn update(&mut self, state: &MainState, emitter: &mut Vec<EmitterItem>) {
         let map = &state.map;
         let mut body_y = 0.0;
         let mut arm_s;
 
         self.particle.euler();
-        self.control(state);
+        self.control(state, emitter);
 
         *self.skeleton.old_pos_mut(21) = self.skeleton.pos(21);
         *self.skeleton.old_pos_mut(23) = self.skeleton.pos(23);
@@ -760,5 +760,55 @@ impl Soldier {
         }
 
         result
+    }
+
+    pub fn fire(&self, emitter: &mut Vec<EmitterItem>) {
+        let weapon = self.primary_weapon();
+
+        let dir = {
+            if weapon.bullet_style == BulletStyle::Blade || self.body_animation.id == Anim::Mercy
+                || self.body_animation.id == Anim::Mercy2
+            {
+                vec2normalize(self.skeleton.pos(15) - self.skeleton.pos(16))
+            } else {
+                let aim_x = self.control.mouse_aim_x as f32;
+                let aim_y = self.control.mouse_aim_y as f32;
+                vec2normalize(vec2(aim_x, aim_y) - self.skeleton.pos(15))
+            }
+        };
+
+        let pos = self.skeleton.pos(15) + dir * 4.0 - vec2(0.0, 2.0);
+        let bullet_velocity = dir * weapon.speed;
+        let inherited_velocity = self.particle.velocity * weapon.inherited_velocity;
+
+        let mut params = BulletParams {
+            style: weapon.bullet_style,
+            weapon: weapon.kind,
+            position: pos,
+            velocity: bullet_velocity + inherited_velocity,
+            timeout: weapon.timeout as i16,
+            hit_multiply: weapon.hit_multiply,
+            team: Team::None,
+            sprite: weapon.bullet_sprite,
+        };
+
+        match weapon.kind {
+            WeaponKind::DesertEagles => {
+                emitter.push(EmitterItem::Bullet(params));
+
+                let signx = iif!(dir.x > 0.0, 1.0, iif!(dir.x < 0.0, -1.0, 0.0));
+                let signy = iif!(dir.x > 0.0, 1.0, iif!(dir.x < 0.0, -1.0, 0.0));
+
+                params.position += vec2(-signx * dir.y, signy * dir.x) * 3.0;
+                emitter.push(EmitterItem::Bullet(params));
+            }
+            WeaponKind::Spas12 => {}
+            WeaponKind::Flamer => {}
+            WeaponKind::NoWeapon => {}
+            WeaponKind::Knife => {}
+            WeaponKind::Chainsaw => {}
+            WeaponKind::LAW => {}
+            _ => emitter.push(EmitterItem::Bullet(params)),
+        };
     }
 }

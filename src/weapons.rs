@@ -42,6 +42,46 @@ pub enum WeaponKind {
     ThrownKnife,
 }
 
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Weapon {
+    pub kind: WeaponKind,
+    pub ammo: u8,
+    pub ammo_count: u8,
+    pub movement_acc: f32,
+    pub bink: i16,
+    pub recoil: u16,
+    pub fire_interval: u16,
+    pub fire_interval_prev: u16,
+    pub fire_interval_count: u16,
+    pub fire_interval_real: f32,
+    pub start_up_time: u16,
+    pub start_up_time_count: u16,
+    pub reload_time: u16,
+    pub reload_time_prev: u16,
+    pub reload_time_count: u16,
+    pub reload_time_real: f32,
+    pub clip_reload: bool,
+    pub clip_in_time: u16,
+    pub clip_out_time: u16,
+    pub name: &'static str,
+    pub ini_name: &'static str,
+    pub speed: f32,
+    pub hit_multiply: f32,
+    pub bullet_spread: f32,
+    pub push: f32,
+    pub inherited_velocity: f32,
+    pub modifier_legs: f32,
+    pub modifier_chest: f32,
+    pub modifier_head: f32,
+    pub fire_mode: u8,
+    pub timeout: u16,
+    pub bullet_style: BulletStyle,
+    pub sprite: Option<gfx::Weapon>,
+    pub clip_sprite: Option<gfx::Weapon>,
+    pub fire_sprite: Option<gfx::Weapon>,
+    pub bullet_sprite: Option<gfx::Weapon>,
+}
+
 impl Default for WeaponKind {
     fn default() -> WeaponKind {
         WeaponKind::NoWeapon
@@ -113,46 +153,6 @@ impl WeaponKind {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
-pub struct Weapon {
-    pub kind: WeaponKind,
-    pub ammo: u8,
-    pub ammo_count: u8,
-    pub movement_acc: f32,
-    pub bink: i16,
-    pub recoil: u16,
-    pub fire_interval: u16,
-    pub fire_interval_prev: u16,
-    pub fire_interval_count: u16,
-    pub fire_interval_real: f32,
-    pub start_up_time: u16,
-    pub start_up_time_count: u16,
-    pub reload_time: u16,
-    pub reload_time_prev: u16,
-    pub reload_time_count: u16,
-    pub reload_time_real: f32,
-    pub clip_reload: bool,
-    pub clip_in_time: u16,
-    pub clip_out_time: u16,
-    pub name: &'static str,
-    pub ini_name: &'static str,
-    pub speed: f32,
-    pub hit_multiply: f32,
-    pub bullet_spread: f32,
-    pub push: f32,
-    pub inherited_velocity: f32,
-    pub modifier_legs: f32,
-    pub modifier_chest: f32,
-    pub modifier_head: f32,
-    pub fire_mode: u8,
-    pub timeout: u16,
-    pub bullet_style: u8,
-    pub sprite: Option<gfx::Weapon>,
-    pub clip_sprite: Option<gfx::Weapon>,
-    pub fire_sprite: Option<gfx::Weapon>,
-    pub bullet_sprite: Option<gfx::Weapon>,
-}
-
 impl Weapon {
     pub fn new(kind: WeaponKind, realistic: bool) -> Weapon {
         let mut weapon = Weapon {
@@ -177,7 +177,7 @@ impl Weapon {
                     weapon.ammo = 7;
                     weapon.reload_time = 106;
                     weapon.speed = 19.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.02;
@@ -194,7 +194,7 @@ impl Weapon {
                     weapon.ammo = 7;
                     weapon.reload_time = 87;
                     weapon.speed = 19.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.009;
@@ -224,7 +224,7 @@ impl Weapon {
                     weapon.ammo = 30;
                     weapon.reload_time = 110;
                     weapon.speed = 18.9;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = -10;
                     weapon.movement_acc = 0.01;
@@ -241,7 +241,7 @@ impl Weapon {
                     weapon.ammo = 30;
                     weapon.reload_time = 105;
                     weapon.speed = 18.9;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -271,7 +271,7 @@ impl Weapon {
                     weapon.ammo = 35;
                     weapon.reload_time = 158;
                     weapon.speed = 24.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = -10;
                     weapon.movement_acc = 0.02;
@@ -288,7 +288,7 @@ impl Weapon {
                     weapon.ammo = 35;
                     weapon.reload_time = 165;
                     weapon.speed = 24.6;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = -12;
                     weapon.movement_acc = 0.011;
@@ -318,7 +318,7 @@ impl Weapon {
                     weapon.ammo = 30;
                     weapon.reload_time = 126;
                     weapon.speed = 26.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = -9;
                     weapon.movement_acc = 0.01;
@@ -335,7 +335,7 @@ impl Weapon {
                     weapon.ammo = 25;
                     weapon.reload_time = 125;
                     weapon.speed = 26.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -365,7 +365,7 @@ impl Weapon {
                     weapon.ammo = 7;
                     weapon.reload_time = 175;
                     weapon.speed = 13.2;
-                    weapon.bullet_style = 3;
+                    weapon.bullet_style = BulletStyle::GaugeBullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -382,7 +382,7 @@ impl Weapon {
                     weapon.ammo = 7;
                     weapon.reload_time = 175;
                     weapon.speed = 14.0;
-                    weapon.bullet_style = 3;
+                    weapon.bullet_style = BulletStyle::GaugeBullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -412,7 +412,7 @@ impl Weapon {
                     weapon.ammo = 4;
                     weapon.reload_time = 104;
                     weapon.speed = 33.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 14;
                     weapon.movement_acc = 0.03;
@@ -429,7 +429,7 @@ impl Weapon {
                     weapon.ammo = 4;
                     weapon.reload_time = 78;
                     weapon.speed = 33.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.03;
@@ -459,7 +459,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 173;
                     weapon.speed = 11.4;
-                    weapon.bullet_style = 4;
+                    weapon.bullet_style = BulletStyle::M79Grenade;
                     weapon.start_up_time = 0;
                     weapon.bink = 45;
                     weapon.movement_acc = 0.03;
@@ -476,7 +476,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 178;
                     weapon.speed = 10.7;
-                    weapon.bullet_style = 4;
+                    weapon.bullet_style = BulletStyle::M79Grenade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -506,7 +506,7 @@ impl Weapon {
                     weapon.ammo = 10;
                     weapon.reload_time = 170;
                     weapon.speed = 55.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 16;
                     weapon.bink = 80;
                     weapon.movement_acc = 0.07;
@@ -523,7 +523,7 @@ impl Weapon {
                     weapon.ammo = 10;
                     weapon.reload_time = 70;
                     weapon.speed = 55.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 19;
                     weapon.bink = 65;
                     weapon.movement_acc = 0.05;
@@ -553,7 +553,7 @@ impl Weapon {
                     weapon.ammo = 50;
                     weapon.reload_time = 261;
                     weapon.speed = 27.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = -8;
                     weapon.movement_acc = 0.02;
@@ -570,7 +570,7 @@ impl Weapon {
                     weapon.ammo = 50;
                     weapon.reload_time = 250;
                     weapon.speed = 27.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.013;
@@ -600,7 +600,7 @@ impl Weapon {
                     weapon.ammo = 100;
                     weapon.reload_time = 320;
                     weapon.speed = 29.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 33;
                     weapon.bink = -2;
                     weapon.movement_acc = 0.01;
@@ -617,7 +617,7 @@ impl Weapon {
                     weapon.ammo = 100;
                     weapon.reload_time = 480;
                     weapon.speed = 29.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 25;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0625;
@@ -647,7 +647,7 @@ impl Weapon {
                     weapon.ammo = 12;
                     weapon.reload_time = 72;
                     weapon.speed = 18.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.02;
@@ -664,7 +664,7 @@ impl Weapon {
                     weapon.ammo = 14;
                     weapon.reload_time = 60;
                     weapon.speed = 18.0;
-                    weapon.bullet_style = 1;
+                    weapon.bullet_style = BulletStyle::Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -694,7 +694,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 3;
                     weapon.speed = 6.0;
-                    weapon.bullet_style = 11;
+                    weapon.bullet_style = BulletStyle::Blade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -711,7 +711,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 3;
                     weapon.speed = 6.0;
-                    weapon.bullet_style = 11;
+                    weapon.bullet_style = BulletStyle::Blade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -741,7 +741,7 @@ impl Weapon {
                     weapon.ammo = 200;
                     weapon.reload_time = 110;
                     weapon.speed = 7.6;
-                    weapon.bullet_style = 11;
+                    weapon.bullet_style = BulletStyle::Blade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -758,7 +758,7 @@ impl Weapon {
                     weapon.ammo = 200;
                     weapon.reload_time = 110;
                     weapon.speed = 8.0;
-                    weapon.bullet_style = 11;
+                    weapon.bullet_style = BulletStyle::Blade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -788,7 +788,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 495;
                     weapon.speed = 23.0;
-                    weapon.bullet_style = 12;
+                    weapon.bullet_style = BulletStyle::LAWMissile;
                     weapon.start_up_time = 12;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -805,7 +805,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 300;
                     weapon.speed = 23.0;
-                    weapon.bullet_style = 12;
+                    weapon.bullet_style = BulletStyle::LAWMissile;
                     weapon.start_up_time = 13;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -835,7 +835,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 39;
                     weapon.speed = 18.0;
-                    weapon.bullet_style = 8;
+                    weapon.bullet_style = BulletStyle::FlameArrow;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -852,7 +852,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 39;
                     weapon.speed = 18.0;
-                    weapon.bullet_style = 8;
+                    weapon.bullet_style = BulletStyle::FlameArrow;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -882,7 +882,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 25;
                     weapon.speed = 21.0;
-                    weapon.bullet_style = 7;
+                    weapon.bullet_style = BulletStyle::Arrow;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -899,7 +899,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 25;
                     weapon.speed = 21.0;
-                    weapon.bullet_style = 7;
+                    weapon.bullet_style = BulletStyle::Arrow;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -929,7 +929,7 @@ impl Weapon {
                     weapon.ammo = 200;
                     weapon.reload_time = 5;
                     weapon.speed = 12.5;
-                    weapon.bullet_style = 5;
+                    weapon.bullet_style = BulletStyle::Flame;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -946,7 +946,7 @@ impl Weapon {
                     weapon.ammo = 200;
                     weapon.reload_time = 5;
                     weapon.speed = 10.5;
-                    weapon.bullet_style = 5;
+                    weapon.bullet_style = BulletStyle::Flame;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -976,7 +976,7 @@ impl Weapon {
                     weapon.ammo = 100;
                     weapon.reload_time = 366;
                     weapon.speed = 36.0;
-                    weapon.bullet_style = 14;
+                    weapon.bullet_style = BulletStyle::M2Bullet;
                     weapon.start_up_time = 21;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -993,7 +993,7 @@ impl Weapon {
                     weapon.ammo = 100;
                     weapon.reload_time = 366;
                     weapon.speed = 36.0;
-                    weapon.bullet_style = 14;
+                    weapon.bullet_style = BulletStyle::M2Bullet;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -1023,7 +1023,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 3;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 6;
+                    weapon.bullet_style = BulletStyle::Fist;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -1040,7 +1040,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 3;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 6;
+                    weapon.bullet_style = BulletStyle::Fist;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -1070,7 +1070,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 20;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 2;
+                    weapon.bullet_style = BulletStyle::FragGrenade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -1087,7 +1087,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 20;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 2;
+                    weapon.bullet_style = BulletStyle::FragGrenade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -1117,7 +1117,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 20;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 9;
+                    weapon.bullet_style = BulletStyle::ClusterGrenade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -1134,7 +1134,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 20;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 9;
+                    weapon.bullet_style = BulletStyle::ClusterGrenade;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -1164,7 +1164,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 20;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 10;
+                    weapon.bullet_style = BulletStyle::Cluster;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -1181,7 +1181,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 20;
                     weapon.speed = 5.0;
-                    weapon.bullet_style = 10;
+                    weapon.bullet_style = BulletStyle::Cluster;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -1211,7 +1211,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 3;
                     weapon.speed = 6.0;
-                    weapon.bullet_style = 13;
+                    weapon.bullet_style = BulletStyle::ThrownKnife;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.01;
@@ -1228,7 +1228,7 @@ impl Weapon {
                     weapon.ammo = 1;
                     weapon.reload_time = 3;
                     weapon.speed = 6.0;
-                    weapon.bullet_style = 13;
+                    weapon.bullet_style = BulletStyle::ThrownKnife;
                     weapon.start_up_time = 0;
                     weapon.bink = 0;
                     weapon.movement_acc = 0.0;
@@ -1261,10 +1261,10 @@ impl Weapon {
         }
 
         weapon.timeout = match weapon.bullet_style {
-            2 | 9 => GRENADE_TIMEOUT,
-            5 => FLAMER_TIMEOUT,
-            6 | 11 => MELEE_TIMEOUT,
-            14 => M2BULLET_TIMEOUT,
+            BulletStyle::FragGrenade | BulletStyle::ClusterGrenade => GRENADE_TIMEOUT,
+            BulletStyle::Flame => FLAMER_TIMEOUT,
+            BulletStyle::Fist | BulletStyle::Blade => MELEE_TIMEOUT,
+            BulletStyle::M2Bullet => M2BULLET_TIMEOUT,
             _ => BULLET_TIMEOUT,
         };
 
