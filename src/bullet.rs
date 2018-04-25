@@ -115,9 +115,8 @@ impl Bullet {
                 if dist2 > degrade_dists2[self.degrade_count] {
                     self.hit_multiply_prev = self.hit_multiply;
                     self.hit_multiply *= 0.5;
+                    self.degrade_count += 1;
                 }
-
-                self.degrade_count += 1;
             }
         }
 
