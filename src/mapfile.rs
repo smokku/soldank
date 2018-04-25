@@ -522,8 +522,8 @@ impl MapFile {
 
     pub fn sector_polys(&self, pos: Vec2) -> &[u16] {
         let num = self.sectors_num;
-        let kx = f32::floor(pos.x / self.sectors_division as f32) as i32;
-        let ky = f32::floor(pos.y / self.sectors_division as f32) as i32;
+        let kx = (pos.x / self.sectors_division as f32).round() as i32;
+        let ky = (pos.y / self.sectors_division as f32).round() as i32;
 
         if kx >= -num && kx <= num && ky >= -num && ky <= num {
             let i = (kx + num) * (2 * num + 1) + (ky + num);
