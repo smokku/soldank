@@ -28,6 +28,7 @@ pub struct Control {
     pub grenade: bool,
     pub change: bool,
     pub throw: bool,
+    pub drop: bool,
     pub reload: bool,
     pub prone: bool,
     pub flag_throw: bool,
@@ -203,6 +204,55 @@ impl Soldier {
             {
                 self.body_apply_animation(Anim::Stand, 1);
             }
+        }
+
+        // throw weapon
+        if self.control.drop
+            && (self.body_animation.id != Anim::Change || self.body_animation.frame > 25)
+            && !self.body_animation.is_any(&[Anim::Roll, Anim::RollBack, Anim::ThrowWeapon])
+            // && !flamegod bonus
+            && !self.primary_weapon().is_any(
+                &[
+                    WeaponKind::Bow,
+                    WeaponKind::FlameBow,
+                    WeaponKind::NoWeapon,
+                ]
+            ) {
+            self.body_apply_animation(Anim::ThrowWeapon, 1);
+
+            if self.primary_weapon().kind == WeaponKind::Knife {
+                self.body_animation.speed = 2;
+            }
+        }
+
+        // throw knife
+        if self.body_animation.id == Anim::ThrowWeapon
+            && self.primary_weapon().kind == WeaponKind::Knife
+            && (!self.control.drop || self.body_animation.frame == 16)
+        {
+            let weapon = Weapon::new(WeaponKind::ThrownKnife, false);
+            let aim_x = self.control.mouse_aim_x as f32;
+            let aim_y = self.control.mouse_aim_y as f32;
+            let dir = vec2normalize(vec2(aim_x, aim_y) - self.skeleton.pos(15));
+            let frame = self.body_animation.frame as f32;
+            let thrown_mul = 1.5 * f32::min(16.0, f32::max(8.0, frame)) / 16.0;
+            let bullet_vel = dir * weapon.speed * thrown_mul;
+            let inherited_vel = self.particle.velocity * weapon.inherited_velocity;
+            let velocity = bullet_vel + inherited_vel;
+
+            emitter.push(EmitterItem::Bullet(BulletParams {
+                style: weapon.bullet_style,
+                weapon: weapon.kind,
+                position: self.skeleton.pos(16) + velocity,
+                velocity,
+                timeout: weapon.timeout as i16,
+                hit_multiply: weapon.hit_multiply,
+                team: Team::None,
+                sprite: weapon.bullet_sprite,
+            }));
+
+            self.control.drop = false;
+            self.body_apply_animation(Anim::Stand, 1);
         }
 
         // Punch!

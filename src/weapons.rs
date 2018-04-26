@@ -1274,4 +1274,8 @@ impl Weapon {
 
         weapon
     }
+
+    pub fn is_any(&self, weapons: &[WeaponKind]) -> bool {
+        weapons.contains(&self.kind)
+    }
 }

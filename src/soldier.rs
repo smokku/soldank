@@ -92,6 +92,7 @@ impl Soldier {
                 Some(glutin::VirtualKeyCode::S) => self.control.down = true,
                 Some(glutin::VirtualKeyCode::Q) => self.control.change = true,
                 Some(glutin::VirtualKeyCode::E) => self.control.throw = true,
+                Some(glutin::VirtualKeyCode::F) => self.control.drop = true,
                 Some(glutin::VirtualKeyCode::X) => self.control.prone = true,
                 _ => {}
             },
@@ -102,6 +103,7 @@ impl Soldier {
                 Some(glutin::VirtualKeyCode::S) => self.control.down = false,
                 Some(glutin::VirtualKeyCode::Q) => self.control.change = false,
                 Some(glutin::VirtualKeyCode::E) => self.control.throw = false,
+                Some(glutin::VirtualKeyCode::F) => self.control.drop = false,
                 Some(glutin::VirtualKeyCode::X) => self.control.prone = false,
                 _ => {}
             },
