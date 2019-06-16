@@ -124,7 +124,7 @@ pub fn render_soldier(
     for (i, part) in soldier_graphics.parts.iter().enumerate() {
         if visible[i] && !part.sprite.is_none() {
             let mut sprite_index: usize = 0;
-            let mut cx = part.center.0;
+            let cx = part.center.0;
             let mut cy = part.center.1;
             let mut scale = vec2(1.0, 1.0);
             let (p0, p1) = part.point;

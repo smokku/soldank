@@ -642,7 +642,7 @@ impl Soldier {
                             let mut norm = map.perps[poly][k];
                             norm *= -SOLDIER_COL_RADIUS;
 
-                            let mut pos = s_pos + norm;
+                            let pos = s_pos + norm;
 
                             if map.point_in_poly_edges(pos.x, pos.y, poly as i32) {
                                 if !has_collided {

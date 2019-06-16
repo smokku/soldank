@@ -111,8 +111,8 @@ impl Spritesheet {
                 texture: None,
             });
 
-            let mut w = i32::min(max_size, img.width() as i32);
-            let mut h = i32::min(max_size, img.height() as i32);
+            let w = i32::min(max_size, img.width() as i32);
+            let h = i32::min(max_size, img.height() as i32);
 
             if w != img.width() as i32 || h != img.height() as i32 {
                 let filter = image::FilterType::Lanczos3;

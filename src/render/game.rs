@@ -46,7 +46,7 @@ impl GameGraphics {
         );
 
         if false {
-            let px = h / context.wnd.get_inner_size().unwrap().1 as f32;
+            let px = h / context.wnd.window().get_inner_size().unwrap().to_physical(1.).height as f32;
             render_skeleton(soldier, &mut self.batch, px, frame_percent);
         }
 
@@ -74,8 +74,8 @@ impl GameGraphics {
     fn render_cursor(&mut self, context: &mut Gfx2dContext, state: &MainState) {
         let zoom = f32::exp(state.zoom);
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
-        let size = context.wnd.get_inner_size().unwrap();
-        let size = vec2(size.0 as f32, size.1 as f32);
+        let size = context.wnd.window().get_inner_size().unwrap().to_physical(1.);
+        let size = vec2(size.width as f32, size.height as f32);
         let x = zoom * f32::floor(state.mouse.x * size.x / w);
         let y = zoom * f32::floor(state.mouse.y * size.y / h);
         let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();

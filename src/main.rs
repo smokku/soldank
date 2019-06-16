@@ -88,11 +88,11 @@ fn main() {
     context
         .wnd
         .window()
-        .set_cursor(glutin::MouseCursor::NoneCursor);
+        .hide_cursor(true);
     context
         .wnd
         .window()
-        .set_cursor_state(glutin::CursorState::Grab)
+        .grab_cursor(true)
         .unwrap();
     context.clear(gfx2d::rgb(0, 0, 0));
     context.present();
@@ -121,7 +121,7 @@ fn main() {
         context.evt.poll_events(|e| {
             if let Event::WindowEvent { event, .. } = e {
                 match event {
-                    WindowEvent::Closed => running = false,
+                    WindowEvent::CloseRequested => running = false,
                     WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode {
                         Some(VirtualKeyCode::Escape) => running = false,
                         Some(VirtualKeyCode::Add) => {
@@ -149,10 +149,10 @@ fn main() {
                         soldier.update_mouse_button(&(state, button));
                     }
                     WindowEvent::CursorMoved {
-                        position: (x, y), ..
+                        position: logical_pos, ..
                     } => {
-                        state.mouse.x = x as f32 * state.game_width / W as f32;
-                        state.mouse.y = y as f32 * state.game_height / H as f32;
+                        state.mouse.x = logical_pos.x as f32 * state.game_width / W as f32;
+                        state.mouse.y = logical_pos.y as f32 * state.game_height / H as f32;
                     }
                     _ => (),
                 }

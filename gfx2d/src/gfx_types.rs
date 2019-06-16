@@ -3,7 +3,6 @@
 
 use {
     glutin::{
-        GlWindow,
         EventsLoop,
     },
     gfx::{

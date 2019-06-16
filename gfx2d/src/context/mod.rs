@@ -2,7 +2,6 @@ use super::*;
 use gfx::Device;
 use gfx::traits::Factory;
 use gfx::traits::FactoryExt;
-use glutin::GlContext;
 
 mod pipeline;
 use self::pipeline::{post, FRAG_SOURCE, VERT_SOURCE};
@@ -29,7 +28,7 @@ impl ::std::default::Default for Vertex {
 // Gfx2dContext
 
 pub struct Gfx2dContext {
-    pub wnd: GlWindow,
+    pub wnd: glutin::WindowedContext<glutin::PossiblyCurrent>,
     pub evt: EventsLoop,
     pub(crate) fct: GlFactory,
     pub(crate) enc: GlEncoder,
@@ -46,7 +45,7 @@ impl Gfx2dContext {
 
         let wnd_b = glutin::WindowBuilder::new()
             .with_title(title)
-            .with_dimensions(w, h);
+            .with_dimensions(glutin::dpi::LogicalSize::new(w.into(), h.into()));
 
         let ctx_b = glutin::ContextBuilder::new().with_vsync(true).with_gl(
             glutin::GlRequest::GlThenGles {
@@ -56,7 +55,7 @@ impl Gfx2dContext {
         );
 
         let (wnd, dvc, mut fct, rtv_post, _) =
-            ::gfx_window_glutin::init::<Srgba8, DepthStencil>(wnd_b, ctx_b, &evt);
+            ::gfx_window_glutin::init::<Srgba8, DepthStencil>(wnd_b, ctx_b, &evt).unwrap();
 
         let mut enc = GlEncoder::from(fct.create_command_buffer());
 

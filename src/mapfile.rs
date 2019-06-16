@@ -196,7 +196,7 @@ impl MapFile {
         let mut perps = Vec::new();
 
         for _i in 0..n {
-            let mut vertices: [MapVertex; 3] = [
+            let vertices: [MapVertex; 3] = [
                 read_vertex(&mut buf),
                 read_vertex(&mut buf),
                 read_vertex(&mut buf),
@@ -345,7 +345,7 @@ impl MapFile {
         let mut scenery: Vec<MapScenery> = Vec::new();
 
         for _i in 0..n {
-            let mut filename = read_string(&mut buf, 50).ok().unwrap();
+            let filename = read_string(&mut buf, 50).ok().unwrap();
             let date = buf.read_i32::<LittleEndian>().unwrap();
 
             scenery.push(MapScenery { filename, date });
@@ -534,7 +534,7 @@ impl MapFile {
     }
 }
 
-pub fn read_string<T: Read>(reader: &mut T, length: u32) -> Result<String, Box<Error>> {
+pub fn read_string<T: Read>(reader: &mut T, length: u32) -> Result<String, Box<dyn Error>> {
     let mut buffer: Vec<u8>;
     let byte = reader.read_u8()?;
     buffer = vec![0u8; byte as usize];
