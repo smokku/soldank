@@ -1,11 +1,11 @@
 use super::*;
-use gfx::Device;
 use gfx::traits::Factory;
 use gfx::traits::FactoryExt;
+use gfx::Device;
 
 mod pipeline;
-use self::pipeline::{post, FRAG_SOURCE, VERT_SOURCE};
 pub use self::pipeline::{pipe, Vertex};
+use self::pipeline::{post, FRAG_SOURCE, VERT_SOURCE};
 
 pub fn vertex(pos: Vec2, texcoords: Vec2, color: Color) -> Vertex {
     Vertex {
@@ -28,8 +28,7 @@ impl ::std::default::Default for Vertex {
 // Gfx2dContext
 
 pub struct Gfx2dContext {
-    pub wnd: glutin::WindowedContext<glutin::PossiblyCurrent>,
-    pub evt: EventsLoop,
+    pub wnd_c: glutin::ContextWrapper<glutin::PossiblyCurrent, ()>,
     pub(crate) fct: GlFactory,
     pub(crate) enc: GlEncoder,
     dvc: GlDevice,
@@ -40,30 +39,93 @@ pub struct Gfx2dContext {
 }
 
 impl Gfx2dContext {
-    pub fn initialize(title: &str, w: u32, h: u32) -> Gfx2dContext {
-        let evt = glutin::EventsLoop::new();
-
-        let wnd_b = glutin::WindowBuilder::new()
+    pub fn initialize(
+        evt: glutin::event_loop::EventLoop<()>,
+        title: &str,
+        w: u32,
+        h: u32,
+    ) -> Gfx2dContext {
+        let wnd_b = glutin::window::WindowBuilder::new()
             .with_title(title)
-            .with_dimensions(glutin::dpi::LogicalSize::new(w.into(), h.into()));
+            .with_inner_size(glutin::dpi::LogicalSize::new(w, h));
 
-        let ctx_b = glutin::ContextBuilder::new().with_vsync(true).with_gl(
-            glutin::GlRequest::GlThenGles {
-                opengl_version: (2, 1),
-                opengles_version: (2, 0),
-            },
+        let ctx_b =
+            glutin::ContextBuilder::new()
+                .with_vsync(true)
+                .with_gl(glutin::GlRequest::GlThenGles {
+                    opengl_version: (2, 1),
+                    opengles_version: (2, 0),
+                });
+
+        let gfx =
+            ::gfx_window_glutin::init::<Srgba8, DepthStencil, ()>(wnd_b, ctx_b, &evt).unwrap();
+        let wnd = unsafe { gfx.0.split() };
+        Gfx2dContext::init_inner(
+            w as gfx_core::texture::Size,
+            h as gfx_core::texture::Size,
+            wnd.0,
+            gfx.1,
+            gfx.2,
+            gfx.3,
+            gfx.4,
+        )
+    }
+
+    // this is pulled-in internals of ::gfx_window_glutin::init_existing()
+    pub fn initialize_existing(
+        window: &glutin::window::Window,
+        wnd_c: glutin::ContextWrapper<glutin::NotCurrent, ()>,
+    ) -> Gfx2dContext {
+        use gfx::format::Formatted;
+        use gfx_core::{memory, texture};
+
+        let wnd_c = unsafe { wnd_c.make_current().unwrap() };
+        let (device, factory) =
+            gfx_device_gl::create(|s| wnd_c.get_proc_address(s) as *const std::os::raw::c_void);
+
+        // create the main color/depth targets
+        let aa = wnd_c.get_pixel_format().multisampling.unwrap_or(0) as texture::NumSamples;
+        let color_format = Srgba8::get_format();
+        let ds_format = DepthStencil::get_format();
+        let window_size = window.inner_size();
+        let w = window_size.width as gfx_core::texture::Size;
+        let h = window_size.height as gfx_core::texture::Size;
+        let (color_view, ds_view) = gfx_device_gl::create_main_targets_raw(
+            (w, h, 1, aa.into()),
+            color_format.0,
+            ds_format.0,
         );
 
-        let (wnd, dvc, mut fct, rtv_post, _) =
-            ::gfx_window_glutin::init::<Srgba8, DepthStencil>(wnd_b, ctx_b, &evt).unwrap();
+        Gfx2dContext::init_inner(
+            w,
+            h,
+            wnd_c,
+            device,
+            factory,
+            memory::Typed::new(color_view),
+            memory::Typed::new(ds_view),
+        )
+    }
 
+    fn init_inner(
+        w: gfx_core::texture::Size,
+        h: gfx_core::texture::Size,
+        wnd_c: glutin::ContextWrapper<glutin::PossiblyCurrent, ()>,
+        dvc: gfx_device_gl::Device,
+        mut fct: gfx_device_gl::Factory,
+        rtv_post: gfx_core::handle::RenderTargetView<
+            R,
+            (gfx::format::R8_G8_B8_A8, gfx::format::Srgb),
+        >,
+        _dt_view: gfx_core::handle::DepthStencilView<R, (gfx::format::D24_S8, gfx::format::Unorm)>,
+    ) -> Gfx2dContext {
         let mut enc = GlEncoder::from(fct.create_command_buffer());
 
         // main pipeline
         let (pso_main, rtv_main, rtv_main_sampler, white_texture) = {
             let pso = fct.create_pipeline_simple(VERT_SOURCE, FRAG_SOURCE, pipe::new());
 
-            let render_target = fct.create_render_target::<Rgba8>(w as u16, h as u16);
+            let render_target = fct.create_render_target::<Rgba8>(w, h);
             let (_, res_view, rtv) = render_target.unwrap();
 
             let sampler_info = SamplerInfo::new(FilterMethod::Scale, WrapMode::Clamp);
@@ -110,8 +172,7 @@ impl Gfx2dContext {
         };
 
         Gfx2dContext {
-            wnd,
-            evt,
+            wnd_c,
             fct,
             enc,
             dvc,
@@ -165,7 +226,7 @@ impl Gfx2dContext {
     pub fn present(&mut self) {
         self.bundle.encode(&mut self.enc);
         self.enc.flush(&mut self.dvc);
-        self.wnd.swap_buffers().unwrap();
+        self.wnd_c.swap_buffers().unwrap();
         self.dvc.cleanup();
     }
 

@@ -2,43 +2,16 @@
 // traits are "used" where needed to avoid unused warnings (compiler bug?)
 
 use {
-    glutin::{
-        EventsLoop,
-    },
     gfx::{
-        pso::bundle::Bundle,
         buffer::Role::Vertex as VertexRole,
-        memory::{
-            Bind,
-            Usage::Dynamic,
-        },
-        format::{
-            Rgba8,
-            Srgba8,
-            R8_G8_B8_A8,
-            DepthStencil,
-            U8Norm as U8N,
-        },
-        texture::{
-            AaMode,
-            Kind::D2,
-            SamplerInfo,
-            Mipmap,
-        },
-        state::{
-            ColorMask,
-            Blend,
-            BlendChannel,
-            BlendValue,
-            Equation,
-            Factor,
-        },
+        format::{DepthStencil, Rgba8, Srgba8, U8Norm as U8N, R8_G8_B8_A8},
+        memory::{Bind, Usage::Dynamic},
+        pso::bundle::Bundle,
+        state::{Blend, BlendChannel, BlendValue, ColorMask, Equation, Factor},
+        texture::{AaMode, Kind::D2, Mipmap, SamplerInfo},
     },
     gfx_device_gl::{
-        Resources as R,
-        Device as GlDevice,
-        Factory as GlFactory,
-        CommandBuffer as GlCommandBuffer,
+        CommandBuffer as GlCommandBuffer, Device as GlDevice, Factory as GlFactory, Resources as R,
     },
 };
 
