@@ -1,7 +1,6 @@
 use super::*;
 
 const SLIDELIMIT: f32 = 0.2;
-const GRAV: f32 = 0.06;
 const SURFACECOEFX: f32 = 0.970;
 const SURFACECOEFY: f32 = 0.970;
 const CROUCHMOVESURFACECOEFX: f32 = 0.85;
@@ -18,7 +17,7 @@ const SOLDIER_COL_RADIUS: f32 = 3.0;
 
 lazy_static! {
     static ref SOLDIER_SKELETON: ParticleSystem =
-        ParticleSystem::load_from_file("gostek.po", 4.5, 1.0, 1.06 * GRAV, 0.0, 0.9945);
+        ParticleSystem::load_from_file("gostek.po", 4.5, 1.0, 1.06 * constants::GRAV, 0.0, 0.9945);
 }
 
 #[allow(dead_code)]
@@ -105,7 +104,7 @@ impl Soldier {
             old_pos: vec2(spawn.x as f32, spawn.y as f32),
             one_over_mass: 1.0,
             timestep: 1.0,
-            gravity: GRAV,
+            gravity: constants::GRAV,
             e_damping: 0.99,
             ..Default::default()
         };
@@ -490,7 +489,7 @@ impl Soldier {
                                     && (step.y > SLIDELIMIT)
                                 {
                                     self.particle.pos = self.particle.old_pos;
-                                    self.particle.force.y -= GRAV;
+                                    self.particle.force.y -= constants::GRAV;
                                 }
 
                                 if (step.y > SLIDELIMIT)

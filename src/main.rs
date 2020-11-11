@@ -8,6 +8,7 @@ macro_rules! iif(
 mod anims;
 mod bullet;
 mod calc;
+mod constants;
 mod control;
 mod mapfile;
 mod particles;
@@ -29,8 +30,6 @@ use weapons::*;
 
 use clap::{App, Arg};
 use gfx2d::macroquad::{self as macroquad, prelude as mq};
-
-const GRAV: f32 = 0.06;
 
 const W: u32 = 1280;
 const H: u32 = 720;
@@ -75,7 +74,7 @@ async fn main() {
         camera_prev: Vec2::zero(),
         mouse: Vec2::zero(),
         mouse_prev: Vec2::zero(),
-        gravity: GRAV,
+        gravity: constants::GRAV,
         zoom: 0.0,
         bullets: vec![],
     };

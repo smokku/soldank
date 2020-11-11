@@ -63,7 +63,7 @@ impl Bullet {
             velocity: params.velocity,
             one_over_mass: 1.0,
             timestep: 1.0,
-            gravity: 0.06 * 2.25,
+            gravity: constants::GRAV * 2.25,
             e_damping: 0.99,
             ..Default::default()
         };
