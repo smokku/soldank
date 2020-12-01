@@ -109,7 +109,7 @@ impl Bullet {
             ];
 
             if !except.contains(&self.weapon) {
-                let dist2 = (self.particle.pos - self.initial_pos).magnitude2();
+                let dist2 = (self.particle.pos - self.initial_pos).length_squared();
                 let degrade_dists2 = [500.0 * 500.0, 900.0 * 900.0];
 
                 if dist2 > degrade_dists2[self.degrade_count] {
@@ -132,7 +132,7 @@ impl Bullet {
         let b = self.particle.pos;
 
         let delta = b - a;
-        let steps = f32::ceil(delta.magnitude() / 2.5) as i32;
+        let steps = f32::ceil(delta.length() / 2.5) as i32;
 
         for i in 0..steps + 1 {
             let (x, y) = lerp(a, b, i as f32 / steps as f32).into();

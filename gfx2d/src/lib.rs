@@ -3,10 +3,10 @@
 
 #[macro_use]
 extern crate gfx;
-extern crate cgmath;
 extern crate gfx_core;
 extern crate gfx_device_gl;
 extern crate gfx_window_glutin;
+extern crate glam;
 extern crate glutin;
 extern crate image;
 
@@ -24,12 +24,12 @@ pub mod math;
 
 pub use batch::DrawBatch;
 pub use batch::DrawSlice;
-pub use color::Color;
 pub use color::rgb;
 pub use color::rgba;
+pub use color::Color;
+pub use context::vertex;
 pub use context::Gfx2dContext;
 pub use context::Vertex;
-pub use context::vertex;
 pub use gfx::texture::FilterMethod;
 pub use gfx::texture::WrapMode;
 pub use spritesheet::Sprite;

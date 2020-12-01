@@ -44,8 +44,8 @@ pub fn render_bullet(
                 let hit = lerp(bullet.hit_multiply_prev, bullet.hit_multiply, frame_percent);
 
                 let scale = {
-                    let scale = bullet.particle.velocity.magnitude() / 13.0;
-                    let dist = (pos - bullet.initial_pos).magnitude();
+                    let scale = bullet.particle.velocity.length() / 13.0;
+                    let dist = (pos - bullet.initial_pos).length();
 
                     if dist < scale * sprite.width {
                         dist / (scale * sprite.width)

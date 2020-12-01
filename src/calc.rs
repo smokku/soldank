@@ -2,20 +2,20 @@ pub use gfx2d::math::*;
 use std::ops::{Add, Mul, Sub};
 
 pub fn distance(p1: Vec2, p2: Vec2) -> f32 {
-    (p2 - p1).magnitude()
+    (p2 - p1).length()
 }
 
 pub fn vec2length(v: Vec2) -> f32 {
-    v.magnitude()
+    v.length()
 }
 
 pub fn vec2normalize(v: Vec2) -> Vec2 {
-    let magnitude = v.magnitude();
+    let magnitude = v.length();
     iif!(magnitude < 0.001, Vec2::zero(), v / magnitude)
 }
 
 pub fn vec2angle(v: Vec2) -> Rad {
-    Vec2::angle(Vec2::unit_x(), v)
+    Vec2::unit_x().angle_between(v)
 }
 
 pub fn point_line_distance(p1: Vec2, p2: Vec2, p3: Vec2) -> f32 {

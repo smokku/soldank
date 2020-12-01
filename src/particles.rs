@@ -163,7 +163,7 @@ impl ParticleSystem {
         let (a, b) = (constraint.particle_num.0 - 1, constraint.particle_num.1 - 1);
 
         let delta = particles[b].pos - particles[a].pos;
-        let length = delta.magnitude();
+        let length = delta.length();
 
         if length > 0.0 {
             let diff = (length - constraint.rest_length) / length;
@@ -250,7 +250,7 @@ impl ParticleSystem {
             };
 
             let delta = particles[pa_num - 1].pos - particles[pb_num - 1].pos;
-            constraints.push(Constraint::new(pa_num, pb_num, delta.magnitude()));
+            constraints.push(Constraint::new(pa_num, pb_num, delta.length()));
         }
 
         ParticleSystem {

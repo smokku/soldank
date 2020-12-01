@@ -241,7 +241,7 @@ impl MapFile {
                 }
             }
 
-            let bounciness = normals[2].magnitude();
+            let bounciness = normals[2].length();
 
             polygons.push(MapPolygon {
                 vertices,

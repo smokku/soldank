@@ -142,7 +142,7 @@ pub fn render_soldier(
             }
 
             if part.flexibility > 0.0 {
-                scale.x = f32::min(1.5, (p1 - p0).magnitude() / part.flexibility);
+                scale.x = f32::min(1.5, (p1 - p0).length() / part.flexibility);
             }
 
             let color = {
