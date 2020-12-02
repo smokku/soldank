@@ -115,7 +115,7 @@ impl Spritesheet {
             let h = i32::min(max_size, img.height() as i32);
 
             if w != img.width() as i32 || h != img.height() as i32 {
-                let filter = image::FilterType::Lanczos3;
+                let filter = image::imageops::FilterType::Lanczos3;
                 img = image::imageops::resize(&img, w as u32, h as u32, filter);
             }
 
@@ -141,7 +141,9 @@ impl Spritesheet {
         for rc in &rects {
             let image_index = rc.data.0;
             let sheet_index = rc.data.1;
-            sheets[sheet_index].copy_from(&images[image_index], rc.x as u32, rc.y as u32);
+            sheets[sheet_index]
+                .copy_from(&images[image_index], rc.x as u32, rc.y as u32)
+                .expect("Cannot copy image.");
         }
 
         let textures: Vec<Texture> = sheets
@@ -190,7 +192,8 @@ impl Spritesheet {
             let mut w = u32::next_power_of_two(f64::sqrt(area as f64).ceil() as u32) as i32;
             let mut h = w;
 
-            while w <= max_size && h <= max_size
+            while w <= max_size
+                && h <= max_size
                 && pack_rects(w + pad, h + pad, rects) < rects.len()
             {
                 if w <= h {

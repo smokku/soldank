@@ -1,13 +1,5 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate bit_array;
-extern crate byteorder;
-extern crate clap;
-extern crate gfx2d;
-extern crate glutin;
-extern crate ini;
-extern crate time;
-extern crate typenum;
 
 macro_rules! iif(
     ($cond:expr, $then:expr, $else:expr) => (if $cond { $then } else { $else })

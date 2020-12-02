@@ -77,7 +77,7 @@ pub fn load_image_rgba<P: AsRef<Path>>(filename: P) -> image::RgbaImage {
     let img = image::open(filename).unwrap();
     match img {
         image::DynamicImage::ImageRgba8(img) => img,
-        _ => img.to_rgba(),
+        _ => img.to_rgba8(),
     }
 }
 

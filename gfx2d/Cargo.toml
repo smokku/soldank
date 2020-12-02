@@ -9,5 +9,5 @@ gfx_core = "0.9"
 gfx_device_gl = "0.16"
 gfx_window_glutin = { version = "0.33", git = "https://github.com/bebrws/gfx_window_glutin.git" }
 glutin = "0.25"
-image = "0.21"
+image = "0.23"
 glam = "0.11"
