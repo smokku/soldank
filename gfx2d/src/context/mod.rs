@@ -2,6 +2,8 @@ use super::*;
 use gfx::traits::Factory;
 use gfx::traits::FactoryExt;
 use gfx::Device;
+use rgb::*;
+use std::convert::TryInto;
 
 mod pipeline;
 pub use self::pipeline::{pipe, Vertex};
@@ -186,12 +188,11 @@ impl Gfx2dContext {
     pub fn clear(&mut self, color: Color) {
         self.enc.clear(
             &self.rtv,
-            [
-                f32::from(color.r()) / 255.0,
-                f32::from(color.g()) / 255.0,
-                f32::from(color.b()) / 255.0,
-                f32::from(color.a()) / 255.0,
-            ],
+            color
+                .map(|c| f32::from(c.0) / 255.0)
+                .as_slice()
+                .try_into()
+                .unwrap(),
         );
     }
 

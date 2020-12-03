@@ -147,7 +147,7 @@ pub fn render_soldier(
 
             let color = {
                 let color = colors[part.color as usize];
-                rgba(color.r(), color.g(), color.b(), alpha[part.alpha as usize])
+                rgba(color.r.0, color.g.0, color.b.0, alpha[part.alpha as usize])
             };
 
             let sprite = match part.sprite {

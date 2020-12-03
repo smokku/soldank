@@ -11,3 +11,4 @@ gfx_window_glutin = { version = "0.33", git = "https://github.com/bebrws/gfx_win
 glutin = "0.25"
 image = "0.23"
 glam = "0.11"
+rgb = "0.8"
