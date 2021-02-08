@@ -28,11 +28,25 @@ use state::*;
 use weapons::*;
 
 use clap::{App, Arg};
-use glutin::*;
+use gfx2d::macroquad::{self as macroquad, prelude as mq};
 
 const GRAV: f32 = 0.06;
 
-fn main() {
+const W: u32 = 1280;
+const H: u32 = 720;
+
+fn config() -> mq::Conf {
+    mq::Conf {
+        sample_count: 4,
+        window_title: "Soldank".to_string(),
+        window_width: W as _,
+        window_height: H as _,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(config)]
+async fn main() {
     let cmd = App::new("Soldank")
         .about("open source clone of Soldat engine written in rust")
         .version("0.0.1")
@@ -52,9 +66,6 @@ fn main() {
     map_name.push_str(".pms");
 
     let map = MapFile::load_map_file(map_name.as_str());
-
-    const W: u32 = 1280;
-    const H: u32 = 720;
 
     let mut state = MainState {
         map,
@@ -76,22 +87,16 @@ fn main() {
 
     // setup window, renderer & main loop
 
-    let mut context = gfx2d::Gfx2dContext::initialize("Soldank", W, H);
-    context
-        .wnd
-        .window()
-        .hide_cursor(true);
-    context
-        .wnd
-        .window()
-        .grab_cursor(true)
-        .unwrap();
-    context.clear(gfx2d::rgb(0, 0, 0));
-    context.present();
+    let mq::InternalGlContext {
+        quad_context: ctx, ..
+    } = unsafe { mq::get_internal_gl() };
+    ctx.show_mouse(false);
+    ctx.set_cursor_grab(true);
+    mq::clear_background(mq::BLACK);
 
-    let mut graphics = GameGraphics::new(&mut context);
-    graphics.load_sprites(&mut context);
-    graphics.load_map(&mut context, &state.map);
+    let mut graphics = GameGraphics::new();
+    graphics.load_sprites();
+    graphics.load_map(&state.map);
 
     let time_start = time::precise_time_s();
     let current_time = || time::precise_time_s() - time_start;
@@ -101,8 +106,8 @@ fn main() {
     let mut timeacc: f64 = 0.0;
     let mut running = true;
 
-    let mut zoomin_pressed = false;
-    let mut zoomout_pressed = false;
+    let mut zoomin_pressed;
+    let mut zoomout_pressed;
 
     let weapons: Vec<Weapon> = WeaponKind::values()
         .iter()
@@ -110,46 +115,24 @@ fn main() {
         .collect();
 
     while running {
-        context.evt.poll_events(|e| {
-            if let Event::WindowEvent { event, .. } = e {
-                match event {
-                    WindowEvent::CloseRequested => running = false,
-                    WindowEvent::KeyboardInput { input, .. } => match input.virtual_keycode {
-                        Some(VirtualKeyCode::Escape) => running = false,
-                        Some(VirtualKeyCode::Add) => {
-                            zoomin_pressed = match input.state {
-                                ElementState::Pressed => true,
-                                ElementState::Released => false,
-                            }
-                        }
-                        Some(VirtualKeyCode::Subtract) => {
-                            zoomout_pressed = match input.state {
-                                ElementState::Pressed => true,
-                                ElementState::Released => false,
-                            }
-                        }
-                        Some(VirtualKeyCode::Tab) => {
-                            if input.state == ElementState::Pressed {
-                                let index = soldier.primary_weapon().kind.index();
-                                let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
-                                soldier.weapons[soldier.active_weapon] = weapons[index];
-                            }
-                        }
-                        _ => soldier.update_keys(&input),
-                    },
-                    WindowEvent::MouseInput { state, button, .. } => {
-                        soldier.update_mouse_button(&(state, button));
-                    }
-                    WindowEvent::CursorMoved {
-                        position: logical_pos, ..
-                    } => {
-                        state.mouse.x = logical_pos.x as f32 * state.game_width / W as f32;
-                        state.mouse.y = logical_pos.y as f32 * state.game_height / H as f32;
-                    }
-                    _ => (),
-                }
-            }
-        });
+        //             WindowEvent::CloseRequested => running = false,
+
+        if mq::is_key_pressed(mq::KeyCode::Escape) {
+            running = false;
+        }
+        zoomin_pressed = mq::is_key_down(mq::KeyCode::Equal);
+        zoomout_pressed = mq::is_key_down(mq::KeyCode::Minus);
+        if mq::is_key_pressed(mq::KeyCode::Tab) {
+            let index = soldier.primary_weapon().kind.index();
+            let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
+            soldier.weapons[soldier.active_weapon] = weapons[index];
+        }
+        soldier.update_keys();
+        soldier.update_mouse_button();
+
+        let (mouse_x, mouse_y) = mq::mouse_position();
+        state.mouse.x = mouse_x * state.game_width / W as f32;
+        state.mouse.y = mouse_y * state.game_height / H as f32;
 
         let dt = 1.0 / 60.0;
 
@@ -223,17 +206,8 @@ fn main() {
 
         let p = f64::min(1.0, f64::max(0.0, timeacc / dt));
 
-        graphics.render_frame(
-            &mut context,
-            &state,
-            &soldier,
-            timecur - dt * (1.0 - p),
-            p as f32,
-        );
+        graphics.render_frame(&state, &soldier, timecur - dt * (1.0 - p), p as f32);
 
-        context.present();
-
-        // only sleep if no vsync (or if vsync doesn't wait), also needs timeBeginPeriod(1)
-        // std::thread::sleep(std::time::Duration::from_millis(1));
+        macroquad::window::next_frame().await
     }
 }

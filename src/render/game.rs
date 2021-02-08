@@ -1,5 +1,6 @@
 use super::*;
 use gfx::SpriteData;
+use gfx2d::macroquad::prelude::*;
 use ini::Ini;
 use std::str::FromStr;
 
@@ -10,8 +11,53 @@ pub struct GameGraphics {
     batch: DrawBatch,
 }
 
+pub fn draw_batch(slice: &mut DrawSlice, transform: &Mat2d) {
+    let macroquad::prelude::InternalGlContext { quad_gl: gl, .. } =
+        unsafe { macroquad::prelude::get_internal_gl() };
+
+    let buffer = slice.buffer();
+
+    gl.draw_mode(DrawMode::Triangles);
+
+    let prj = gl.get_projection_matrix();
+    gl.set_projection_matrix(Mat4::from_cols_array_2d(&[
+        [(transform.0).0, (transform.1).0, 0.0, 0.0],
+        [(transform.0).1, (transform.1).1, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [(transform.0).2, (transform.1).2, 0.0, 1.0],
+    ]));
+
+    for cmd in slice.commands() {
+        gl.texture(
+            cmd.texture
+                .map(|texture| Texture2D::from_miniquad_texture(texture)),
+        );
+
+        let mut vertices: Vec<Vertex> = Vec::new();
+        let mut indices: Vec<u16> = Vec::new();
+
+        for i in cmd.vertex_range.clone() {
+            let vert = buffer[i];
+
+            indices.push(vertices.len() as u16);
+            vertices.push(Vertex::new(
+                vert.pos.x,
+                vert.pos.y,
+                0.0,
+                vert.uv.x,
+                vert.uv.y,
+                [vert.color.r, vert.color.g, vert.color.b, vert.color.a].into(),
+            ));
+        }
+
+        gl.geometry(vertices.as_ref(), indices.as_ref());
+    }
+
+    gl.set_projection_matrix(prj);
+}
+
 impl GameGraphics {
-    pub fn new(_context: &mut Gfx2dContext) -> GameGraphics {
+    pub fn new() -> GameGraphics {
         GameGraphics {
             map: MapGraphics::empty(),
             soldier_graphics: SoldierGraphics::new(),
@@ -22,7 +68,6 @@ impl GameGraphics {
 
     pub fn render_frame(
         &mut self,
-        context: &mut Gfx2dContext,
         state: &MainState,
         soldier: &Soldier,
         elapsed: f64,
@@ -46,7 +91,7 @@ impl GameGraphics {
         );
 
         if false {
-            let px = h / context.wnd.window().get_inner_size().unwrap().to_physical(1.).height as f32;
+            let px = h / screen_height();
             render_skeleton(soldier, &mut self.batch, px, frame_percent);
         }
 
@@ -60,22 +105,21 @@ impl GameGraphics {
             );
         }
 
-        context.clear(rgb(0, 0, 0));
-        context.draw(&mut self.map.background(), &transform_bg);
-        context.draw(&mut self.map.polys_back(), &transform);
-        context.draw(&mut self.map.scenery_back(), &transform);
-        context.draw(&mut self.batch.all(), &transform);
-        context.draw(&mut self.map.scenery_mid(), &transform);
-        context.draw(&mut self.map.polys_front(), &transform);
-        context.draw(&mut self.map.scenery_front(), &transform);
-        self.render_cursor(context, state);
+        clear_background(BLACK);
+        draw_batch(&mut self.map.background(), &transform_bg);
+        draw_batch(&mut self.map.polys_back(), &transform);
+        draw_batch(&mut self.map.scenery_back(), &transform);
+        draw_batch(&mut self.batch.all(), &transform);
+        draw_batch(&mut self.map.scenery_mid(), &transform);
+        draw_batch(&mut self.map.polys_front(), &transform);
+        draw_batch(&mut self.map.scenery_front(), &transform);
+        self.render_cursor(state);
     }
 
-    fn render_cursor(&mut self, context: &mut Gfx2dContext, state: &MainState) {
+    fn render_cursor(&mut self, state: &MainState) {
         let zoom = f32::exp(state.zoom);
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
-        let size = context.wnd.window().get_inner_size().unwrap().to_physical(1.);
-        let size = vec2(size.width as f32, size.height as f32);
+        let size = vec2(screen_width(), screen_height());
         let x = zoom * f32::floor(state.mouse.x * size.x / w);
         let y = zoom * f32::floor(state.mouse.y * size.y / h);
         let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();
@@ -102,14 +146,14 @@ impl GameGraphics {
             ],
         );
 
-        context.draw(&mut self.batch.all(), &screen);
+        draw_batch(&mut self.batch.all(), &screen);
     }
 
-    pub fn load_map(&mut self, context: &mut Gfx2dContext, map: &MapFile) {
-        self.map = MapGraphics::new(context, map);
+    pub fn load_map(&mut self, map: &MapFile) {
+        self.map = MapGraphics::new(map);
     }
 
-    pub fn load_sprites(&mut self, context: &mut Gfx2dContext) {
+    pub fn load_sprites(&mut self) {
         let mut main: Vec<SpriteInfo> = Vec::new();
         let mut intf: Vec<SpriteInfo> = Vec::new();
 
@@ -174,8 +218,8 @@ impl GameGraphics {
             }
         }
 
-        let main = Spritesheet::new(context, 8, FilterMethod::Trilinear, &main);
-        let intf = Spritesheet::new(context, 8, FilterMethod::Trilinear, &intf);
+        let main = Spritesheet::new(8, FilterMode::Linear, &main);
+        let intf = Spritesheet::new(8, FilterMode::Linear, &intf);
 
         self.sprites.clear();
         self.sprites.resize(gfx::Group::values().len(), Vec::new());
@@ -187,26 +231,36 @@ impl GameGraphics {
             let index = group.id();
 
             match *group {
-                gfx::Group::Soldier => for _ in gfx::Soldier::values() {
-                    self.sprites[index].push(main.sprites[imain].clone());
-                    imain += 1;
-                },
-                gfx::Group::Weapon => for _ in gfx::Weapon::values() {
-                    self.sprites[index].push(main.sprites[imain].clone());
-                    imain += 1;
-                },
-                gfx::Group::Spark => for _ in gfx::Spark::values() {
-                    self.sprites[index].push(main.sprites[imain].clone());
-                    imain += 1;
-                },
-                gfx::Group::Object => for _ in gfx::Object::values() {
-                    self.sprites[index].push(main.sprites[imain].clone());
-                    imain += 1;
-                },
-                gfx::Group::Interface => for _ in gfx::Interface::values() {
-                    self.sprites[index].push(intf.sprites[iintf].clone());
-                    iintf += 1;
-                },
+                gfx::Group::Soldier => {
+                    for _ in gfx::Soldier::values() {
+                        self.sprites[index].push(main.sprites[imain].clone());
+                        imain += 1;
+                    }
+                }
+                gfx::Group::Weapon => {
+                    for _ in gfx::Weapon::values() {
+                        self.sprites[index].push(main.sprites[imain].clone());
+                        imain += 1;
+                    }
+                }
+                gfx::Group::Spark => {
+                    for _ in gfx::Spark::values() {
+                        self.sprites[index].push(main.sprites[imain].clone());
+                        imain += 1;
+                    }
+                }
+                gfx::Group::Object => {
+                    for _ in gfx::Object::values() {
+                        self.sprites[index].push(main.sprites[imain].clone());
+                        imain += 1;
+                    }
+                }
+                gfx::Group::Interface => {
+                    for _ in gfx::Interface::values() {
+                        self.sprites[index].push(intf.sprites[iintf].clone());
+                        iintf += 1;
+                    }
+                }
             }
         }
     }

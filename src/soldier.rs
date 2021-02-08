@@ -1,5 +1,4 @@
 use super::*;
-use glutin;
 
 const SLIDELIMIT: f32 = 0.2;
 const GRAV: f32 = 0.06;
@@ -83,43 +82,20 @@ impl Soldier {
         // burst_count = 0;
     }
 
-    pub fn update_keys(&mut self, input: &glutin::KeyboardInput) {
-        match input.state {
-            glutin::ElementState::Pressed => match input.virtual_keycode {
-                Some(glutin::VirtualKeyCode::A) => self.control.left = true,
-                Some(glutin::VirtualKeyCode::D) => self.control.right = true,
-                Some(glutin::VirtualKeyCode::W) => self.control.up = true,
-                Some(glutin::VirtualKeyCode::S) => self.control.down = true,
-                Some(glutin::VirtualKeyCode::Q) => self.control.change = true,
-                Some(glutin::VirtualKeyCode::E) => self.control.throw = true,
-                Some(glutin::VirtualKeyCode::F) => self.control.drop = true,
-                Some(glutin::VirtualKeyCode::X) => self.control.prone = true,
-                _ => {}
-            },
-            glutin::ElementState::Released => match input.virtual_keycode {
-                Some(glutin::VirtualKeyCode::A) => self.control.left = false,
-                Some(glutin::VirtualKeyCode::D) => self.control.right = false,
-                Some(glutin::VirtualKeyCode::W) => self.control.up = false,
-                Some(glutin::VirtualKeyCode::S) => self.control.down = false,
-                Some(glutin::VirtualKeyCode::Q) => self.control.change = false,
-                Some(glutin::VirtualKeyCode::E) => self.control.throw = false,
-                Some(glutin::VirtualKeyCode::F) => self.control.drop = false,
-                Some(glutin::VirtualKeyCode::X) => self.control.prone = false,
-                _ => {}
-            },
-        }
+    pub fn update_keys(&mut self) {
+        self.control.left = mq::is_key_down(mq::KeyCode::A);
+        self.control.right = mq::is_key_down(mq::KeyCode::D);
+        self.control.up = mq::is_key_down(mq::KeyCode::W);
+        self.control.down = mq::is_key_down(mq::KeyCode::S);
+        self.control.change = mq::is_key_down(mq::KeyCode::Q);
+        self.control.throw = mq::is_key_down(mq::KeyCode::E);
+        self.control.drop = mq::is_key_down(mq::KeyCode::F);
+        self.control.prone = mq::is_key_down(mq::KeyCode::X);
     }
 
-    pub fn update_mouse_button(&mut self, input: &(glutin::ElementState, glutin::MouseButton)) {
-        let pressed = match input.0 {
-            glutin::ElementState::Pressed => true,
-            glutin::ElementState::Released => false,
-        };
-        match input.1 {
-            glutin::MouseButton::Left => self.control.fire = pressed,
-            glutin::MouseButton::Right => self.control.jets = pressed,
-            _ => (),
-        }
+    pub fn update_mouse_button(&mut self) {
+        self.control.fire = mq::is_mouse_button_down(mq::MouseButton::Left);
+        self.control.jets = mq::is_mouse_button_down(mq::MouseButton::Right);
     }
 
     pub fn new(spawn: &MapSpawnpoint) -> Soldier {
@@ -193,7 +169,8 @@ impl Soldier {
     }
 
     pub fn handle_special_polytypes(&mut self, map: &MapFile, polytype: PolyType, _pos: Vec2) {
-        if polytype == PolyType::Deadly || polytype == PolyType::BloodyDeadly
+        if polytype == PolyType::Deadly
+            || polytype == PolyType::BloodyDeadly
             || polytype == PolyType::Explosive
         {
             self.particle.pos = vec2(map.spawnpoints[0].x as f32, map.spawnpoints[0].y as f32);
@@ -516,7 +493,8 @@ impl Soldier {
                                     self.particle.force.y -= GRAV;
                                 }
 
-                                if (step.y > SLIDELIMIT) && (polytype != PolyType::Ice)
+                                if (step.y > SLIDELIMIT)
+                                    && (polytype != PolyType::Ice)
                                     && (polytype != PolyType::Bouncy)
                                 {
                                     if (self.legs_animation.id == Anim::Stand)
@@ -768,7 +746,8 @@ impl Soldier {
         let weapon = self.primary_weapon();
 
         let dir = {
-            if weapon.bullet_style == BulletStyle::Blade || self.body_animation.id == Anim::Mercy
+            if weapon.bullet_style == BulletStyle::Blade
+                || self.body_animation.id == Anim::Mercy
                 || self.body_animation.id == Anim::Mercy2
             {
                 vec2normalize(self.skeleton.pos(15) - self.skeleton.pos(16))

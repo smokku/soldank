@@ -1,4 +1,5 @@
 use super::*;
+use std::fs;
 use std::ops::Range;
 
 pub struct MapGraphics {
@@ -96,24 +97,44 @@ impl MapGraphics {
         }
     }
 
-    pub fn new(context: &mut Gfx2dContext, map: &MapFile) -> MapGraphics {
+    pub fn new(map: &MapFile) -> MapGraphics {
         let texture_file = filename_override("assets/textures", &map.texture_name);
+        let macroquad::prelude::InternalGlContext {
+            quad_context: ctx, ..
+        } = unsafe { macroquad::prelude::get_internal_gl() };
 
         let texture = if texture_file.exists() {
-            Texture::load(
-                context,
-                &texture_file,
-                FilterMethod::Trilinear,
-                WrapMode::Tile,
-                None,
+            let bytes =
+                fs::read(&texture_file).unwrap_or_else(|e| panic!("Error loading texture: {}", e));
+            let img = image::load_from_memory(&bytes)
+                .unwrap_or_else(|e| panic!("{}", e))
+                .to_rgba8();
+            let width = img.width();
+            let height = img.height();
+            let bytes = img.into_raw();
+
+            Texture::from_data_and_format(
+                ctx,
+                &bytes[..],
+                TextureParams {
+                    format: TextureFormat::RGBA8,
+                    wrap: TextureWrap::Repeat,
+                    filter: FilterMode::Linear,
+                    width,
+                    height,
+                },
             )
         } else {
-            Texture::new(
-                context,
-                (1, 1),
+            Texture::from_data_and_format(
+                ctx,
                 &[255u8; 4],
-                FilterMethod::Scale,
-                WrapMode::Clamp,
+                TextureParams {
+                    format: TextureFormat::RGBA8,
+                    wrap: TextureWrap::Clamp,
+                    filter: FilterMode::Nearest,
+                    width: 1,
+                    height: 1,
+                },
             )
         };
 
@@ -139,7 +160,8 @@ impl MapGraphics {
         };
 
         let sprites = {
-            let scenery_info: Vec<SpriteInfo> = map.scenery
+            let scenery_info: Vec<SpriteInfo> = map
+                .scenery
                 .iter()
                 .enumerate()
                 .filter(|&(i, _)| scenery_used[i])
@@ -161,7 +183,7 @@ impl MapGraphics {
                 })
                 .collect();
 
-            Spritesheet::new(context, 8, FilterMethod::Trilinear, &scenery_info).sprites
+            Spritesheet::new(8, FilterMode::Linear, &scenery_info).sprites
         };
 
         let props = {

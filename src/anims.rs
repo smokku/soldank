@@ -138,7 +138,8 @@ impl AnimData {
         let mut path = PathBuf::from("assets/anims/");
         path.push(file_name);
 
-        let file = File::open(&path).expect("Error opening animation file.");
+        let file =
+            File::open(&path).expect(format!("Error opening animation file: {:?}", path).as_str());
         let mut line = String::new();
         let mut buf = BufReader::new(file);
         let mut frames: Vec<AnimFrame> = Vec::new();
@@ -242,7 +243,8 @@ fn load_animations() -> Vec<AnimData> {
         (Anim::Own, "rucha.poa", 3, false),
     ];
 
-    let mut animations: Vec<AnimData> = data.iter()
+    let mut animations: Vec<AnimData> = data
+        .iter()
         .map(|params| AnimData::load_from_file(params.0, params.1, params.2, params.3))
         .collect();
 

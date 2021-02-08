@@ -1,7 +1,16 @@
 use super::*;
-use gfx::Factory;
-use gfx::traits::FactoryExt;
 use std::ops::Range;
+
+#[derive(Debug, Clone, Copy)]
+pub struct Vertex {
+    pub pos: Vec2,
+    pub uv: Vec2,
+    pub color: Color,
+}
+
+pub fn vertex(pos: Vec2, uv: Vec2, color: Color) -> Vertex {
+    Vertex { pos, uv, color }
+}
 
 fn batch_command(texture: Option<&Texture>, vertex_range: Range<usize>) -> BatchCommand {
     BatchCommand {
@@ -39,7 +48,7 @@ pub struct DrawSlice<'a> {
 }
 
 impl<'a> DrawSlice<'a> {
-    pub fn buffer(&self) -> VertexBuffer {
+    pub fn buffer(&self) -> &[Vertex] {
         self.batch.buffer()
     }
 
@@ -89,10 +98,13 @@ impl DrawBatch {
         self.updated = false;
         self.buf.extend_from_slice(vertices);
 
-        if m == 0 || m == self.split_start
+        if m == 0
+            || m == self.split_start
             || (m > 0
                 && (texture.is_none() != self.last_texture().is_none()
-                    || texture.is_some() && texture.unwrap().is(self.last_texture().unwrap())))
+                    || texture.is_some()
+                        && texture.unwrap().gl_internal_id()
+                            == self.last_texture().unwrap().gl_internal_id()))
         {
             self.cmds.push(batch_command(texture, i..i + n));
         } else {
@@ -158,31 +170,8 @@ impl DrawBatch {
         }
     }
 
-    pub fn update(&mut self, context: &mut Gfx2dContext) {
-        if !self.updated {
-            match self.usage {
-                BatchUsage::Dynamic => {
-                    if self.vbuf.is_none() || self.vbuf.as_ref().unwrap().len() < self.buf.len() {
-                        let n = self.buf.len().next_power_of_two();
-                        let (role, usage, bind) = (VertexRole, Dynamic, Bind::empty());
-                        let vbuf = context.fct.create_buffer(n, role, usage, bind);
-                        self.vbuf = Some(vbuf.unwrap());
-                    }
-
-                    let vbuf = self.vbuf.as_ref().unwrap();
-                    context.enc.update_buffer(vbuf, &self.buf, 0).unwrap();
-                    self.updated = true;
-                }
-                BatchUsage::Static => {
-                    self.vbuf = Some(context.fct.create_vertex_buffer(&self.buf));
-                    self.updated = true;
-                }
-            };
-        }
-    }
-
-    pub fn buffer(&self) -> VertexBuffer {
-        self.vbuf.clone().unwrap()
+    pub fn buffer(&self) -> &[Vertex] {
+        self.buf.as_ref()
     }
 
     pub fn commands(&self, range: Range<usize>) -> &[BatchCommand] {

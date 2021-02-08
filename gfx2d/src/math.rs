@@ -1,4 +1,4 @@
-pub use glam::{vec2, vec3, Vec2, Vec3};
+pub use macroquad::math::{vec2, vec3, Vec2, Vec3};
 pub use std::f32::consts::PI;
 
 pub type Rad = f32;
