@@ -1,5 +1,5 @@
 #[macro_use]
-extern crate lazy_static;
+extern crate clap;
 
 macro_rules! iif(
     ($cond:expr, $then:expr, $else:expr) => (if $cond { $then } else { $else })
@@ -28,8 +28,9 @@ use soldier::*;
 use state::*;
 use weapons::*;
 
-use clap::{App, Arg};
-use gfx2d::macroquad::{self as macroquad, prelude as mq};
+use gfx2d::macroquad::{self as macroquad, logging as log, prelude as mq};
+use gvfs::filesystem::{File, Filesystem};
+use std::{env, path};
 
 const W: u32 = 1280;
 const H: u32 = 720;
@@ -37,7 +38,7 @@ const H: u32 = 720;
 fn config() -> mq::Conf {
     mq::Conf {
         sample_count: 4,
-        window_title: "Soldank".to_string(),
+        window_title: clap::crate_name!().to_string(),
         window_width: W as _,
         window_height: H as _,
         ..Default::default()
@@ -46,11 +47,9 @@ fn config() -> mq::Conf {
 
 #[macroquad::main(config)]
 async fn main() {
-    let cmd = App::new("Soldank")
-        .about("open source clone of Soldat engine written in rust")
-        .version("0.0.1")
+    let cmd = clap::app_from_crate!()
         .arg(
-            Arg::with_name("map")
+            clap::Arg::with_name("map")
                 .help("name of map to load")
                 .short("m")
                 .long("map")
@@ -58,13 +57,46 @@ async fn main() {
         )
         .get_matches();
 
-    AnimData::initialize();
-    Soldier::initialize();
+    let mut filesystem = Filesystem::new(clap::crate_name!(), "Soldat2k").unwrap();
+
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        filesystem.mount(path.as_path(), true);
+    }
+    log::info!("Full VFS info: {:#?}", filesystem);
+
+    let mut mods = Vec::new();
+
+    let soldat_smod = path::Path::new("/soldat.smod");
+    if filesystem.is_file(soldat_smod) {
+        mods.push(filesystem.open(soldat_smod).unwrap());
+    }
+
+    for f in filesystem.read_dir(path::Path::new("/")).unwrap() {
+        let f = f.as_path();
+        if let Some(name) = f.to_str() {
+            if filesystem.is_file(f) && f != soldat_smod && name.ends_with(".smod") {
+                mods.push(filesystem.open(f).unwrap());
+            }
+        }
+    }
+    for m in mods.drain(..) {
+        match m {
+            File::VfsFile(file) => {
+                filesystem.add_zip_file(file).unwrap();
+            }
+        }
+    }
+
+    AnimData::initialize(&mut filesystem);
+    Soldier::initialize(&mut filesystem);
 
     let mut map_name = cmd.value_of("map").unwrap_or("ctf_Ash").to_owned();
     map_name.push_str(".pms");
 
-    let map = MapFile::load_map_file(map_name.as_str());
+    let map = MapFile::load_map_file(&mut filesystem, map_name.as_str());
+    log::info!("Using map: {}", map.mapname);
 
     let mut state = MainState {
         map,
@@ -94,8 +126,8 @@ async fn main() {
     mq::clear_background(mq::BLACK);
 
     let mut graphics = GameGraphics::new();
-    graphics.load_sprites();
-    graphics.load_map(&state.map);
+    graphics.load_sprites(&mut filesystem);
+    graphics.load_map(&mut filesystem, &state.map);
 
     let time_start = time::precise_time_s();
     let current_time = || time::precise_time_s() - time_start;

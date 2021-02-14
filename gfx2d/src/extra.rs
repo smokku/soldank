@@ -1,10 +1,20 @@
 use super::*;
-use image;
 use std::convert::AsRef;
+use std::io::{Cursor, Read};
 use std::path::Path;
 
-pub fn load_image_rgba<P: AsRef<Path>>(filename: P) -> image::RgbaImage {
-    let img = image::open(filename).unwrap();
+pub fn load_image_rgba<P: AsRef<Path> + Clone>(
+    fs: &mut gvfs::filesystem::Filesystem,
+    filename: P,
+) -> image::RgbaImage {
+    let mut file = fs.open(filename.clone()).expect("Error opening File");
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).expect("Error reading File");
+    let img = image::load(
+        Cursor::new(buffer),
+        image::ImageFormat::from_path(filename).unwrap(),
+    )
+    .unwrap();
     match img {
         image::DynamicImage::ImageRgba8(img) => img,
         _ => img.to_rgba8(),

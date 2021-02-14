@@ -15,10 +15,7 @@ const POS_PRONE: u8 = 3;
 const MAX_VELOCITY: f32 = 11.0;
 const SOLDIER_COL_RADIUS: f32 = 3.0;
 
-lazy_static! {
-    static ref SOLDIER_SKELETON: ParticleSystem =
-        ParticleSystem::load_from_file("gostek.po", 4.5, 1.0, 1.06 * constants::GRAV, 0.0, 0.9945);
-}
+static mut SOLDIER_SKELETON: Option<ParticleSystem> = None;
 
 #[allow(dead_code)]
 pub struct Soldier {
@@ -57,8 +54,18 @@ pub struct Soldier {
 }
 
 impl Soldier {
-    pub fn initialize() {
-        lazy_static::initialize(&SOLDIER_SKELETON);
+    pub fn initialize(fs: &mut Filesystem) {
+        unsafe {
+            SOLDIER_SKELETON.replace(ParticleSystem::load_from_file(
+                fs,
+                "gostek.po",
+                4.5,
+                1.0,
+                1.06 * constants::GRAV,
+                0.0,
+                0.9945,
+            ));
+        }
     }
 
     pub fn primary_weapon(&self) -> &Weapon {
@@ -140,7 +147,7 @@ impl Soldier {
             on_fire: 0,
             collider_distance: 255,
             half_dead: false,
-            skeleton: SOLDIER_SKELETON.clone(),
+            skeleton: unsafe { SOLDIER_SKELETON.as_ref().unwrap().clone() },
             legs_animation: AnimState::new(Anim::Stand),
             body_animation: AnimState::new(Anim::Stand),
             control: Default::default(),

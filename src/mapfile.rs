@@ -1,7 +1,6 @@
 use super::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::error::Error;
-use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 
@@ -167,11 +166,11 @@ impl MapPolygon {
 }
 
 impl MapFile {
-    pub fn load_map_file(file_name: &str) -> MapFile {
+    pub fn load_map_file(fs: &mut Filesystem, file_name: &str) -> MapFile {
         let mut path = PathBuf::new();
-        path.push("assets/maps/");
+        path.push("maps/");
         path.push(file_name);
-        let file = File::open(&path).expect("Error opening File");
+        let file = fs.open(&path).expect("Error opening File");
         let mut buf = BufReader::new(file);
 
         let filename = path.to_string_lossy().into_owned();

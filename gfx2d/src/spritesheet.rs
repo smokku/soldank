@@ -73,7 +73,12 @@ impl Spritesheet {
         }
     }
 
-    pub fn new(padding: i32, filter: FilterMode, info: &[SpriteInfo]) -> Spritesheet {
+    pub fn new(
+        fs: &mut gvfs::filesystem::Filesystem,
+        padding: i32,
+        filter: FilterMode,
+        info: &[SpriteInfo],
+    ) -> Spritesheet {
         if info.is_empty() {
             return Spritesheet::empty();
         }
@@ -87,8 +92,8 @@ impl Spritesheet {
         let mut rects: Vec<Rect> = Vec::with_capacity(info.len());
 
         for (index, sprite_info) in info.iter().enumerate() {
-            let mut img = if sprite_info.filename.exists() {
-                gfx2d_extra::load_image_rgba(&sprite_info.filename)
+            let mut img = if fs.is_file(sprite_info.filename.clone()) {
+                gfx2d_extra::load_image_rgba(fs, &sprite_info.filename)
             } else {
                 Image::from_pixel(1, 1, image::Rgba([0u8; 4]))
             };

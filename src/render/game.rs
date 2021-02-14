@@ -149,16 +149,16 @@ impl GameGraphics {
         draw_batch(&mut self.batch.all(), &screen);
     }
 
-    pub fn load_map(&mut self, map: &MapFile) {
-        self.map = MapGraphics::new(map);
+    pub fn load_map(&mut self, fs: &mut Filesystem, map: &MapFile) {
+        self.map = MapGraphics::new(fs, map);
     }
 
-    pub fn load_sprites(&mut self) {
+    pub fn load_sprites(&mut self, fs: &mut Filesystem) {
         let mut main: Vec<SpriteInfo> = Vec::new();
         let mut intf: Vec<SpriteInfo> = Vec::new();
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
-            let fname = filename_override("assets/", fname);
+            let fname = filename_override(fs, "", fname);
             v.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
         };
 
@@ -191,7 +191,8 @@ impl GameGraphics {
             }
         }
 
-        if let Ok(cfg) = Ini::load_from_file("assets/mod.ini") {
+        let mut file = fs.open("mod.ini").expect("Error opening File");
+        if let Ok(cfg) = Ini::read_from(&mut file) {
             self.soldier_graphics.load_data(&cfg);
 
             if let Some(data) = cfg.section(Some("SCALE".to_owned())) {
@@ -201,12 +202,7 @@ impl GameGraphics {
                 };
 
                 for sprite_info in main.iter_mut().chain(intf.iter_mut()) {
-                    let fname = sprite_info
-                        .filename
-                        .strip_prefix("assets/")
-                        .unwrap()
-                        .to_str()
-                        .unwrap();
+                    let fname = sprite_info.filename.to_str().unwrap();
 
                     let scale = match data.get(fname) {
                         None => default_scale,
@@ -218,8 +214,8 @@ impl GameGraphics {
             }
         }
 
-        let main = Spritesheet::new(8, FilterMode::Linear, &main);
-        let intf = Spritesheet::new(8, FilterMode::Linear, &intf);
+        let main = Spritesheet::new(fs, 8, FilterMode::Linear, &main);
+        let intf = Spritesheet::new(fs, 8, FilterMode::Linear, &intf);
 
         self.sprites.clear();
         self.sprites.resize(gfx::Group::values().len(), Vec::new());

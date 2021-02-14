@@ -18,6 +18,11 @@ codegen-units = 1
 
 [dependencies]
 gfx2d = { path = "gfx2d" }
+gvfs = "0.1"
+zip = { version = "0.5", features = [
+    # enable deflate support in gvfs
+    "deflate"
+] }
 byteorder = "1.4"
 # image = "0.21"
 time = "0.1.42"
@@ -25,4 +30,3 @@ rust-ini = "0.16"
 bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"
-lazy_static = "1.4"

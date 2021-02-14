@@ -1,5 +1,4 @@
 use super::*;
-use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
@@ -179,6 +178,7 @@ impl ParticleSystem {
     }
 
     pub fn load_from_file(
+        fs: &mut Filesystem,
         file_name: &str,
         scale: f32,
         timestep: f32,
@@ -186,10 +186,10 @@ impl ParticleSystem {
         e_damping: f32,
         v_damping: f32,
     ) -> ParticleSystem {
-        let mut path = PathBuf::from("assets/objects/");
+        let mut path = PathBuf::from("objects/");
         path.push(file_name);
 
-        let file = File::open(&path).expect("Error opening object file.");
+        let file = fs.open(&path).expect("Error opening object file.");
         let mut line = String::new();
         let mut buf = BufReader::new(file);
         let mut particles: Vec<Particle> = Vec::new();

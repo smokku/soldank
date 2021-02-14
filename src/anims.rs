@@ -1,12 +1,8 @@
 use super::*;
-use lazy_static;
-use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
-lazy_static! {
-    static ref ANIMATIONS: Vec<AnimData> = load_animations();
-}
+static mut ANIMATIONS: Option<Vec<AnimData>> = None;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Anim {
@@ -79,8 +75,8 @@ pub struct AnimState {
 }
 
 impl Anim {
-    pub fn data(&self) -> &'static AnimData {
-        &ANIMATIONS[*self as usize]
+    pub fn data(&self) -> &AnimData {
+        unsafe { &ANIMATIONS.as_ref().unwrap()[*self as usize] }
     }
 
     pub fn num_frames(&self) -> usize {
@@ -130,16 +126,25 @@ impl AnimState {
 }
 
 impl AnimData {
-    pub fn initialize() {
-        lazy_static::initialize(&ANIMATIONS);
+    pub fn initialize(fs: &mut Filesystem) {
+        unsafe {
+            ANIMATIONS.replace(load_animations(fs));
+        }
     }
 
-    pub fn load_from_file(id: Anim, file_name: &str, speed: i32, looped: bool) -> AnimData {
-        let mut path = PathBuf::from("assets/anims/");
+    pub fn load_from_file(
+        id: Anim,
+        fs: &mut Filesystem,
+        file_name: &str,
+        speed: i32,
+        looped: bool,
+    ) -> AnimData {
+        let mut path = PathBuf::from("anims/");
         path.push(file_name);
 
-        let file =
-            File::open(&path).expect(format!("Error opening animation file: {:?}", path).as_str());
+        let file = fs
+            .open(&path)
+            .expect(format!("Error opening animation file: {:?}", path).as_str());
         let mut line = String::new();
         let mut buf = BufReader::new(file);
         let mut frames: Vec<AnimFrame> = Vec::new();
@@ -195,7 +200,7 @@ impl AnimData {
     }
 }
 
-fn load_animations() -> Vec<AnimData> {
+fn load_animations(fs: &mut Filesystem) -> Vec<AnimData> {
     let data = [
         (Anim::Stand, "stoi.poa", 3, true),
         (Anim::Run, "biega.poa", 1, true),
@@ -245,7 +250,7 @@ fn load_animations() -> Vec<AnimData> {
 
     let mut animations: Vec<AnimData> = data
         .iter()
-        .map(|params| AnimData::load_from_file(params.0, params.1, params.2, params.3))
+        .map(|params| AnimData::load_from_file(params.0, fs, params.1, params.2, params.3))
         .collect();
 
     animations.sort_by(|a, b| (a.id as usize).cmp(&(b.id as usize)));

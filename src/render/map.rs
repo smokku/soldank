@@ -1,5 +1,5 @@
 use super::*;
-use std::fs;
+use gfx2d::gfx2d_extra::load_image_rgba;
 use std::ops::Range;
 
 pub struct MapGraphics {
@@ -97,18 +97,14 @@ impl MapGraphics {
         }
     }
 
-    pub fn new(map: &MapFile) -> MapGraphics {
-        let texture_file = filename_override("assets/textures", &map.texture_name);
+    pub fn new(fs: &mut Filesystem, map: &MapFile) -> MapGraphics {
+        let texture_file = filename_override(fs, "textures", &map.texture_name);
         let macroquad::prelude::InternalGlContext {
             quad_context: ctx, ..
         } = unsafe { macroquad::prelude::get_internal_gl() };
 
-        let texture = if texture_file.exists() {
-            let bytes =
-                fs::read(&texture_file).unwrap_or_else(|e| panic!("Error loading texture: {}", e));
-            let img = image::load_from_memory(&bytes)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8();
+        let texture = if fs.is_file(texture_file.clone()) {
+            let img = load_image_rgba(fs, texture_file);
             let width = img.width();
             let height = img.height();
             let bytes = img.into_raw();
@@ -166,7 +162,7 @@ impl MapGraphics {
                 .enumerate()
                 .filter(|&(i, _)| scenery_used[i])
                 .map(|(_, s)| {
-                    let fname = filename_override("assets/scenery-gfx", &s.filename);
+                    let fname = filename_override(fs, "scenery-gfx", &s.filename);
 
                     let color_key = match fname.extension() {
                         Some(ext) => {
@@ -183,7 +179,7 @@ impl MapGraphics {
                 })
                 .collect();
 
-            Spritesheet::new(8, FilterMode::Linear, &scenery_info).sprites
+            Spritesheet::new(fs, 8, FilterMode::Linear, &scenery_info).sprites
         };
 
         let props = {

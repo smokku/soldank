@@ -5,6 +5,7 @@ authors = ["Mariano Cuatrin <mariano.cuatrin@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-macroquad = "0.3.0-alpha.14"
+macroquad = { version = "0.3.0-alpha.14", features = ["log-impl"] }
 image = "0.23"
 rgb = "0.8"
+gvfs = "0.1"
