@@ -25,6 +25,7 @@ pub struct MainState {
     pub gravity: f32,
     pub zoom: f32,
     pub bullets: Vec<Bullet>,
+    pub mouse_over_ui: bool,
 }
 
 impl Default for Team {

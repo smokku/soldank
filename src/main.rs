@@ -30,6 +30,7 @@ use weapons::*;
 
 use gfx2d::macroquad::{self as macroquad, logging as log, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
+use megaui_macroquad::{draw_megaui, draw_window, megaui::hash, mouse_over_ui, WindowParams};
 use std::{env, path};
 
 const W: u32 = 1280;
@@ -109,6 +110,7 @@ async fn main() {
         gravity: constants::GRAV,
         zoom: 0.0,
         bullets: vec![],
+        mouse_over_ui: false,
     };
 
     let mut soldier = Soldier::new(&state.map.spawnpoints[0]);
@@ -158,8 +160,10 @@ async fn main() {
             let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
             soldier.weapons[soldier.active_weapon] = weapons[index];
         }
-        soldier.update_keys();
-        soldier.update_mouse_button();
+        if !state.mouse_over_ui {
+            soldier.update_keys();
+            soldier.update_mouse_button();
+        }
 
         let (mouse_x, mouse_y) = mq::mouse_position();
         state.mouse.x = mouse_x * state.game_width / W as f32;
@@ -238,6 +242,27 @@ async fn main() {
         let p = f64::min(1.0, f64::max(0.0, timeacc / dt));
 
         graphics.render_frame(&state, &soldier, timecur - dt * (1.0 - p), p as f32);
+
+        draw_window(
+            hash!(),
+            vec2(10., 10.),
+            vec2(50., 20.),
+            WindowParams {
+                titlebar: false,
+                ..Default::default()
+            },
+            |ui| {
+                ui.label(None, "Hello!");
+            },
+        );
+
+        draw_megaui();
+
+        let mouse_over_ui = mouse_over_ui();
+        if state.mouse_over_ui != mouse_over_ui {
+            state.mouse_over_ui = mouse_over_ui;
+            ctx.show_mouse(state.mouse_over_ui);
+        }
 
         macroquad::window::next_frame().await
     }
