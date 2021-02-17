@@ -137,8 +137,8 @@ async fn main() {
     graphics.load_sprites(&mut filesystem);
     graphics.load_map(&mut filesystem, &state.map);
 
-    let time_start = time::precise_time_s();
-    let current_time = || time::precise_time_s() - time_start;
+    let time_start = instant::now();
+    let current_time = || (instant::now() - time_start) / 1000.;
 
     let mut timecur: f64 = current_time();
     let mut timeprv: f64 = timecur;

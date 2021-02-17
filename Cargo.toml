@@ -1,5 +1,5 @@
 [package]
-name = "bv_soldank"
+name = "mq_soldank"
 description = "open source clone of Soldat engine written in Rust"
 version = "0.1.0"
 authors = [
@@ -24,8 +24,7 @@ zip = { version = "0.5", features = [
     "deflate"
 ] }
 byteorder = "1.4"
-# image = "0.21"
-time = "0.1.42"
+instant = { version = "0.1", default-features = false, features = ["now"] }
 rust-ini = "0.16"
 bit-array = "0.4"
 typenum = "1.12"
