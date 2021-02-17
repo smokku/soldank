@@ -4,11 +4,12 @@ macro_rules! sprites {
             $($id:ident = $file:tt)+
         })+
     ) => {
-        pub trait SpriteData where Self: ::std::marker::Sized {
+        pub trait SpriteData: Send + Sync + std::fmt::Debug {
             fn id(&self) -> usize;
             fn group(&self) -> Group;
             fn filename(&self) -> &'static str;
-            fn values() -> &'static [Self];
+            fn values() -> &'static [Self]
+                where Self: ::std::marker::Sized;
         }
 
         #[derive(Debug, Copy, Clone)]
@@ -65,8 +66,12 @@ macro_rules! sprites {
 }
 
 macro_rules! soldier_parts_sprite {
-    ( None ) => ( SoldierSprite::None );
-    ( $group:ident::$id:ident ) => ( SoldierSprite::$group($group::$id) );
+    ( None ) => {
+        SoldierSprite::None
+    };
+    ( $group:ident::$id:ident ) => {
+        SoldierSprite::$group($group::$id)
+    };
 }
 
 macro_rules! soldier_parts {

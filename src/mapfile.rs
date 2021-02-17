@@ -42,7 +42,7 @@ pub enum PolyType {
     HurtsFlaggers,
     OnlyFlaggers,
     NotFlaggers,
-    NonFlaggersCollide,
+    FlagCollide,
     Background,
     BackgroundTransition,
 }
@@ -103,10 +103,10 @@ pub struct MapScenery {
 
 #[derive(Debug)]
 pub struct MapCollider {
-    active: bool,
-    x: f32,
-    y: f32,
-    radius: f32,
+    pub active: bool,
+    pub x: f32,
+    pub y: f32,
+    pub diameter: f32,
 }
 
 #[derive(Debug)]
@@ -233,7 +233,7 @@ impl MapFile {
                     20 => PolyType::HurtsFlaggers,
                     21 => PolyType::OnlyFlaggers,
                     22 => PolyType::NotFlaggers,
-                    23 => PolyType::NonFlaggersCollide,
+                    23 => PolyType::FlagCollide,
                     24 => PolyType::Background,
                     25 => PolyType::BackgroundTransition,
                     _ => PolyType::Normal,
@@ -357,13 +357,13 @@ impl MapFile {
             let active = buf.read_i32::<LittleEndian>().unwrap() != 0;
             let x = buf.read_f32::<LittleEndian>().unwrap();
             let y = buf.read_f32::<LittleEndian>().unwrap();
-            let radius = buf.read_f32::<LittleEndian>().unwrap();
+            let diameter = buf.read_f32::<LittleEndian>().unwrap();
 
             colliders.push(MapCollider {
                 active,
                 x,
                 y,
-                radius,
+                diameter,
             });
         }
 

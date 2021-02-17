@@ -338,6 +338,26 @@ sprites! {
         FlagHandle         = "objects-gfx/flag"
     }
 
+    Marker {
+        SpawnGeneral       = "/markers/0"
+        SpawnAlpha         = "/markers/1"
+        SpawnBravo         = "/markers/2"
+        SpawnCharlie       = "/markers/3"
+        SpawnDelta         = "/markers/4"
+        FlagAlpha          = "/markers/5"
+        FlagBravo          = "/markers/6"
+        Grenades           = "/markers/7"
+        Medkits            = "/markers/8"
+        Clusters           = "/markers/9"
+        Vest               = "/markers/10"
+        Flamer             = "/markers/11"
+        Berserker          = "/markers/12"
+        Predator           = "/markers/13"
+        FlagYellow         = "/markers/14"
+        RamboBow           = "/markers/15"
+        StatGun            = "/markers/16"
+    }
+
     // Preserve order of Guns*
 
     Interface {

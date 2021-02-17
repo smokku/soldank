@@ -1,6 +1,7 @@
 use super::*;
 use binpack::pack_rects;
 use image::{self, GenericImage, RgbaImage as Image};
+use macroquad::logging as log;
 use std::path::PathBuf;
 
 type Rect = binpack::Rect<(usize, usize)>;
@@ -95,6 +96,10 @@ impl Spritesheet {
             let mut img = if fs.is_file(sprite_info.filename.clone()) {
                 gfx2d_extra::load_image_rgba(fs, &sprite_info.filename)
             } else {
+                log::error!(
+                    "Could not load texture: {}",
+                    sprite_info.filename.as_path().display()
+                );
                 Image::from_pixel(1, 1, image::Rgba([0u8; 4]))
             };
 

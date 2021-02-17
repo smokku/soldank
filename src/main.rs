@@ -93,6 +93,7 @@ async fn main() {
             }
         }
     }
+    // filesystem.print_all();
 
     AnimData::initialize(&mut filesystem);
     Soldier::initialize(&mut filesystem);
@@ -245,7 +246,13 @@ async fn main() {
 
         let p = f64::min(1.0, f64::max(0.0, timeacc / FIXED_RATE));
 
-        graphics.render_frame(&state, &soldier, timecur - FIXED_RATE * (1.0 - p), p as f32);
+        graphics.render_frame(
+            &state,
+            &debug_state,
+            &soldier,
+            timecur - FIXED_RATE * (1.0 - p),
+            p as f32,
+        );
 
         if cfg!(debug_assertions) {
             debug::build_ui(&mut debug_state, &state, timecur as u32, p as f32);

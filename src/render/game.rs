@@ -1,59 +1,71 @@
 use super::*;
+use crate::debug::DebugState;
 use gfx::SpriteData;
 use gfx2d::macroquad::prelude::*;
 use ini::Ini;
 use std::str::FromStr;
+
+pub trait QuadGlProjectionExt {
+    fn set_projection_from_transform(&mut self, transform: &Mat2d) -> Mat4;
+    fn draw_batch(&mut self, slice: &mut DrawSlice, transform: &Mat2d);
+}
+
+impl QuadGlProjectionExt for QuadGl {
+    fn set_projection_from_transform(&mut self, transform: &Mat2d) -> Mat4 {
+        let prj = self.get_projection_matrix();
+
+        self.set_projection_matrix(Mat4::from_cols_array_2d(&[
+            [(transform.0).0, (transform.1).0, 0.0, 0.0],
+            [(transform.0).1, (transform.1).1, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [(transform.0).2, (transform.1).2, 0.0, 1.0],
+        ]));
+
+        prj
+    }
+
+    fn draw_batch(&mut self, slice: &mut DrawSlice, transform: &Mat2d) {
+        let buffer = slice.buffer();
+
+        self.draw_mode(DrawMode::Triangles);
+
+        let prj = self.set_projection_from_transform(transform);
+
+        for cmd in slice.commands() {
+            self.texture(
+                cmd.texture
+                    .map(|texture| Texture2D::from_miniquad_texture(texture)),
+            );
+
+            let mut vertices: Vec<Vertex> = Vec::new();
+            let mut indices: Vec<u16> = Vec::new();
+
+            for i in cmd.vertex_range.clone() {
+                let vert = buffer[i];
+
+                indices.push(vertices.len() as u16);
+                vertices.push(Vertex::new(
+                    vert.pos.x,
+                    vert.pos.y,
+                    0.0,
+                    vert.uv.x,
+                    vert.uv.y,
+                    [vert.color.r, vert.color.g, vert.color.b, vert.color.a].into(),
+                ));
+            }
+
+            self.geometry(vertices.as_ref(), indices.as_ref());
+        }
+
+        self.set_projection_matrix(prj);
+    }
+}
 
 pub struct GameGraphics {
     map: MapGraphics,
     soldier_graphics: SoldierGraphics,
     sprites: Vec<Vec<Sprite>>,
     batch: DrawBatch,
-}
-
-pub fn draw_batch(slice: &mut DrawSlice, transform: &Mat2d) {
-    let macroquad::prelude::InternalGlContext { quad_gl: gl, .. } =
-        unsafe { macroquad::prelude::get_internal_gl() };
-
-    let buffer = slice.buffer();
-
-    gl.draw_mode(DrawMode::Triangles);
-
-    let prj = gl.get_projection_matrix();
-    gl.set_projection_matrix(Mat4::from_cols_array_2d(&[
-        [(transform.0).0, (transform.1).0, 0.0, 0.0],
-        [(transform.0).1, (transform.1).1, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [(transform.0).2, (transform.1).2, 0.0, 1.0],
-    ]));
-
-    for cmd in slice.commands() {
-        gl.texture(
-            cmd.texture
-                .map(|texture| Texture2D::from_miniquad_texture(texture)),
-        );
-
-        let mut vertices: Vec<Vertex> = Vec::new();
-        let mut indices: Vec<u16> = Vec::new();
-
-        for i in cmd.vertex_range.clone() {
-            let vert = buffer[i];
-
-            indices.push(vertices.len() as u16);
-            vertices.push(Vertex::new(
-                vert.pos.x,
-                vert.pos.y,
-                0.0,
-                vert.uv.x,
-                vert.uv.y,
-                [vert.color.r, vert.color.g, vert.color.b, vert.color.a].into(),
-            ));
-        }
-
-        gl.geometry(vertices.as_ref(), indices.as_ref());
-    }
-
-    gl.set_projection_matrix(prj);
 }
 
 impl GameGraphics {
@@ -69,6 +81,7 @@ impl GameGraphics {
     pub fn render_frame(
         &mut self,
         state: &MainState,
+        debug_state: &DebugState,
         soldier: &Soldier,
         elapsed: f64,
         frame_percent: f32,
@@ -105,18 +118,49 @@ impl GameGraphics {
             );
         }
 
+        let macroquad::prelude::InternalGlContext { quad_gl: gl, .. } =
+            unsafe { macroquad::prelude::get_internal_gl() };
+
         clear_background(BLACK);
-        draw_batch(&mut self.map.background(), &transform_bg);
-        draw_batch(&mut self.map.polys_back(), &transform);
-        draw_batch(&mut self.map.scenery_back(), &transform);
-        draw_batch(&mut self.batch.all(), &transform);
-        draw_batch(&mut self.map.scenery_mid(), &transform);
-        draw_batch(&mut self.map.polys_front(), &transform);
-        draw_batch(&mut self.map.scenery_front(), &transform);
-        self.render_cursor(state);
+
+        if !debug_state.render.disable_background {
+            gl.draw_batch(&mut self.map.background(), &transform_bg);
+        }
+        if !debug_state.render.disable_polygon {
+            if !debug_state.render.disable_texture {
+                gl.draw_batch(&mut self.map.polys_back(), &transform);
+            } else {
+                // gl.draw_batch(&mut self.map.polys_back(), &transform);
+            }
+        }
+        if !debug_state.render.disable_scenery_back {
+            gl.draw_batch(&mut self.map.scenery_back(), &transform);
+        }
+        gl.draw_batch(&mut self.batch.all(), &transform);
+        if !debug_state.render.disable_scenery_middle {
+            gl.draw_batch(&mut self.map.scenery_mid(), &transform);
+        }
+        if !debug_state.render.disable_polygon {
+            if !debug_state.render.disable_texture {
+                gl.draw_batch(&mut self.map.polys_front(), &transform);
+            } else {
+                // gl.draw_batch(&mut self.map.polys_front(), &transform);
+            }
+        }
+        if !debug_state.render.disable_scenery_front {
+            gl.draw_batch(&mut self.map.scenery_front(), &transform);
+        }
+
+        if debug_state.ui_visible {
+            let prj = gl.set_projection_from_transform(&transform);
+            debug::debug_render(gl, debug_state, state, self);
+            gl.set_projection_matrix(prj);
+        }
+
+        self.render_cursor(gl, state);
     }
 
-    fn render_cursor(&mut self, state: &MainState) {
+    fn render_cursor(&mut self, gl: &mut QuadGl, state: &MainState) {
         let zoom = f32::exp(state.zoom);
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
         let size = vec2(screen_width(), screen_height());
@@ -146,7 +190,7 @@ impl GameGraphics {
             ],
         );
 
-        draw_batch(&mut self.batch.all(), &screen);
+        gl.draw_batch(&mut self.batch.all(), &screen);
     }
 
     pub fn load_map(&mut self, fs: &mut Filesystem, map: &MapFile) {
@@ -183,6 +227,11 @@ impl GameGraphics {
                     .iter()
                     .map(|v| v.filename())
                     .for_each(|f| add_to(&mut main, f)),
+
+                gfx::Group::Marker => gfx::Marker::values()
+                    .iter()
+                    .map(|v| v.filename())
+                    .for_each(|f| add_to(&mut intf, f)),
 
                 gfx::Group::Interface => gfx::Interface::values()
                     .iter()
@@ -251,6 +300,12 @@ impl GameGraphics {
                         imain += 1;
                     }
                 }
+                gfx::Group::Marker => {
+                    for _ in gfx::Marker::values() {
+                        self.sprites[index].push(intf.sprites[iintf].clone());
+                        iintf += 1;
+                    }
+                }
                 gfx::Group::Interface => {
                     for _ in gfx::Interface::values() {
                         self.sprites[index].push(intf.sprites[iintf].clone());
@@ -259,5 +314,9 @@ impl GameGraphics {
                 }
             }
         }
+    }
+
+    pub fn get_sprite(&self, sprite: &dyn SpriteData) -> &gfx2d::Sprite {
+        &self.sprites[sprite.group().id()][sprite.id()]
     }
 }
