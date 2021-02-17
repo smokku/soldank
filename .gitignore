@@ -2,4 +2,3 @@
 /target
 /gfx2d/target
 **/*.rs.bk
-Cargo.lock
