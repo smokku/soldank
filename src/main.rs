@@ -10,6 +10,7 @@ mod bullet;
 mod calc;
 mod constants;
 mod control;
+mod debug;
 mod mapfile;
 mod particles;
 mod render;
@@ -20,6 +21,7 @@ mod weapons;
 use anims::*;
 use bullet::*;
 use calc::*;
+use constants::*;
 use control::*;
 use mapfile::*;
 use particles::*;
@@ -30,18 +32,15 @@ use weapons::*;
 
 use gfx2d::macroquad::{self as macroquad, logging as log, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
-use megaui_macroquad::{draw_megaui, draw_window, megaui::hash, mouse_over_ui, WindowParams};
+use megaui_macroquad::{draw_megaui, mouse_over_ui};
 use std::{env, path};
-
-const W: u32 = 1280;
-const H: u32 = 720;
 
 fn config() -> mq::Conf {
     mq::Conf {
         sample_count: 4,
         window_title: clap::crate_name!().to_string(),
-        window_width: W as _,
-        window_height: H as _,
+        window_width: WINDOW_WIDTH as _,
+        window_height: WINDOW_HEIGHT as _,
         ..Default::default()
     }
 }
@@ -55,6 +54,11 @@ async fn main() {
                 .short("m")
                 .long("map")
                 .takes_value(true),
+        )
+        .arg(
+            clap::Arg::with_name("debug")
+                .help("display debug UI on start (^` to toggle)")
+                .long("debug"),
         )
         .get_matches();
 
@@ -101,7 +105,7 @@ async fn main() {
 
     let mut state = MainState {
         map,
-        game_width: W as f32 * (480.0 / H as f32),
+        game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),
         game_height: 480.0,
         camera: Vec2::zero(),
         camera_prev: Vec2::zero(),
@@ -112,6 +116,8 @@ async fn main() {
         bullets: vec![],
         mouse_over_ui: false,
     };
+    let mut debug_state = debug::DebugState::default();
+    debug_state.ui_visible = cmd.is_present("debug");
 
     let mut soldier = Soldier::new(&state.map.spawnpoints[0]);
     state.camera = soldier.particle.pos;
@@ -166,17 +172,15 @@ async fn main() {
         }
 
         let (mouse_x, mouse_y) = mq::mouse_position();
-        state.mouse.x = mouse_x * state.game_width / W as f32;
-        state.mouse.y = mouse_y * state.game_height / H as f32;
-
-        let dt = 1.0 / 60.0;
+        state.mouse.x = mouse_x * state.game_width / WINDOW_WIDTH as f32;
+        state.mouse.y = mouse_y * state.game_height / WINDOW_HEIGHT as f32;
 
         timecur = current_time();
         timeacc += timecur - timeprv;
         timeprv = timecur;
 
-        while timeacc >= dt {
-            timeacc -= dt;
+        while timeacc >= FIXED_RATE {
+            timeacc -= FIXED_RATE;
 
             // remove inactive bullets
 
@@ -213,7 +217,7 @@ async fn main() {
             state.mouse_prev = state.mouse;
 
             if zoomin_pressed ^ zoomout_pressed {
-                state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * dt as f32;
+                state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * FIXED_RATE as f32;
             }
 
             state.camera = {
@@ -239,22 +243,13 @@ async fn main() {
             timeprv = timecur;
         }
 
-        let p = f64::min(1.0, f64::max(0.0, timeacc / dt));
+        let p = f64::min(1.0, f64::max(0.0, timeacc / FIXED_RATE));
 
-        graphics.render_frame(&state, &soldier, timecur - dt * (1.0 - p), p as f32);
+        graphics.render_frame(&state, &soldier, timecur - FIXED_RATE * (1.0 - p), p as f32);
 
-        draw_window(
-            hash!(),
-            vec2(10., 10.),
-            vec2(50., 20.),
-            WindowParams {
-                titlebar: false,
-                ..Default::default()
-            },
-            |ui| {
-                ui.label(None, "Hello!");
-            },
-        );
+        if cfg!(debug_assertions) {
+            debug::build_ui(&mut debug_state, &state, timecur as u32, p as f32);
+        }
 
         draw_megaui();
 
