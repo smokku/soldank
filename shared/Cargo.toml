@@ -1,5 +1,5 @@
 [package]
-name = "naia-mq-example-shared"
+name = "soldank-shared"
 version = "0.1.0"
 authors = ["connorcarpenter <connorcarpenter@gmail.com>"]
 publish = false

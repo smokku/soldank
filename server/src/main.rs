@@ -1,25 +1,29 @@
 #[macro_use]
 extern crate log;
 
-use simple_logger;
+use simple_logger::SimpleLogger;
 use smol::io;
 
-use naia_server::{find_my_ip_address, NaiaServer, ServerConfig, ServerEvent, UserKey, ActorKey, Random};
-
-use naia_mq_example_shared::{
-    get_shared_config, manifest_load, PointActor, PointActorColor, ExampleEvent, ExampleActor, shared_behavior,
+use naia_server::{
+    find_my_ip_address, ActorKey, NaiaServer, Random, ServerConfig, ServerEvent, UserKey,
 };
 
-use std::{net::SocketAddr, rc::Rc, time::Duration, collections::HashMap};
+use soldank_shared::{
+    get_shared_config, manifest_load, shared_behavior, ExampleActor, ExampleEvent, PointActor,
+    PointActorColor,
+};
+
+use std::{collections::HashMap, net::SocketAddr, rc::Rc, time::Duration};
 
 const SERVER_PORT: u16 = 14191;
 
-
 fn main() -> io::Result<()> {
     smol::block_on(async {
-        simple_logger::init_with_level(log::Level::Info).expect("A logger was already initialized");
+        SimpleLogger::from_env()
+            .init()
+            .expect("A logger was already initialized");
 
-        info!("Naia Macroquad Server Example Started");
+        info!("Soldank Server Started");
 
         let current_ip_address = find_my_ip_address().expect("can't find ip address");
         let current_socket_address = SocketAddr::new(current_ip_address, SERVER_PORT);
@@ -73,8 +77,10 @@ fn main() -> io::Result<()> {
                                     _ => PointActorColor::Blue,
                                 };
 
-                                let new_actor = PointActor::new(x as u16, y as u16, actor_color).wrap();
-                                let new_actor_key = server.register_actor(ExampleActor::PointActor(new_actor.clone()));
+                                let new_actor =
+                                    PointActor::new(x as u16, y as u16, actor_color).wrap();
+                                let new_actor_key = server
+                                    .register_actor(ExampleActor::PointActor(new_actor.clone()));
                                 server.room_add_actor(&main_room_key, &new_actor_key);
                                 server.assign_pawn(&user_key, &new_actor_key);
                                 user_to_pawn_map.insert(user_key, new_actor_key);
@@ -89,20 +95,18 @@ fn main() -> io::Result<()> {
                                 server.deregister_actor(actor_key);
                             }
                         }
-                        ServerEvent::Command(_, actor_key, command_type) => {
-                            match command_type {
-                                ExampleEvent::KeyCommand(key_command) => {
-                                    if let Some(typed_actor) = server.get_actor(actor_key) {
-                                        match typed_actor {
-                                            ExampleActor::PointActor(actor) => {
-                                                shared_behavior::process_command(&key_command, actor);
-                                            }
+                        ServerEvent::Command(_, actor_key, command_type) => match command_type {
+                            ExampleEvent::KeyCommand(key_command) => {
+                                if let Some(typed_actor) = server.get_actor(actor_key) {
+                                    match typed_actor {
+                                        ExampleActor::PointActor(actor) => {
+                                            shared_behavior::process_command(&key_command, actor);
                                         }
                                     }
                                 }
-                                _ => {}
                             }
-                        }
+                            _ => {}
+                        },
                         ServerEvent::Tick => {
                             server.send_all_updates().await;
                             //info!("tick");

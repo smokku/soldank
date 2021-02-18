@@ -1,0 +1,25 @@
+[package]
+name = "soldank-client"
+description = "open source clone of Soldat engine written in Rust"
+version = "0.1.0"
+authors = [
+    "helloer <im.helloer@gmail.com>",
+    "Tomasz Sterna <tomek@sterna.link>"
+]
+edition = "2018"
+publish = false
+
+[dependencies]
+gfx2d = { path = "./gfx2d" }
+gvfs = "0.1"
+zip = { version = "0.5", features = [
+    # enable deflate support in gvfs
+    "deflate"
+] }
+byteorder = "1.4"
+instant = { version = "0.1", default-features = false, features = ["now"] }
+rust-ini = "0.16"
+bit-array = "0.4"
+typenum = "1.12"
+clap = "2.33"
+megaui-macroquad = "0.1"

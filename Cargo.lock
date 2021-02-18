@@ -987,22 +987,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mq_soldank"
-version = "0.1.0"
-dependencies = [
- "bit-array",
- "byteorder",
- "clap",
- "gfx2d",
- "gvfs",
- "instant",
- "megaui-macroquad",
- "rust-ini",
- "typenum",
- "zip",
-]
-
-[[package]]
 name = "naia-derive"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1011,28 +995,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "naia-mq-example-shared"
-version = "0.1.0"
-dependencies = [
- "cfg-if 0.1.10",
- "log",
- "naia-derive",
- "naia-shared",
- "nanoserde",
-]
-
-[[package]]
-name = "naia-mq-server-example"
-version = "0.1.0"
-dependencies = [
- "log",
- "naia-mq-example-shared",
- "naia-server",
- "simple_logger",
- "smol",
 ]
 
 [[package]]
@@ -1781,6 +1743,44 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "soldank-client"
+version = "0.1.0"
+dependencies = [
+ "bit-array",
+ "byteorder",
+ "clap",
+ "gfx2d",
+ "gvfs",
+ "instant",
+ "megaui-macroquad",
+ "rust-ini",
+ "typenum",
+ "zip",
+]
+
+[[package]]
+name = "soldank-server"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "naia-server",
+ "simple_logger",
+ "smol",
+ "soldank-shared",
+]
+
+[[package]]
+name = "soldank-shared"
+version = "0.1.0"
+dependencies = [
+ "cfg-if 0.1.10",
+ "log",
+ "naia-derive",
+ "naia-shared",
+ "nanoserde",
 ]
 
 [[package]]

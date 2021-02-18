@@ -11,13 +11,20 @@
 * Fully authentic look and feel
 * ~~bugs~~ feature-complete port of Soldat
 
-## How to build
+## build and run
 
-1. Install Rust and cargo: https://doc.rust-lang.org/cargo/getting-started/installation.html
-2. build ```soldat.smod``` from [soldat-base](https://github.com/Soldat/base) and copy to `soldank/resources` directory
-3. ```cargo run --release``` to run the game
+### Server
 
-## ROADMAP
+    env RUST_LOG=debug cargo run --manifest-path server/Cargo.toml --features use-udp
+
+### Client
+
+    cargo run --manifest-path client/Cargo.toml -- --debug
+
+## TODO
 
 - [x] Refactor rendering code and add support for sceneries and gostek rendering
 - [x] Implement proper game loop
+- [x] Debug UI
+- [ ] Implement game interface
+- [ ] server-authoritative networking
