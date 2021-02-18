@@ -30,3 +30,6 @@ bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"
 megaui-macroquad = "0.1"
+
+[workspace]
+members = ["gfx2d", "server", "shared"]

@@ -1,0 +1,14 @@
+[package]
+name = "naia-mq-example-shared"
+version = "0.1.0"
+authors = ["connorcarpenter <connorcarpenter@gmail.com>"]
+publish = false
+edition = "2018"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+naia-shared = { version = "0.4.1" }
+naia-derive = { version = "0.3.0" }
+cfg-if = "0.1.10"
+log = "0.4"
+nanoserde = "0.1.17"
