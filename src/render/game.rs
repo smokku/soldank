@@ -103,7 +103,7 @@ impl GameGraphics {
             frame_percent,
         );
 
-        if false {
+        if debug_state.render.render_skeleton {
             let px = h / screen_height();
             render_skeleton(soldier, &mut self.batch, px, frame_percent);
         }

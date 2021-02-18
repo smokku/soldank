@@ -63,16 +63,16 @@ pub fn build_ui(state: &mut DebugState) {
                 toggle_state(ui, None, &mut state.render_position, "Position");
 
                 ui.separator();
-                toggle_state(ui, None, &mut state.disable_background, "Background");
-                toggle_state(ui, None, &mut state.disable_polygon, "Polygons");
-                toggle_state(ui, None, &mut state.disable_texture, "Texture");
+                toggle_state_i(ui, None, &mut state.disable_background, "Background");
+                toggle_state_i(ui, None, &mut state.disable_polygon, "Polygons");
+                // toggle_state(ui, None, &mut state.disable_texture, "Texture");
                 toggle_state(ui, None, &mut state.render_wireframe, "Wireframe");
                 toggle_state(ui, None, &mut state.render_colliders, "Colliders");
 
                 ui.tree_node(hash!(), "Scenery", |ui| {
-                    toggle_state(ui, None, &mut state.disable_scenery_back, "Back");
-                    toggle_state(ui, None, &mut state.disable_scenery_middle, "Middle");
-                    toggle_state(ui, None, &mut state.disable_scenery_front, "Front");
+                    toggle_state_i(ui, None, &mut state.disable_scenery_back, "Back");
+                    toggle_state_i(ui, None, &mut state.disable_scenery_middle, "Middle");
+                    toggle_state_i(ui, None, &mut state.disable_scenery_front, "Front");
                 });
 
                 ui.tree_node(hash!(), "Spawns", |ui| {
@@ -158,6 +158,17 @@ pub fn build_ui(state: &mut DebugState) {
 
 fn toggle_state<P: Into<Option<Vector2>>>(ui: &mut Ui, position: P, state: &mut bool, label: &str) {
     if ui.button(position, checkbox_label(*state, label).as_str()) {
+        *state = !*state;
+    }
+}
+
+fn toggle_state_i<P: Into<Option<Vector2>>>(
+    ui: &mut Ui,
+    position: P,
+    state: &mut bool,
+    label: &str,
+) {
+    if ui.button(position, checkbox_label(!*state, label).as_str()) {
         *state = !*state;
     }
 }
