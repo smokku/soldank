@@ -12,6 +12,7 @@ mod constants;
 mod control;
 mod debug;
 mod mapfile;
+mod networking;
 mod particles;
 mod render;
 mod soldier;
@@ -24,6 +25,7 @@ use calc::*;
 use constants::*;
 use control::*;
 use mapfile::*;
+use networking::*;
 use particles::*;
 use render::*;
 use soldier::*;
@@ -95,6 +97,8 @@ async fn main() {
     }
     // filesystem.print_all();
 
+    let mut networking = Networking::new();
+
     AnimData::initialize(&mut filesystem);
     Soldier::initialize(&mut filesystem);
 
@@ -155,6 +159,8 @@ async fn main() {
         .collect();
 
     while running {
+        networking.update();
+
         //             WindowEvent::CloseRequested => running = false,
 
         if mq::is_key_pressed(mq::KeyCode::Escape) {
@@ -253,6 +259,8 @@ async fn main() {
             timecur - FIXED_RATE * (1.0 - p),
             p as f32,
         );
+
+        networking.render();
 
         if cfg!(debug_assertions) {
             debug::build_ui(&mut debug_state, &state, timecur as u32, p as f32);
