@@ -7,9 +7,15 @@ authors = [
     "Tomasz Sterna <tomek@sterna.link>"
 ]
 edition = "2018"
+license = "MIT"
 publish = false
 
+[features]
+multithread = ["naia-client/multithread"]
+mquad = ["naia-client/mquad"]
+
 [dependencies]
+soldank-shared = { path = "../shared" }
 gfx2d = { path = "./gfx2d" }
 gvfs = "0.1"
 zip = { version = "0.5", features = [
@@ -23,3 +29,4 @@ bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"
 megaui-macroquad = "0.1"
+naia-client = "0.4"

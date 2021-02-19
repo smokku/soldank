@@ -1,18 +1,18 @@
 [package]
 name = "soldank-server"
 version = "0.1.0"
-authors = ["connorcarpenter <connorcarpenter@gmail.com>"]
-publish = false
+authors = ["Tomasz Sterna <tomek@sterna.link>"]
 edition = "2018"
-license = "MIT OR Apache-2.0"
+license = "MIT"
+publish = false
 
 [features]
 use-udp = ["naia-server/use-udp"]
 use-webrtc = ["naia-server/use-webrtc"]
 
 [dependencies]
-naia-server = { version = "0.4.1" }
 soldank-shared = { path = "../shared" }
+naia-server = "0.4"
 log = "0.4"
-simple_logger = { version = "1.4" }
-smol = { version = "1.2.4" }
+simple_logger = "1.4"
+smol = "1.2"

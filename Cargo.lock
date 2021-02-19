@@ -265,9 +265,9 @@ checksum = "39092a32794787acd8525ee150305ff051b0aa6cc2abaf193924f5ab05425f39"
 
 [[package]]
 name = "bumpalo"
-version = "3.6.0"
+version = "3.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "099e596ef14349721d9016f6b80dd3419ea1bf289ab9b44df8e4dfd3a005d5d9"
+checksum = "63396b8a4b9de3f4fdfb320ab6080762242f66a8ef174c49d8e19b674db4cdbe"
 
 [[package]]
 name = "bytecount"
@@ -899,7 +899,7 @@ dependencies = [
  "glam",
  "image",
  "macroquad_macro",
- "miniquad",
+ "miniquad 0.3.0-alpha.26",
  "quad-rand",
 ]
 
@@ -945,6 +945,19 @@ dependencies = [
 
 [[package]]
 name = "miniquad"
+version = "0.2.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ef4f871d65ceb1603b1eb1f31e5a1f230ce4222c50739209d62fca2815febe1"
+dependencies = [
+ "sapp-darwin",
+ "sapp-dummy",
+ "sapp-linux",
+ "sapp-wasm",
+ "sapp-windows",
+]
+
+[[package]]
+name = "miniquad"
 version = "0.3.0-alpha.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f93dc8b526b2d565063e819449f0e2e7d6acfbf638c9a14c017d5f6c57e3caf"
@@ -984,6 +997,31 @@ checksum = "0f2d26ec3309788e423cfbf68ad1800f061638098d76a83681af979dc4eda19d"
 dependencies = [
  "adler",
  "autocfg",
+]
+
+[[package]]
+name = "naia-client"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3fd557ca4c82759eb355061dd0a210ea52df7cd648756b69ec1e19b89f9b90d"
+dependencies = [
+ "byteorder",
+ "cfg-if 0.1.10",
+ "log",
+ "naia-client-socket",
+ "naia-shared",
+]
+
+[[package]]
+name = "naia-client-socket"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2fd23bf96e747ed3f8d1d9a3180f86d9e184c30ecffb55856a47fd6b87d9d3e"
+dependencies = [
+ "cfg-if 0.1.10",
+ "log",
+ "miniquad 0.2.32",
+ "naia-socket-shared",
 ]
 
 [[package]]
@@ -1756,7 +1794,9 @@ dependencies = [
  "gvfs",
  "instant",
  "megaui-macroquad",
+ "naia-client",
  "rust-ini",
+ "soldank-shared",
  "typenum",
  "zip",
 ]
@@ -1898,18 +1938,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76cc616c6abf8c8928e2fdcc0dbfab37175edd8fb49a4641066ad1364fdab146"
+checksum = "e0f4a65597094d4483ddaed134f409b2cb7c1beccf25201a9f73c719254fa98e"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9be73a2caec27583d0046ef3796c3794f868a5bc813db689eed00c7631275cd1"
+checksum = "7765189610d8241a44529806d6fd1f2e0a08734313a35d5b3a556f92b381f3c0"
 dependencies = [
  "proc-macro2",
  "quote",
