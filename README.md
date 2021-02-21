@@ -15,7 +15,7 @@
 
 ### Server
 
-    env RUST_LOG=debug cargo run --manifest-path server/Cargo.toml --features use-udp
+    env RUST_LOG=debug cargo run --manifest-path server/Cargo.toml
 
 ### Client
 

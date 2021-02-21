@@ -1,164 +1,93 @@
-use gfx2d::macroquad::{logging as log, prelude as mq};
-
-use std::{net::SocketAddr, time::Duration};
-
-use naia_client::{find_my_ip_address, ClientConfig, ClientEvent, NaiaClient};
-
-use soldank_shared::{
-    behaviors, get_manifest, get_shared_config, AuthEvent, KeyCommand, NetworkActor, NetworkEvent,
-    PointActorColor,
+use gfx2d::macroquad::logging as log;
+use naia_client_socket::{
+    ClientSocket, ClientSocketTrait, LinkConditionerConfig, MessageSender, Packet,
 };
+use std::net::{IpAddr, SocketAddr};
 
-const SERVER_PORT: u16 = 14191;
+use soldank_shared::{constants::SERVER_PORT, messages::*};
+
 pub struct Networking {
-    client: NaiaClient<NetworkEvent, NetworkActor>,
-    pawn_key: Option<u16>,
-    queued_command: Option<KeyCommand>,
+    client_socket: Box<dyn ClientSocketTrait>,
+    message_sender: MessageSender,
+    got_one_response: bool,
+    backoff_round: i32,
+    message_count: u8,
+}
+
+fn backoff_enabled(round: i32) -> bool {
+    (round & (round - 1)) == 0
 }
 
 impl Networking {
-    pub fn new() -> Self {
-        let server_ip_address = find_my_ip_address().expect("can't find ip address");
+    pub fn new() -> Networking {
+        let server_ip_address: IpAddr = "127.0.0.1"
+            .parse()
+            .expect("couldn't parse input IP address"); // Put your Server's IP Address here!, can't easily find this automatically from the browser
+
         let server_socket_address = SocketAddr::new(server_ip_address, SERVER_PORT);
 
-        let mut client_config = ClientConfig::default();
-        client_config.heartbeat_interval = Duration::from_secs(2);
-        client_config.disconnection_timeout_duration = Duration::from_secs(5);
+        let mut client_socket = ClientSocket::connect(server_socket_address)
+            .with_link_conditioner(&LinkConditionerConfig::good_condition());
+        let mut message_sender = client_socket.get_sender();
 
-        let auth = NetworkEvent::AuthEvent(AuthEvent::new("charlie", "12345"));
-
-        let client = NaiaClient::new(
-            server_socket_address,
-            get_manifest(),
-            Some(client_config),
-            get_shared_config(),
-            Some(auth),
-        );
+        message_sender
+            .send(Packet::new(PING_MSG.to_string().into_bytes()))
+            .unwrap();
 
         Networking {
-            client,
-            pawn_key: None,
-            queued_command: None,
+            client_socket,
+            message_sender,
+            got_one_response: false,
+            backoff_round: 0,
+            message_count: 0,
         }
     }
 
     pub fn update(&mut self) {
-        // input
-        let w = mq::is_key_down(mq::KeyCode::W);
-        let s = mq::is_key_down(mq::KeyCode::S);
-        let a = mq::is_key_down(mq::KeyCode::A);
-        let d = mq::is_key_down(mq::KeyCode::D);
-
-        if let Some(command) = &mut self.queued_command {
-            if w {
-                command.w.set(true);
-            }
-            if s {
-                command.s.set(true);
-            }
-            if a {
-                command.a.set(true);
-            }
-            if d {
-                command.d.set(true);
-            }
-        } else {
-            self.queued_command = Some(KeyCommand::new(w, s, a, d));
-        }
-
-        // update
         loop {
-            if let Some(result) = self.client.receive() {
-                match result {
-                    Ok(event) => match event {
-                        ClientEvent::Connection => {
-                            log::debug!("Client connected to: {}", self.client.server_address());
-                        }
-                        ClientEvent::Disconnection => {
+            match self.client_socket.receive() {
+                Ok(event) => match event {
+                    Some(packet) => {
+                        let message = String::from_utf8_lossy(packet.payload());
+                        log::debug!("Client recv: {}", message);
+
+                        if message.eq(PONG_MSG) && self.message_count < 128 {
+                            if !self.got_one_response {
+                                log::debug!("Got first PONG");
+                                self.got_one_response = true;
+                            }
+                            self.message_count += 1;
+                            let to_server_message: String = PING_MSG.to_string();
                             log::debug!(
-                                "Client disconnected from: {}",
-                                self.client.server_address()
+                                "Client send: {} (count {})",
+                                to_server_message,
+                                self.message_count
                             );
+                            self.message_sender
+                                .send(Packet::new(to_server_message.into_bytes()))
+                                .expect("send error");
                         }
-                        ClientEvent::Tick => {
-                            if let Some(pawn_key) = self.pawn_key {
-                                if let Some(command) = self.queued_command.take() {
-                                    self.client.send_command(pawn_key, &command);
-                                }
+                    }
+                    None => {
+                        if !self.got_one_response {
+                            if backoff_enabled(self.backoff_round) {
+                                let to_server_message: String = PING_MSG.to_string();
+                                log::debug!(
+                                    "Client send: {} (backoff {})",
+                                    to_server_message,
+                                    self.backoff_round
+                                );
+                                self.message_sender
+                                    .send(Packet::new(to_server_message.into_bytes()))
+                                    .expect("send error");
                             }
+                            self.backoff_round += 1;
                         }
-                        ClientEvent::AssignPawn(local_key) => {
-                            self.pawn_key = Some(local_key);
-                            log::debug!("assign pawn");
-                        }
-                        ClientEvent::UnassignPawn(_) => {
-                            self.pawn_key = None;
-                            log::debug!("unassign pawn");
-                        }
-                        ClientEvent::Command(pawn_key, command_type) => match command_type {
-                            NetworkEvent::KeyCommand(key_command) => {
-                                if let Some(typed_actor) = self.client.get_pawn_mut(&pawn_key) {
-                                    match typed_actor {
-                                        NetworkActor::PointActor(actor) => {
-                                            behaviors::process_command(&key_command, actor);
-                                        }
-                                    }
-                                }
-                            }
-                            _ => {}
-                        },
-                        _ => {}
-                    },
-                    Err(err) => {
-                        log::error!("Client Error: {}", err);
+                        return;
                     }
-                }
-            } else {
-                break;
-            }
-        }
-    }
-
-    pub fn render(&mut self) {
-        let square_size = 32.0;
-
-        if self.client.has_connection() {
-            // draw actors
-            for actor_key in self.client.actor_keys().unwrap() {
-                if let Some(actor) = self.client.get_actor(&actor_key) {
-                    match actor {
-                        NetworkActor::PointActor(point_actor) => {
-                            let color = match point_actor.as_ref().borrow().color.get() {
-                                PointActorColor::Red => mq::RED,
-                                PointActorColor::Blue => mq::BLUE,
-                                PointActorColor::Yellow => mq::YELLOW,
-                            };
-                            mq::draw_rectangle(
-                                f32::from(*(point_actor.as_ref().borrow().x.get())),
-                                f32::from(*(point_actor.as_ref().borrow().y.get())),
-                                square_size,
-                                square_size,
-                                color,
-                            );
-                        }
-                    }
-                }
-            }
-
-            // draw pawns
-            for pawn_key in self.client.pawn_keys().unwrap() {
-                if let Some(actor) = self.client.get_pawn(&pawn_key) {
-                    match actor {
-                        NetworkActor::PointActor(point_actor) => {
-                            mq::draw_rectangle(
-                                f32::from(*(point_actor.as_ref().borrow().x.get())),
-                                f32::from(*(point_actor.as_ref().borrow().y.get())),
-                                square_size,
-                                square_size,
-                                mq::WHITE,
-                            );
-                        }
-                    }
+                },
+                Err(err) => {
+                    log::error!("Client Error: {}", err);
                 }
             }
         }

@@ -1,14 +1,12 @@
 [package]
 name = "soldank-shared"
 version = "0.1.0"
-authors = ["Tomasz Sterna <tomek@sterna.link>"]
+authors = ["Tomasz Sterna <tomasz@sterna.link>"]
 edition = "2018"
 license = "MIT"
 publish = false
 
 [dependencies]
-naia-shared = "0.4"
-naia-derive = "0.3"
 cfg-if = "0.1"
 log = "0.4"
 nanoserde = "0.1"

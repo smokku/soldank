@@ -260,8 +260,6 @@ async fn main() {
             p as f32,
         );
 
-        networking.render();
-
         if cfg!(debug_assertions) {
             debug::build_ui(&mut debug_state, &state, timecur as u32, p as f32);
         }

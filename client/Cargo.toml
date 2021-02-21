@@ -4,15 +4,11 @@ description = "open source clone of Soldat engine written in Rust"
 version = "0.1.0"
 authors = [
     "helloer <im.helloer@gmail.com>",
-    "Tomasz Sterna <tomek@sterna.link>"
+    "Tomasz Sterna <tomasz@sterna.link>"
 ]
 edition = "2018"
 license = "MIT"
 publish = false
-
-[features]
-multithread = ["naia-client/multithread"]
-mquad = ["naia-client/mquad"]
 
 [dependencies]
 soldank-shared = { path = "../shared" }
@@ -29,4 +25,4 @@ bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"
 megaui-macroquad = "0.1"
-naia-client = "0.4"
+naia-client-socket = "0.5"
