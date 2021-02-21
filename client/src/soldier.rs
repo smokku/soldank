@@ -147,7 +147,7 @@ impl Soldier {
             on_fire: 0,
             collider_distance: 255,
             half_dead: false,
-            skeleton: unsafe { SOLDIER_SKELETON.as_ref().unwrap().clone() },
+            skeleton: unsafe { SOLDIER_SKELETON.as_ref().unwrap() }.clone(),
             legs_animation: AnimState::new(Anim::Stand),
             body_animation: AnimState::new(Anim::Stand),
             control: Default::default(),

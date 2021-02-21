@@ -9,7 +9,7 @@ use naia_server::{
 };
 
 use soldank_shared::{
-    get_shared_config, manifest_load, shared_behavior, ExampleActor, ExampleEvent, PointActor,
+    behaviors, get_manifest, get_shared_config, NetworkActor, NetworkEvent, PointActor,
     PointActorColor,
 };
 
@@ -34,17 +34,17 @@ fn main() -> io::Result<()> {
 
         let mut server = NaiaServer::new(
             current_socket_address,
-            manifest_load(),
+            get_manifest(),
             Some(server_config),
             get_shared_config(),
         )
         .await;
 
         server.on_auth(Rc::new(Box::new(|_, auth_type| {
-            if let ExampleEvent::AuthEvent(auth_event) = auth_type {
-                let username = auth_event.username.get();
-                let password = auth_event.password.get();
-                return username == "charlie" && password == "12345";
+            if let NetworkEvent::AuthEvent(auth_event) = auth_type {
+                let nick = auth_event.nick.get();
+                let key = auth_event.key.get();
+                return nick == "charlie" && key == "12345";
             }
             return false;
         })));
@@ -52,7 +52,7 @@ fn main() -> io::Result<()> {
         let main_room_key = server.create_room();
 
         server.on_scope_actor(Rc::new(Box::new(|_, _, _, actor| match actor {
-            ExampleActor::PointActor(_) => {
+            NetworkActor::PointActor(_) => {
                 return true;
             }
         })));
@@ -80,7 +80,7 @@ fn main() -> io::Result<()> {
                                 let new_actor =
                                     PointActor::new(x as u16, y as u16, actor_color).wrap();
                                 let new_actor_key = server
-                                    .register_actor(ExampleActor::PointActor(new_actor.clone()));
+                                    .register_actor(NetworkActor::PointActor(new_actor.clone()));
                                 server.room_add_actor(&main_room_key, &new_actor_key);
                                 server.assign_pawn(&user_key, &new_actor_key);
                                 user_to_pawn_map.insert(user_key, new_actor_key);
@@ -96,11 +96,11 @@ fn main() -> io::Result<()> {
                             }
                         }
                         ServerEvent::Command(_, actor_key, command_type) => match command_type {
-                            ExampleEvent::KeyCommand(key_command) => {
+                            NetworkEvent::KeyCommand(key_command) => {
                                 if let Some(typed_actor) = server.get_actor(actor_key) {
                                     match typed_actor {
-                                        ExampleActor::PointActor(actor) => {
-                                            shared_behavior::process_command(&key_command, actor);
+                                        NetworkActor::PointActor(actor) => {
+                                            behaviors::process_command(&key_command, actor);
                                         }
                                     }
                                 }

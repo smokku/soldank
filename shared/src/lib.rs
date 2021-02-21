@@ -1,19 +1,42 @@
 extern crate log;
 extern crate naia_derive;
 
-mod auth_event;
-mod example_actor;
-mod example_event;
-mod manifest_load;
-mod point_actor;
-mod shared_config;
-mod key_command;
-pub mod shared_behavior;
+use naia_shared::{LinkConditionerConfig, Manifest, SharedConfig};
+use std::time::Duration;
 
-pub use auth_event::AuthEvent;
-pub use example_actor::ExampleActor;
-pub use example_event::ExampleEvent;
-pub use manifest_load::manifest_load;
-pub use point_actor::{PointActor, PointActorColor};
-pub use shared_config::get_shared_config;
-pub use key_command::KeyCommand;
+mod actors;
+pub mod behaviors;
+mod events;
+
+pub use actors::{
+    point::{PointActor, PointActorColor},
+    NetworkActor,
+};
+pub use events::{auth::AuthEvent, key::KeyCommand, NetworkEvent};
+
+pub fn get_manifest() -> Manifest<NetworkEvent, NetworkActor> {
+    let mut manifest = Manifest::<NetworkEvent, NetworkActor>::new();
+
+    manifest.register_event(AuthEvent::get_builder());
+    manifest.register_pawn(PointActor::get_builder(), KeyCommand::get_builder());
+
+    manifest
+}
+
+pub fn get_shared_config() -> SharedConfig {
+    let tick_interval = Duration::from_millis(50);
+
+    let link_condition = if cfg!(debug_assertions) {
+        Some(LinkConditionerConfig::good_condition())
+        // Some(LinkConditionerConfig {
+        //     incoming_latency: 500,
+        //     incoming_jitter: 1,
+        //     incoming_loss: 0.0,
+        //     incoming_corruption: 0.0,
+        // })
+    } else {
+        None
+    };
+
+    return SharedConfig::new(tick_interval, link_condition);
+}

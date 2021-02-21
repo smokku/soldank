@@ -5,13 +5,13 @@ use std::{net::SocketAddr, time::Duration};
 use naia_client::{find_my_ip_address, ClientConfig, ClientEvent, NaiaClient};
 
 use soldank_shared::{
-    get_shared_config, manifest_load, shared_behavior, AuthEvent, ExampleActor, ExampleEvent,
-    KeyCommand, PointActorColor,
+    behaviors, get_manifest, get_shared_config, AuthEvent, KeyCommand, NetworkActor, NetworkEvent,
+    PointActorColor,
 };
 
 const SERVER_PORT: u16 = 14191;
 pub struct Networking {
-    client: NaiaClient<ExampleEvent, ExampleActor>,
+    client: NaiaClient<NetworkEvent, NetworkActor>,
     pawn_key: Option<u16>,
     queued_command: Option<KeyCommand>,
 }
@@ -25,11 +25,11 @@ impl Networking {
         client_config.heartbeat_interval = Duration::from_secs(2);
         client_config.disconnection_timeout_duration = Duration::from_secs(5);
 
-        let auth = ExampleEvent::AuthEvent(AuthEvent::new("charlie", "12345"));
+        let auth = NetworkEvent::AuthEvent(AuthEvent::new("charlie", "12345"));
 
         let client = NaiaClient::new(
             server_socket_address,
-            manifest_load(),
+            get_manifest(),
             Some(client_config),
             get_shared_config(),
             Some(auth),
@@ -96,11 +96,11 @@ impl Networking {
                             log::debug!("unassign pawn");
                         }
                         ClientEvent::Command(pawn_key, command_type) => match command_type {
-                            ExampleEvent::KeyCommand(key_command) => {
+                            NetworkEvent::KeyCommand(key_command) => {
                                 if let Some(typed_actor) = self.client.get_pawn_mut(&pawn_key) {
                                     match typed_actor {
-                                        ExampleActor::PointActor(actor) => {
-                                            shared_behavior::process_command(&key_command, actor);
+                                        NetworkActor::PointActor(actor) => {
+                                            behaviors::process_command(&key_command, actor);
                                         }
                                     }
                                 }
@@ -127,7 +127,7 @@ impl Networking {
             for actor_key in self.client.actor_keys().unwrap() {
                 if let Some(actor) = self.client.get_actor(&actor_key) {
                     match actor {
-                        ExampleActor::PointActor(point_actor) => {
+                        NetworkActor::PointActor(point_actor) => {
                             let color = match point_actor.as_ref().borrow().color.get() {
                                 PointActorColor::Red => mq::RED,
                                 PointActorColor::Blue => mq::BLUE,
@@ -149,7 +149,7 @@ impl Networking {
             for pawn_key in self.client.pawn_keys().unwrap() {
                 if let Some(actor) = self.client.get_pawn(&pawn_key) {
                     match actor {
-                        ExampleActor::PointActor(point_actor) => {
+                        NetworkActor::PointActor(point_actor) => {
                             mq::draw_rectangle(
                                 f32::from(*(point_actor.as_ref().borrow().x.get())),
                                 f32::from(*(point_actor.as_ref().borrow().y.get())),
