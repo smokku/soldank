@@ -1,5 +1,6 @@
 [package]
 name = "soldank-server"
+description = "open source clone of Soldat engine written in Rust"
 version = "0.1.0"
 authors = ["Tomasz Sterna <tomasz@sterna.link>"]
 edition = "2018"
@@ -17,3 +18,4 @@ naia-server-socket = "0.4"
 log = "0.4"
 simple_logger = "1.4"
 smol = "1.2"
+clap = "2.33"

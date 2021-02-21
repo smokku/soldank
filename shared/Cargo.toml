@@ -7,6 +7,8 @@ license = "MIT"
 publish = false
 
 [dependencies]
-cfg-if = "0.1"
 log = "0.4"
-nanoserde = "0.1"
+bytes = "1.0"
+hexdump = "0.1"
+num-traits = "0.2"
+enum-primitive-derive = "0.2"

@@ -50,6 +50,16 @@ checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
 
 [[package]]
 name = "arrayvec"
+version = "0.3.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06f59fe10306bb78facd90d28c2038ad23ffaaefa85bac43c8a434cde383334f"
+dependencies = [
+ "nodrop",
+ "odds",
+]
+
+[[package]]
+name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
@@ -239,7 +249,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afa748e348ad3be8263be728124b24a24f268266f6f5d58af9d75f6a40b5c587"
 dependencies = [
  "arrayref",
- "arrayvec",
+ "arrayvec 0.5.2",
  "constant_time_eq",
 ]
 
@@ -534,6 +544,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
+name = "enum-primitive-derive"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f52288f9a7ebb08959188872b58e7eaa12af9cb47da8e94158e16da7e143340"
+dependencies = [
+ "num-traits",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "error-chain"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -802,6 +823,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hexdump"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "850f3f2c33d20c0f96c4485e087dd580ff041d720988ebf4c84a42acf739262b"
+dependencies = [
+ "arrayvec 0.3.25",
+ "itertools",
+]
+
+[[package]]
 name = "http"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -840,6 +871,12 @@ dependencies = [
  "cfg-if 1.0.0",
  "time 0.2.25",
 ]
+
+[[package]]
+name = "itertools"
+version = "0.4.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4a9b56eb56058f43dc66e58f40a214b2ccbc9f3df51861b63d51dec7b65bc3f"
 
 [[package]]
 name = "itoa"
@@ -1037,21 +1074,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nanoserde"
-version = "0.1.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cadfbf6f15cee144bb4b4a8d8885b25d9338cf05021fa6b9e40d527c812fc7c5"
-dependencies = [
- "nanoserde-derive",
-]
-
-[[package]]
-name = "nanoserde-derive"
-version = "0.1.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14c89882788bb83c0eb07ee5c5e690910210f5425d9651b525d7ad9f4041dd68"
-
-[[package]]
 name = "nb-connect"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1117,6 +1139,12 @@ dependencies = [
  "hermit-abi",
  "libc",
 ]
+
+[[package]]
+name = "odds"
+version = "0.2.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4eae0151b9dacf24fcc170d9995e511669a082856a91f958a2fe380bfab3fb22"
 
 [[package]]
 name = "once_cell"
@@ -1733,6 +1761,7 @@ dependencies = [
 name = "soldank-server"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "log",
  "naia-server-socket",
  "simple_logger",
@@ -1744,9 +1773,11 @@ dependencies = [
 name = "soldank-shared"
 version = "0.1.0"
 dependencies = [
- "cfg-if 0.1.10",
+ "bytes",
+ "enum-primitive-derive",
+ "hexdump",
  "log",
- "nanoserde",
+ "num-traits",
 ]
 
 [[package]]

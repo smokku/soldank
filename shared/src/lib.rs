@@ -1,10 +1,10 @@
 pub mod constants;
 pub mod messages;
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+use hexdump::hexdump_iter;
+
+pub fn trace_dump_packet(data: &[u8]) {
+    for (n, line) in hexdump_iter(data).enumerate() {
+        log::trace!(" {:3} {}", n, line);
     }
 }
