@@ -2,16 +2,19 @@ use gfx2d::macroquad::logging as log;
 use naia_client_socket::{
     ClientSocket, ClientSocketTrait, LinkConditionerConfig, MessageSender, Packet,
 };
-use std::net::{IpAddr, SocketAddr};
+use std::{
+    convert::TryFrom,
+    net::{IpAddr, SocketAddr},
+};
 
-use soldank_shared::{constants::SERVER_PORT, messages::*};
+use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
 
 pub struct Networking {
     client_socket: Box<dyn ClientSocketTrait>,
     message_sender: MessageSender,
-    got_one_response: bool,
+    connecting: bool,
     backoff_round: i32,
-    message_count: u8,
+    last_message_received: f64,
 }
 
 fn backoff_enabled(round: i32) -> bool {
@@ -20,26 +23,22 @@ fn backoff_enabled(round: i32) -> bool {
 
 impl Networking {
     pub fn new() -> Networking {
-        let server_ip_address: IpAddr = "127.0.0.1"
+        let server_ip_address: IpAddr = "127.0.0.1" // Put your Server's IP Address here!, can't easily find this automatically from the browser
             .parse()
-            .expect("couldn't parse input IP address"); // Put your Server's IP Address here!, can't easily find this automatically from the browser
+            .expect("couldn't parse input IP address");
 
         let server_socket_address = SocketAddr::new(server_ip_address, SERVER_PORT);
 
         let mut client_socket = ClientSocket::connect(server_socket_address)
             .with_link_conditioner(&LinkConditionerConfig::good_condition());
-        let mut message_sender = client_socket.get_sender();
-
-        message_sender
-            .send(Packet::new(PING_MSG.to_string().into_bytes()))
-            .unwrap();
+        let message_sender = client_socket.get_sender();
 
         Networking {
             client_socket,
             message_sender,
-            got_one_response: false,
+            connecting: true, // TODO: make it state: enum
             backoff_round: 0,
-            message_count: 0,
+            last_message_received: 0.,
         }
     }
 
@@ -48,37 +47,45 @@ impl Networking {
             match self.client_socket.receive() {
                 Ok(event) => match event {
                     Some(packet) => {
-                        let message = String::from_utf8_lossy(packet.payload());
-                        log::debug!("Client recv: {}", message);
+                        self.last_message_received = instant::now();
 
-                        if message.eq(PONG_MSG) && self.message_count < 128 {
-                            if !self.got_one_response {
-                                log::debug!("Got first PONG");
-                                self.got_one_response = true;
+                        let data = packet.payload();
+                        log::debug!("<--- Received {} bytes", data.len());
+                        trace_dump_packet(data);
+
+                        let code = data[0];
+                        match messages::OperationCode::try_from(code) {
+                            Ok(op_code) => match op_code {
+                                messages::OperationCode::CCREP_ACCEPT => {
+                                    if self.connecting && messages::packet_verify(data) {
+                                        log::info!("---> Connection accepted");
+                                        self.connecting = false;
+                                    }
+                                }
+                                messages::OperationCode::CCREP_REJECT => {
+                                    log::info!("---> Connection rejected");
+                                    self.connecting = false;
+                                }
+                                _ => {
+                                    log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                                }
+                            },
+                            Err(_) => {
+                                log::error!("Unknown packet: 0x{:x}", code);
                             }
-                            self.message_count += 1;
-                            let to_server_message: String = PING_MSG.to_string();
-                            log::debug!(
-                                "Client send: {} (count {})",
-                                to_server_message,
-                                self.message_count
-                            );
-                            self.message_sender
-                                .send(Packet::new(to_server_message.into_bytes()))
-                                .expect("send error");
                         }
                     }
                     None => {
-                        if !self.got_one_response {
+                        if self.connecting {
                             if backoff_enabled(self.backoff_round) {
-                                let to_server_message: String = PING_MSG.to_string();
-                                log::debug!(
-                                    "Client send: {} (backoff {})",
-                                    to_server_message,
+                                let msg = messages::connection_request();
+                                log::info!(
+                                    "---> Connecting server (backoff {})",
                                     self.backoff_round
                                 );
+                                trace_dump_packet(&msg);
                                 self.message_sender
-                                    .send(Packet::new(to_server_message.into_bytes()))
+                                    .send(Packet::new(msg.to_vec()))
                                     .expect("send error");
                             }
                             self.backoff_round += 1;

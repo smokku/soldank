@@ -13,14 +13,19 @@ pub async fn process_packet(packet: Packet, sender: &mut MessageSender) {
     match messages::OperationCode::try_from(code) {
         Ok(op_code) => match op_code {
             messages::OperationCode::CCREQ_CONNECT => {
-                log::info!("---> Accepting connection from [{:?}]", address);
-                let msg = messages::connection_accept();
+                let msg = if messages::packet_verify(data) {
+                    log::info!("---> Accepting connection from [{:?}]", address);
+                    messages::connection_accept()
+                } else {
+                    log::info!("---> Rejecting connection from [{:?}]", address);
+                    messages::connection_reject()
+                };
                 trace_dump_packet(&msg);
 
                 match sender.send(Packet::new(address, msg.to_vec())).await {
                     Ok(()) => {}
                     Err(error) => {
-                        log::error!("Error accepting connection from [{}]: {}", address, error);
+                        log::error!("Error receiving connection from [{}]: {}", address, error);
                     }
                 }
             }
