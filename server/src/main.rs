@@ -1,6 +1,6 @@
-use naia_server_socket::{LinkConditionerConfig, ServerSocket};
+use naia_server_socket::{find_my_ip_address, LinkConditionerConfig, ServerSocket};
 use simple_logger::SimpleLogger;
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 
 use soldank_shared::constants::{DEFAULT_MAP, SERVER_PORT};
 
@@ -40,9 +40,7 @@ fn main() -> smol::io::Result<()> {
         let bind_address = if let Some(addr) = cmd.value_of("bind") {
             addr.parse().expect("can't parse bind address")
         } else {
-            let server_ip_address: IpAddr = "127.0.0.1" // Put your Server's IP Address here!, can't easily find this automatically from the browser
-                .parse()
-                .expect("couldn't parse input IP address");
+            let server_ip_address = find_my_ip_address().expect("can't find ip address");
             SocketAddr::new(server_ip_address, SERVER_PORT)
         };
 

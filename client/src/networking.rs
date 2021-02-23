@@ -1,11 +1,9 @@
 use gfx2d::macroquad::logging as log;
 use naia_client_socket::{
-    ClientSocket, ClientSocketTrait, LinkConditionerConfig, MessageSender, Packet,
+    find_my_ip_address, ClientSocket, ClientSocketTrait, LinkConditionerConfig, MessageSender,
+    Packet,
 };
-use std::{
-    convert::TryFrom,
-    net::{IpAddr, SocketAddr},
-};
+use std::{convert::TryFrom, net::SocketAddr};
 
 use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
 
@@ -23,9 +21,7 @@ fn backoff_enabled(round: i32) -> bool {
 
 impl Networking {
     pub fn new() -> Networking {
-        let server_ip_address: IpAddr = "127.0.0.1" // Put your Server's IP Address here!, can't easily find this automatically from the browser
-            .parse()
-            .expect("couldn't parse input IP address");
+        let server_ip_address = find_my_ip_address().expect("can't find ip address");
 
         let server_socket_address = SocketAddr::new(server_ip_address, SERVER_PORT);
 
