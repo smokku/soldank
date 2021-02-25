@@ -9,7 +9,9 @@ use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
 
 pub struct Networking {
     client_socket: Box<dyn ClientSocketTrait>,
-    message_sender: MessageSender,
+    sender: MessageSender,
+    pub connection_key: String,
+    pub nick_name: String,
     connecting: bool,
     backoff_round: i32,
     last_message_received: f64,
@@ -20,18 +22,24 @@ fn backoff_enabled(round: i32) -> bool {
 }
 
 impl Networking {
-    pub fn new() -> Networking {
-        let server_ip_address = find_my_ip_address().expect("can't find ip address");
+    pub fn new(connect_to: Option<&str>) -> Networking {
+        let server_socket_address = if let Some(addr) = connect_to {
+            addr.parse().expect("cannot parse connect address")
+        } else {
+            let addr = find_my_ip_address().expect("can't find local ip address");
+            SocketAddr::new(addr, SERVER_PORT)
+        };
 
-        let server_socket_address = SocketAddr::new(server_ip_address, SERVER_PORT);
-
+        log::info!("Will connect to server: {}", server_socket_address);
         let mut client_socket = ClientSocket::connect(server_socket_address)
             .with_link_conditioner(&LinkConditionerConfig::good_condition());
-        let message_sender = client_socket.get_sender();
+        let sender = client_socket.get_sender();
 
         Networking {
             client_socket,
-            message_sender,
+            sender,
+            connection_key: "1337".to_string(),
+            nick_name: "Player".to_string(),
             connecting: true, // TODO: make it state: enum
             backoff_round: 0,
             last_message_received: 0.,
@@ -80,7 +88,7 @@ impl Networking {
                                     self.backoff_round
                                 );
                                 trace_dump_packet(&msg);
-                                self.message_sender
+                                self.sender
                                     .send(Packet::new(msg.to_vec()))
                                     .expect("send error");
                             }

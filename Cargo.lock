@@ -1762,6 +1762,7 @@ name = "soldank-server"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "instant",
  "log",
  "naia-server-socket",
  "simple_logger",

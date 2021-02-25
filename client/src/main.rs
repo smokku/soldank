@@ -62,6 +62,28 @@ async fn main() {
                 .help("display debug UI on start (^` to toggle)")
                 .long("debug"),
         )
+        .arg(
+            clap::Arg::with_name("connect")
+                .value_name("address:port")
+                .help("server address and port to connect")
+                .short("c")
+                .long("connect")
+                .takes_value(true),
+        )
+        .arg(
+            clap::Arg::with_name("key")
+                .help("server connection key")
+                .short("k")
+                .long("key")
+                .takes_value(true),
+        )
+        .arg(
+            clap::Arg::with_name("nick")
+                .help("user nickname")
+                .short("n")
+                .long("nick")
+                .takes_value(true),
+        )
         .get_matches();
 
     let mut filesystem = Filesystem::new(clap::crate_name!(), "Soldat2k").unwrap();
@@ -97,7 +119,13 @@ async fn main() {
     }
     // filesystem.print_all();
 
-    let mut networking = Networking::new();
+    let mut networking = Networking::new(cmd.value_of("connect"));
+    if let Some(key) = cmd.value_of("key") {
+        networking.connection_key = key.to_string();
+    }
+    if let Some(nick) = cmd.value_of("nick") {
+        networking.nick_name = nick.to_string();
+    }
 
     AnimData::initialize(&mut filesystem);
     Soldier::initialize(&mut filesystem);
@@ -190,7 +218,6 @@ async fn main() {
             timeacc -= FIXED_RATE;
 
             // remove inactive bullets
-
             let mut i = 0;
             while i < state.bullets.len() {
                 if !state.bullets[i].active {
@@ -201,17 +228,14 @@ async fn main() {
             }
 
             // update soldiers
-
             soldier.update(&state, &mut emitter);
 
             // update bullets
-
             for bullet in state.bullets.iter_mut() {
                 bullet.update(&state.map);
             }
 
             // create emitted objects
-
             for item in emitter.drain(..) {
                 match item {
                     EmitterItem::Bullet(params) => state.bullets.push(Bullet::new(&params)),
@@ -219,7 +243,6 @@ async fn main() {
             }
 
             // update camera
-
             state.camera_prev = state.camera;
             state.mouse_prev = state.mouse;
 

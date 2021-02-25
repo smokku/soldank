@@ -1,8 +1,7 @@
-use naia_server_socket::{find_my_ip_address, LinkConditionerConfig, ServerSocket};
 use simple_logger::SimpleLogger;
-use std::net::SocketAddr;
 
-use soldank_shared::constants::{DEFAULT_MAP, SERVER_PORT};
+use networking::Networking;
+use soldank_shared::constants::DEFAULT_MAP;
 
 mod networking;
 
@@ -35,31 +34,28 @@ fn main() -> smol::io::Result<()> {
                     .long("map")
                     .takes_value(true),
             )
+            .arg(
+                clap::Arg::with_name("key")
+                    .help("server connection key")
+                    .short("k")
+                    .long("key")
+                    .takes_value(true),
+            )
             .get_matches();
-
-        let bind_address = if let Some(addr) = cmd.value_of("bind") {
-            addr.parse().expect("can't parse bind address")
-        } else {
-            let server_ip_address = find_my_ip_address().expect("can't find ip address");
-            SocketAddr::new(server_ip_address, SERVER_PORT)
-        };
 
         let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
         map_name.push_str(".pms");
         log::info!("Using map: {}", map_name);
 
-        let mut server_socket = ServerSocket::listen(bind_address)
-            .await
-            .with_link_conditioner(&LinkConditionerConfig::good_condition());
-
-        log::info!("Bound listener socket: {}", bind_address);
-
-        let mut sender = server_socket.get_sender();
+        let mut networking = Networking::new(cmd.value_of("bind")).await;
+        if let Some(key) = cmd.value_of("key") {
+            networking.connection_key = key.to_string();
+        }
 
         loop {
-            match server_socket.receive().await {
+            match networking.server_socket.receive().await {
                 Ok(packet) => {
-                    networking::process_packet(packet, &mut sender).await;
+                    networking.process_packet(packet).await;
                 }
                 Err(error) => {
                     log::error!("Server Error: {}", error);
