@@ -52,15 +52,10 @@ fn main() -> smol::io::Result<()> {
             networking.connection_key = key.to_string();
         }
 
-        loop {
-            match networking.server_socket.receive().await {
-                Ok(packet) => {
-                    networking.process_packet(packet).await;
-                }
-                Err(error) => {
-                    log::error!("Server Error: {}", error);
-                }
-            }
-        }
+        networking.process().await;
+
+        log::info!("Exiting server");
+
+        Ok(())
     })
 }
