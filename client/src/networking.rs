@@ -7,12 +7,19 @@ use std::{convert::TryFrom, net::SocketAddr};
 
 use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
 
+#[derive(PartialEq)]
+pub enum ConnectionState {
+    Disconnected,
+    Connected,
+    Error,
+}
+
 pub struct Networking {
     client_socket: Box<dyn ClientSocketTrait>,
     sender: MessageSender,
     pub connection_key: String,
     pub nick_name: String,
-    connecting: bool,
+    state: ConnectionState,
     backoff_round: i32,
     last_message_received: f64,
 }
@@ -40,7 +47,7 @@ impl Networking {
             sender,
             connection_key: "1337".to_string(),
             nick_name: "Player".to_string(),
-            connecting: true, // TODO: make it state: enum
+            state: ConnectionState::Disconnected,
             backoff_round: 0,
             last_message_received: 0.,
         }
@@ -61,14 +68,16 @@ impl Networking {
                         match messages::OperationCode::try_from(code) {
                             Ok(op_code) => match op_code {
                                 messages::OperationCode::CCREP_ACCEPT => {
-                                    if self.connecting && messages::packet_verify(data) {
+                                    if self.state == ConnectionState::Disconnected
+                                        && messages::packet_verify(data)
+                                    {
                                         log::info!("---> Connection accepted");
-                                        self.connecting = false;
+                                        self.state = ConnectionState::Connected;
                                     }
                                 }
                                 messages::OperationCode::CCREP_REJECT => {
                                     log::info!("---> Connection rejected");
-                                    self.connecting = false;
+                                    self.state = ConnectionState::Error;
                                 }
                                 _ => {
                                     log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
@@ -80,7 +89,7 @@ impl Networking {
                         }
                     }
                     None => {
-                        if self.connecting {
+                        if self.state == ConnectionState::Disconnected {
                             if backoff_enabled(self.backoff_round) {
                                 let msg = messages::connection_request();
                                 log::info!(
