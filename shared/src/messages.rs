@@ -11,8 +11,6 @@ pub enum OperationCode {
     // outgoing
     CCREP_ACCEPT = 0x81,
     CCREP_REJECT = 0x82,
-    // both
-    LAMINAR_PKT = 0xff,
 }
 
 pub fn connection_request() -> Bytes {

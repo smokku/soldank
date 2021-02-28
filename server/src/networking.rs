@@ -1,7 +1,10 @@
 use instant::Instant;
-use laminar::{Config as LaminarConfig, ConnectionManager, DatagramSocket, VirtualConnection};
+use laminar::{
+    Config as LaminarConfig, ConnectionManager, DatagramSocket, Packet as LaminarPacket,
+    VirtualConnection,
+};
 use naia_server_socket::{
-    find_my_ip_address, LinkConditionerConfig, MessageSender, Packet, ServerSocket,
+    find_my_ip_address, LinkConditionerConfig, MessageSender, Packet as NaiaPacket, ServerSocket,
     ServerSocketTrait,
 };
 use smol::channel::{unbounded, Receiver, Sender, TryRecvError};
@@ -12,8 +15,8 @@ use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
 pub struct Networking {
     server_socket: Box<dyn ServerSocketTrait>,
     sender: MessageSender,
-    packet_sender: Sender<Packet>,
-    payload_receiver: Receiver<Packet>,
+    packet_sender: Sender<NaiaPacket>,
+    payload_receiver: Receiver<NaiaPacket>,
     handler: ConnectionManager<PacketSocket, VirtualConnection>,
     pub connection_key: String,
     last_message_received: f64,
@@ -22,19 +25,19 @@ pub struct Networking {
 #[derive(Debug)]
 struct PacketSocket {
     bind_address: SocketAddr,
-    packet_receiver: Receiver<Packet>,
-    payload_sender: Sender<Packet>,
+    packet_receiver: Receiver<NaiaPacket>,
+    payload_sender: Sender<NaiaPacket>,
 }
 
 impl DatagramSocket for PacketSocket {
     fn send_packet(&mut self, addr: &SocketAddr, payload: &[u8]) -> io::Result<usize> {
         match smol::block_on(
             self.payload_sender
-                .send(Packet::new(*addr, payload.to_vec())),
+                .send(NaiaPacket::new(*addr, payload.to_vec())),
         ) {
             Ok(()) => Ok(payload.len()),
             Err(error) => {
-                panic!(error);
+                panic!("{}", error);
             }
         }
     }
@@ -49,7 +52,7 @@ impl DatagramSocket for PacketSocket {
             Err(error) => match error {
                 TryRecvError::Empty => Err(io::Error::new(io::ErrorKind::WouldBlock, error)),
                 TryRecvError::Closed => {
-                    panic!(error);
+                    panic!("{}", error);
                 }
             },
         }
@@ -106,6 +109,12 @@ impl Networking {
         }
     }
 
+    pub fn send(&mut self, packet: LaminarPacket) {
+        if let Err(error) = self.handler.event_sender().send(packet) {
+            panic!("{}", error);
+        }
+    }
+
     pub async fn process(&mut self) {
         loop {
             match self.server_socket.receive().await {
@@ -114,7 +123,7 @@ impl Networking {
 
                     let address = packet.address();
                     let data = packet.payload();
-                    log::debug!("<--- Received {} bytes from [{}]", data.len(), address);
+                    log::debug!("<-- Received {} bytes from [{}]", data.len(), address);
                     trace_dump_packet(data);
 
                     if let Err(error) = self.packet_sender.send(packet).await {
@@ -131,6 +140,10 @@ impl Networking {
             match self.payload_receiver.try_recv() {
                 Ok(packet) => {
                     let address = packet.address();
+                    let data = packet.payload();
+                    log::debug!("--> Sending {} bytes to [{}]", data.len(), address);
+                    trace_dump_packet(data);
+
                     if let Err(error) = self.sender.send(packet).await {
                         log::error!("Error sending payload to [{}]: {}", address, error);
                     }
@@ -138,46 +151,51 @@ impl Networking {
                 Err(error) => match error {
                     TryRecvError::Empty => {}
                     TryRecvError::Closed => {
-                        panic!(error);
+                        panic!("{}", error);
                     }
                 },
             }
 
             while let Ok(event) = self.handler.event_receiver().try_recv() {
-                println!("{:?}", event);
+                match event {
+                    laminar::SocketEvent::Packet(packet) => self.process_packet(packet),
+                    laminar::SocketEvent::Connect(addr) => {
+                        log::info!("!! Connect {}", addr)
+                    }
+                    laminar::SocketEvent::Timeout(addr) => {
+                        log::info!("!! Timeout {}", addr)
+                    }
+                    laminar::SocketEvent::Disconnect(addr) => {
+                        log::info!("!! Disconnect {}", addr)
+                    }
+                }
             }
         }
     }
 
-    // pub async fn process_message(&mut self, packet: Packet) {
-    //     let code = data[0];
-    //     match messages::OperationCode::try_from(code) {
-    //         Ok(op_code) => match op_code {
-    //             messages::OperationCode::CCREQ_CONNECT => {
-    //                 let msg = if messages::packet_verify(data) {
-    //                     log::info!("---> Accepting connection from [{:?}]", address);
-    //                     messages::connection_accept()
-    //                 } else {
-    //                     log::info!("---> Rejecting connection from [{:?}]", address);
-    //                     messages::connection_reject()
-    //                 };
-    //                 trace_dump_packet(&msg);
-
-    //                 match self.sender.send(Packet::new(address, msg.to_vec())).await {
-    //                     Ok(()) => {}
-    //                     Err(error) => {
-    //                         log::error!("Error receiving connection from [{}]: {}", address, error);
-    //                     }
-    //                 }
-    //             }
-    //             messages::OperationCode::LAMINAR_PKT => {}
-    //             _ => {
-    //                 log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
-    //             }
-    //         },
-    //         Err(_) => {
-    //             log::error!("Unknown packet: 0x{:x}", code);
-    //         }
-    //     }
-    // }
+    fn process_packet(&mut self, packet: LaminarPacket) {
+        let address = packet.addr();
+        let data = packet.payload();
+        let code = data[0];
+        match messages::OperationCode::try_from(code) {
+            Ok(op_code) => match op_code {
+                messages::OperationCode::CCREQ_CONNECT => {
+                    let msg = if messages::packet_verify(data) {
+                        log::info!("<-> Accepting connection from [{:?}]", address);
+                        messages::connection_accept()
+                    } else {
+                        log::info!("<-> Rejecting connection from [{:?}]", address);
+                        messages::connection_reject()
+                    };
+                    self.send(LaminarPacket::unreliable(address, msg.to_vec()));
+                }
+                _ => {
+                    log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                }
+            },
+            Err(_) => {
+                log::error!("Unknown packet: 0x{:x}", code);
+            }
+        }
+    }
 }

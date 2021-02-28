@@ -1,8 +1,14 @@
 use gfx2d::macroquad::logging as log;
+use instant::Instant;
+use laminar::{
+    Config as LaminarConfig, Connection, ConnectionMessenger, Packet as LaminarPacket,
+    VirtualConnection,
+};
 use naia_client_socket::{
     find_my_ip_address, ClientSocket, ClientSocketTrait, LinkConditionerConfig, MessageSender,
-    Packet,
+    Packet as NaiaPacket,
 };
+use smol::channel::{unbounded, Receiver, Sender};
 use std::{convert::TryFrom, net::SocketAddr};
 
 use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
@@ -14,9 +20,14 @@ pub enum ConnectionState {
     Error,
 }
 
+type ReceiveEvent = <VirtualConnection as Connection>::ReceiveEvent;
+
 pub struct Networking {
+    server_address: SocketAddr,
     client_socket: Box<dyn ClientSocketTrait>,
-    sender: MessageSender,
+    messenger: PacketMessenger,
+    event_receiver: Receiver<ReceiveEvent>,
+    connection: VirtualConnection,
     pub connection_key: String,
     pub nick_name: String,
     state: ConnectionState,
@@ -26,6 +37,32 @@ pub struct Networking {
 
 fn backoff_enabled(round: i32) -> bool {
     (round & (round - 1)) == 0
+}
+
+struct PacketMessenger {
+    config: LaminarConfig,
+    sender: MessageSender,
+    event_sender: Sender<ReceiveEvent>,
+}
+
+impl ConnectionMessenger<ReceiveEvent> for PacketMessenger {
+    fn config(&self) -> &LaminarConfig {
+        &self.config
+    }
+
+    fn send_event(&mut self, _address: &SocketAddr, event: ReceiveEvent) {
+        if let Err(error) = smol::block_on(self.event_sender.send(event)) {
+            panic!("{}", error);
+        }
+    }
+
+    fn send_packet(&mut self, _address: &SocketAddr, payload: &[u8]) {
+        log::debug!("--> Sending {} bytes", payload.len());
+        trace_dump_packet(payload);
+        self.sender
+            .send(NaiaPacket::new(payload.to_vec()))
+            .expect("send packet error");
+    }
 }
 
 impl Networking {
@@ -42,9 +79,24 @@ impl Networking {
             .with_link_conditioner(&LinkConditionerConfig::good_condition());
         let sender = client_socket.get_sender();
 
-        Networking {
-            client_socket,
+        let (event_sender, event_receiver) = unbounded();
+        let mut messenger = PacketMessenger {
+            config: LaminarConfig::default(),
             sender,
+            event_sender,
+        };
+        let connection = VirtualConnection::create_connection(
+            &mut messenger,
+            server_socket_address,
+            Instant::now(),
+        );
+
+        Networking {
+            server_address: "0.0.0.0:0".parse().unwrap(),
+            client_socket,
+            messenger,
+            event_receiver,
+            connection,
             connection_key: "1337".to_string(),
             nick_name: "Player".to_string(),
             state: ConnectionState::Disconnected,
@@ -54,6 +106,10 @@ impl Networking {
     }
 
     pub fn update(&mut self) {
+        let time = Instant::now();
+        let messenger = &mut self.messenger;
+
+        // pull all newly arrived packets and handle them
         loop {
             match self.client_socket.receive() {
                 Ok(event) => match event {
@@ -61,54 +117,78 @@ impl Networking {
                         self.last_message_received = instant::now();
 
                         let data = packet.payload();
-                        log::debug!("<--- Received {} bytes", data.len());
+                        log::debug!("<-- Received {} bytes", data.len());
                         trace_dump_packet(data);
 
-                        let code = data[0];
-                        match messages::OperationCode::try_from(code) {
-                            Ok(op_code) => match op_code {
-                                messages::OperationCode::CCREP_ACCEPT => {
-                                    if self.state == ConnectionState::Disconnected
-                                        && messages::packet_verify(data)
-                                    {
-                                        log::info!("---> Connection accepted");
-                                        self.state = ConnectionState::Connected;
-                                    }
-                                }
-                                messages::OperationCode::CCREP_REJECT => {
-                                    log::info!("---> Connection rejected");
-                                    self.state = ConnectionState::Error;
-                                }
-                                _ => {
-                                    log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
-                                }
-                            },
-                            Err(_) => {
-                                log::error!("Unknown packet: 0x{:x}", code);
-                            }
-                        }
+                        self.connection.process_packet(messenger, data, time);
                     }
                     None => {
-                        if self.state == ConnectionState::Disconnected {
-                            if backoff_enabled(self.backoff_round) {
-                                let msg = messages::connection_request();
-                                log::info!(
-                                    "---> Connecting server (backoff {})",
-                                    self.backoff_round
-                                );
-                                trace_dump_packet(&msg);
-                                self.sender
-                                    .send(Packet::new(msg.to_vec()))
-                                    .expect("send error");
-                            }
-                            self.backoff_round += 1;
-                        }
-                        return;
+                        break;
                     }
                 },
                 Err(err) => {
                     log::error!("Client Error: {}", err);
                 }
+            }
+        }
+
+        // update connection
+        self.connection.update(messenger, time);
+    }
+
+    pub fn process(&mut self) {
+        if self.state == ConnectionState::Disconnected {
+            if backoff_enabled(self.backoff_round) {
+                let msg = messages::connection_request();
+                log::info!("--> Connecting server (backoff {})", self.backoff_round);
+                self.send(LaminarPacket::unreliable(self.server_address, msg.to_vec()));
+            }
+            self.backoff_round += 1;
+        }
+
+        while let Ok(event) = self.event_receiver.try_recv() {
+            match event {
+                laminar::SocketEvent::Packet(packet) => self.process_packet(packet),
+                laminar::SocketEvent::Connect(addr) => {
+                    log::info!("!! Connect {}", addr)
+                }
+                laminar::SocketEvent::Timeout(addr) => {
+                    log::info!("!! Timeout {}", addr)
+                }
+                laminar::SocketEvent::Disconnect(addr) => {
+                    log::info!("!! Disconnect {}", addr)
+                }
+            }
+        }
+    }
+
+    pub fn send(&mut self, event: LaminarPacket) {
+        self.connection
+            .process_event(&mut self.messenger, event, Instant::now());
+    }
+
+    fn process_packet(&mut self, packet: LaminarPacket) {
+        let data = packet.payload();
+        let code = data[0];
+        match messages::OperationCode::try_from(code) {
+            Ok(op_code) => match op_code {
+                messages::OperationCode::CCREP_ACCEPT => {
+                    if self.state == ConnectionState::Disconnected && messages::packet_verify(data)
+                    {
+                        log::info!("<-> Connection accepted");
+                        self.state = ConnectionState::Connected;
+                    }
+                }
+                messages::OperationCode::CCREP_REJECT => {
+                    log::info!("<-> Connection rejected");
+                    self.state = ConnectionState::Error;
+                }
+                _ => {
+                    log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                }
+            },
+            Err(_) => {
+                log::error!("Unknown packet: 0x{:x}", code);
             }
         }
     }
