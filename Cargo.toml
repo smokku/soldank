@@ -10,4 +10,4 @@ codegen-units = 1
 incremental = false
 
 [patch.crates-io]
-laminar = { git = "https://github.com/smokku/laminar.git" }
+laminar = { git = "https://github.com/amethyst/laminar.git" }
