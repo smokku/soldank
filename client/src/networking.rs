@@ -75,8 +75,11 @@ impl Networking {
         };
 
         log::info!("Will connect to server: {}", server_socket_address);
-        let mut client_socket = ClientSocket::connect(server_socket_address)
-            .with_link_conditioner(&LinkConditionerConfig::good_condition());
+        let mut client_socket = ClientSocket::connect(server_socket_address);
+        if cfg!(debug_assertions) {
+            client_socket =
+                client_socket.with_link_conditioner(&LinkConditionerConfig::good_condition());
+        }
         let sender = client_socket.get_sender();
 
         let (event_sender, event_receiver) = unbounded();
