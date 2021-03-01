@@ -1786,6 +1786,7 @@ dependencies = [
 name = "soldank-shared"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "bytes",
  "enum-primitive-derive",
  "hexdump",

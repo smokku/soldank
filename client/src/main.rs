@@ -295,6 +295,7 @@ async fn main() {
             ctx.show_mouse(state.mouse_over_ui);
         }
 
+        networking.set_input_state(&soldier.control);
         networking.process();
 
         macroquad::window::next_frame().await

@@ -11,7 +11,7 @@ use naia_client_socket::{
 use smol::channel::{unbounded, Receiver, Sender};
 use std::{convert::TryFrom, net::SocketAddr};
 
-use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
+use soldank_shared::{constants::SERVER_PORT, control::Control, messages, trace_dump_packet};
 
 #[derive(PartialEq)]
 pub enum ConnectionState {
@@ -33,6 +33,9 @@ pub struct Networking {
     state: ConnectionState,
     backoff_round: i32,
     last_message_received: f64,
+
+    // game state
+    control: Control,
 }
 
 fn backoff_enabled(round: i32) -> bool {
@@ -105,6 +108,8 @@ impl Networking {
             state: ConnectionState::Disconnected,
             backoff_round: 0,
             last_message_received: 0.,
+
+            control: Control::default(),
         }
     }
 
@@ -163,6 +168,12 @@ impl Networking {
                 }
             }
         }
+
+        if self.state == ConnectionState::Connected {
+            let msg = messages::control_state(self.control);
+            log::debug!("--> Sending control state: {:?}", self.control);
+            self.send(LaminarPacket::unreliable(self.server_address, msg.to_vec()));
+        }
     }
 
     pub fn send(&mut self, event: LaminarPacket) {
@@ -194,5 +205,50 @@ impl Networking {
                 log::error!("Unknown packet: 0x{:x}", code);
             }
         }
+    }
+
+    pub fn set_input_state(&mut self, control: &crate::control::Control) {
+        let mut flags = Control::default();
+        if control.left {
+            flags.insert(Control::LEFT);
+        }
+        if control.right {
+            flags.insert(Control::RIGHT);
+        }
+        if control.up {
+            flags.insert(Control::UP);
+        }
+        if control.down {
+            flags.insert(Control::DOWN);
+        }
+        if control.fire {
+            flags.insert(Control::FIRE);
+        }
+        if control.jets {
+            flags.insert(Control::JETS);
+        }
+        if control.grenade {
+            flags.insert(Control::GRENADE);
+        }
+        if control.change {
+            flags.insert(Control::CHANGE);
+        }
+        if control.throw {
+            flags.insert(Control::THROW);
+        }
+        if control.drop {
+            flags.insert(Control::DROP);
+        }
+        if control.reload {
+            flags.insert(Control::RELOAD);
+        }
+        if control.prone {
+            flags.insert(Control::PRONE);
+        }
+        if control.flag_throw {
+            flags.insert(Control::FLAG_THROW);
+        }
+
+        self.control = flags;
     }
 }
