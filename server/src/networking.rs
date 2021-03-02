@@ -1,15 +1,16 @@
 use instant::Instant;
 use laminar::{
     Config as LaminarConfig, ConnectionManager, DatagramSocket, Packet as LaminarPacket,
-    VirtualConnection,
+    SocketEvent, VirtualConnection,
 };
 use naia_server_socket::{
     find_my_ip_address, LinkConditionerConfig, MessageSender, Packet as NaiaPacket, ServerSocket,
     ServerSocketTrait,
 };
 use smol::channel::{unbounded, Receiver, Sender, TryRecvError};
-use std::{convert::TryFrom, io, net::SocketAddr};
+use std::{collections::HashMap, convert::TryFrom, io, net::SocketAddr};
 
+use crate::connections::Connection;
 use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
 
 pub struct Networking {
@@ -20,6 +21,8 @@ pub struct Networking {
     handler: ConnectionManager<PacketSocket, VirtualConnection>,
     pub connection_key: String,
     last_message_received: f64,
+
+    connections: HashMap<SocketAddr, Connection>,
 }
 
 #[derive(Debug)]
@@ -106,6 +109,8 @@ impl Networking {
             handler,
             connection_key: "1337".to_string(),
             last_message_received: 0.,
+
+            connections: HashMap::new(),
         }
     }
 
@@ -158,15 +163,16 @@ impl Networking {
 
             while let Ok(event) = self.handler.event_receiver().try_recv() {
                 match event {
-                    laminar::SocketEvent::Packet(packet) => self.process_packet(packet),
-                    laminar::SocketEvent::Connect(addr) => {
-                        log::info!("!! Connect {}", addr)
+                    SocketEvent::Packet(packet) => self.process_packet(packet),
+                    SocketEvent::Connect(addr) => {
+                        log::info!("!! Connect {}", addr);
+                        if !self.connections.contains_key(&addr) {
+                            self.connections.insert(addr, Connection::new());
+                        }
                     }
-                    laminar::SocketEvent::Timeout(addr) => {
-                        log::info!("!! Timeout {}", addr)
-                    }
-                    laminar::SocketEvent::Disconnect(addr) => {
-                        log::info!("!! Disconnect {}", addr)
+                    SocketEvent::Timeout(addr) | SocketEvent::Disconnect(addr) => {
+                        log::info!("!! Disconnect {}", addr);
+                        self.connections.remove(&addr);
                     }
                 }
             }
@@ -189,9 +195,22 @@ impl Networking {
                     };
                     self.send(LaminarPacket::unreliable(address, msg.to_vec()));
                 }
-                _ => {
-                    log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
-                }
+                _ => match self.connections.get_mut(&address) {
+                    Some(connection) => {
+                        connection.last_message_received = instant::now();
+                        match op_code {
+                            messages::OperationCode::CCREQ_AUTHORIZE => {
+                                //
+                            }
+                            _ => {
+                                log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                            }
+                        }
+                    }
+                    None => {
+                        log::error!("Received packet for unknown connection: [{}]", address);
+                    }
+                },
             },
             Err(_) => {
                 log::error!("Unknown packet: 0x{:x}", code);

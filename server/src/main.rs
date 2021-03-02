@@ -3,6 +3,7 @@ use simple_logger::SimpleLogger;
 use networking::Networking;
 use soldank_shared::constants::DEFAULT_MAP;
 
+mod connections;
 mod networking;
 
 fn main() -> smol::io::Result<()> {
