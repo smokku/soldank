@@ -191,6 +191,18 @@ impl Networking {
                     {
                         log::info!("<-> Connection accepted");
                         self.state = ConnectionState::Connected;
+
+                        self.send(LaminarPacket::reliable_unordered(
+                            self.server_address,
+                            messages::encode_message(
+                                messages::NetworkMessage::ConnectionAuthorize {
+                                    nick: self.nick_name.clone(),
+                                    key: self.connection_key.clone(),
+                                },
+                            )
+                            .unwrap()
+                            .to_vec(),
+                        ));
                     }
                 }
                 messages::OperationCode::CCREP_REJECT => {

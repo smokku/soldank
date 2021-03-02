@@ -201,7 +201,35 @@ impl Networking {
                         match messages::decode_message(data) {
                             Some(message) => match message {
                                 messages::NetworkMessage::ConnectionAuthorize { nick, key } => {
-                                    println!("{} {}", nick, key);
+                                    let msg = if key == self.connection_key {
+                                        connection.authorized = true;
+                                        connection.nick = nick;
+                                        log::info!(
+                                            "<-> Authorized connection from [{:?}]",
+                                            address
+                                        );
+                                        messages::connection_authorized()
+                                    } else {
+                                        log::info!("<-> Rejecting connection from [{:?}]", address);
+                                        messages::connection_reject()
+                                    };
+                                    self.send(LaminarPacket::reliable_unordered(
+                                        address,
+                                        msg.to_vec(),
+                                    ));
+                                }
+                                _ => {
+                                    if connection.authorized {
+                                        match message {
+                                            _ => {
+                                                log::error!(
+                                                    "Unhandled packet: 0x{:x} ({:?})",
+                                                    code,
+                                                    op_code
+                                                );
+                                            }
+                                        }
+                                    }
                                 }
                             },
                             None => {

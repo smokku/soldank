@@ -95,6 +95,11 @@ pub fn packet_verify(packet: &[u8]) -> bool {
         && packet[5] == NET_PROTOCOL_VERSION
 }
 
+pub fn connection_authorized() -> Bytes {
+    vec![OperationCode::CCREP_AUTHORIZED as u8].into()
+    // TODO: send server info
+}
+
 pub fn control_state(control: Control) -> Bytes {
     let mut msg = vec![OperationCode::STT_CONTROL as u8];
     msg.extend(control.bits().to_be_bytes().to_vec());
