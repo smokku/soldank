@@ -1,6 +1,7 @@
 use bytes::Bytes;
 use enum_primitive_derive::Primitive;
 use nanoserde::{DeBin, SerBin};
+use std::convert::TryFrom;
 
 use crate::control::Control;
 
@@ -17,6 +18,37 @@ pub enum OperationCode {
     CCREP_ACCEPT = 0x81,
     CCREP_REJECT = 0x82,
     CCREP_AUTHORIZED = 0x83,
+}
+
+pub enum NetworkMessage {
+    ConnectionAuthorize { nick: String, key: String },
+}
+
+pub fn encode_message(msg: NetworkMessage) -> Option<Bytes> {
+    match msg {
+        NetworkMessage::ConnectionAuthorize { nick, key } => {
+            let mut msg = vec![OperationCode::CCREQ_AUTHORIZE as u8];
+            let pkt = AuthPacket { nick, key };
+            msg.extend(SerBin::serialize_bin(&pkt));
+            Some(msg.into())
+        }
+    }
+}
+
+pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
+    let code = data[0];
+    match OperationCode::try_from(code) {
+        Ok(op_code) => match op_code {
+            OperationCode::CCREQ_AUTHORIZE => match DeBin::deserialize_bin(&data[1..]) {
+                Ok(AuthPacket { nick, key }) => {
+                    Some(NetworkMessage::ConnectionAuthorize { nick, key })
+                }
+                Err(_) => None,
+            },
+            _ => None,
+        },
+        Err(_) => None,
+    }
 }
 
 pub fn connection_request() -> Bytes {
@@ -73,14 +105,4 @@ pub fn control_state(control: Control) -> Bytes {
 struct AuthPacket {
     nick: String,
     key: String,
-}
-
-pub fn connection_authorize<S: Into<String>>(nick: S, key: S) -> Bytes {
-    let mut msg = vec![OperationCode::CCREQ_AUTHORIZE as u8];
-    let pkt = AuthPacket {
-        nick: nick.into(),
-        key: key.into(),
-    };
-    msg.extend(SerBin::serialize_bin(&pkt));
-    msg.into()
 }

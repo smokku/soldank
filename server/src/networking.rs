@@ -198,11 +198,13 @@ impl Networking {
                 _ => match self.connections.get_mut(&address) {
                     Some(connection) => {
                         connection.last_message_received = instant::now();
-                        match op_code {
-                            messages::OperationCode::CCREQ_AUTHORIZE => {
-                                //
-                            }
-                            _ => {
+                        match messages::decode_message(data) {
+                            Some(message) => match message {
+                                messages::NetworkMessage::ConnectionAuthorize { nick, key } => {
+                                    println!("{} {}", nick, key);
+                                }
+                            },
+                            None => {
                                 log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
                             }
                         }
