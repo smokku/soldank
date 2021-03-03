@@ -1,7 +1,8 @@
+use legion::{Resources, Schedule, World};
 use simple_logger::SimpleLogger;
 
 use networking::Networking;
-use soldank_shared::constants::DEFAULT_MAP;
+use soldank_shared::{constants::DEFAULT_MAP, systems::*};
 
 mod connections;
 mod networking;
@@ -53,10 +54,17 @@ fn main() -> smol::io::Result<()> {
             networking.connection_key = key.to_string();
         }
 
-        networking.process().await;
+        let mut world = World::default();
+        let mut resources = Resources::default();
+        let mut schedule = Schedule::builder().add_system(tick_debug_system()).build();
 
-        log::info!("Exiting server");
+        loop {
+            networking.process().await; // loop is driven by incoming packets
 
-        Ok(())
+            schedule.execute(&mut world, &mut resources); // TODO: limit to 30 ticks per second
+        }
+
+        // log::info!("Exiting server");
+        // Ok(())
     })
 }

@@ -121,59 +121,57 @@ impl Networking {
     }
 
     pub async fn process(&mut self) {
-        loop {
-            match self.server_socket.receive().await {
-                Ok(packet) => {
-                    self.last_message_received = instant::now();
+        match self.server_socket.receive().await {
+            Ok(packet) => {
+                self.last_message_received = instant::now();
 
-                    let address = packet.address();
-                    let data = packet.payload();
-                    log::debug!("<-- Received {} bytes from [{}]", data.len(), address);
-                    trace_dump_packet(data);
+                let address = packet.address();
+                let data = packet.payload();
+                log::debug!("<-- Received {} bytes from [{}]", data.len(), address);
+                trace_dump_packet(data);
 
-                    if let Err(error) = self.packet_sender.send(packet).await {
-                        log::error!("Error processing packet from [{}]: {}", address, error);
-                    }
-                }
-                Err(error) => {
-                    log::error!("Server error: {}", error);
+                if let Err(error) = self.packet_sender.send(packet).await {
+                    log::error!("Error processing packet from [{}]: {}", address, error);
                 }
             }
+            Err(error) => {
+                log::error!("Server error: {}", error);
+            }
+        }
 
-            self.handler.manual_poll(Instant::now());
+        self.handler.manual_poll(Instant::now());
 
-            match self.payload_receiver.try_recv() {
-                Ok(packet) => {
-                    let address = packet.address();
-                    let data = packet.payload();
-                    log::debug!("--> Sending {} bytes to [{}]", data.len(), address);
-                    trace_dump_packet(data);
+        match self.payload_receiver.try_recv() {
+            Ok(packet) => {
+                let address = packet.address();
+                let data = packet.payload();
+                log::debug!("--> Sending {} bytes to [{}]", data.len(), address);
+                trace_dump_packet(data);
 
-                    if let Err(error) = self.sender.send(packet).await {
-                        log::error!("Error sending payload to [{}]: {}", address, error);
+                if let Err(error) = self.sender.send(packet).await {
+                    log::error!("Error sending payload to [{}]: {}", address, error);
+                }
+            }
+            Err(error) => match error {
+                TryRecvError::Empty => {}
+                TryRecvError::Closed => {
+                    panic!("{}", error);
+                }
+            },
+        }
+
+        while let Ok(event) = self.handler.event_receiver().try_recv() {
+            match event {
+                SocketEvent::Packet(packet) => self.process_packet(packet),
+                SocketEvent::Connect(addr) => {
+                    log::info!("!! Connect {}", addr);
+                    if !self.connections.contains_key(&addr) {
+                        self.connections.insert(addr, Connection::new());
                     }
                 }
-                Err(error) => match error {
-                    TryRecvError::Empty => {}
-                    TryRecvError::Closed => {
-                        panic!("{}", error);
-                    }
-                },
-            }
-
-            while let Ok(event) = self.handler.event_receiver().try_recv() {
-                match event {
-                    SocketEvent::Packet(packet) => self.process_packet(packet),
-                    SocketEvent::Connect(addr) => {
-                        log::info!("!! Connect {}", addr);
-                        if !self.connections.contains_key(&addr) {
-                            self.connections.insert(addr, Connection::new());
-                        }
-                    }
-                    SocketEvent::Timeout(addr) | SocketEvent::Disconnect(addr) => {
-                        log::info!("!! Disconnect {}", addr);
-                        self.connections.remove(&addr);
-                    }
+                SocketEvent::Timeout(addr) | SocketEvent::Disconnect(addr) => {
+                    log::info!("!! Disconnect {}", addr);
+                    self.connections.remove(&addr);
                 }
             }
         }
