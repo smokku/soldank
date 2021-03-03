@@ -20,6 +20,7 @@ pub enum OperationCode {
     CCREP_AUTHORIZED = 0x83,
 }
 
+#[derive(Debug)]
 pub enum NetworkMessage {
     ConnectionAuthorize { nick: String, key: String },
 }

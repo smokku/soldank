@@ -8,10 +8,19 @@ use naia_server_socket::{
     ServerSocketTrait,
 };
 use smol::channel::{unbounded, Receiver, Sender, TryRecvError};
-use std::{collections::HashMap, convert::TryFrom, io, net::SocketAddr};
+use std::{
+    collections::{HashMap, VecDeque},
+    convert::TryFrom,
+    io,
+    net::SocketAddr,
+};
 
 use crate::connections::Connection;
-use soldank_shared::{constants::SERVER_PORT, messages, trace_dump_packet};
+use soldank_shared::{
+    constants::SERVER_PORT,
+    messages::{self, NetworkMessage},
+    trace_dump_packet,
+};
 
 pub struct Networking {
     server_socket: Box<dyn ServerSocketTrait>,
@@ -120,7 +129,7 @@ impl Networking {
         }
     }
 
-    pub async fn process(&mut self) {
+    pub async fn process(&mut self, messages: &mut VecDeque<NetworkMessage>) {
         match self.server_socket.receive().await {
             Ok(packet) => {
                 self.last_message_received = instant::now();
@@ -162,7 +171,11 @@ impl Networking {
 
         while let Ok(event) = self.handler.event_receiver().try_recv() {
             match event {
-                SocketEvent::Packet(packet) => self.process_packet(packet),
+                SocketEvent::Packet(packet) => {
+                    if let Some(message) = self.process_packet(packet) {
+                        messages.push_back(message);
+                    }
+                }
                 SocketEvent::Connect(addr) => {
                     log::info!("!! Connect {}", addr);
                     if !self.connections.contains_key(&addr) {
@@ -177,7 +190,7 @@ impl Networking {
         }
     }
 
-    fn process_packet(&mut self, packet: LaminarPacket) {
+    fn process_packet(&mut self, packet: LaminarPacket) -> Option<NetworkMessage> {
         let address = packet.addr();
         let data = packet.payload();
         let code = data[0];
@@ -198,7 +211,7 @@ impl Networking {
                         connection.last_message_received = instant::now();
                         match messages::decode_message(data) {
                             Some(message) => match message {
-                                messages::NetworkMessage::ConnectionAuthorize { nick, key } => {
+                                NetworkMessage::ConnectionAuthorize { nick, key } => {
                                     let msg = if key == self.connection_key {
                                         connection.authorized = true;
                                         connection.nick = nick;
@@ -216,17 +229,9 @@ impl Networking {
                                         msg.to_vec(),
                                     ));
                                 }
-                                _ => {
+                                msg => {
                                     if connection.authorized {
-                                        match message {
-                                            _ => {
-                                                log::error!(
-                                                    "Unhandled packet: 0x{:x} ({:?})",
-                                                    code,
-                                                    op_code
-                                                );
-                                            }
-                                        }
+                                        return Some(msg);
                                     }
                                 }
                             },
@@ -244,5 +249,7 @@ impl Networking {
                 log::error!("Unknown packet: 0x{:x}", code);
             }
         }
+
+        None
     }
 }
