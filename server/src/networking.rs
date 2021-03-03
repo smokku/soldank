@@ -3,6 +3,7 @@ use laminar::{
     Config as LaminarConfig, ConnectionManager, DatagramSocket, Packet as LaminarPacket,
     SocketEvent, VirtualConnection,
 };
+use legion::{systems::CommandBuffer, Entity};
 use naia_server_socket::{
     find_my_ip_address, LinkConditionerConfig, MessageSender, Packet as NaiaPacket, ServerSocket,
     ServerSocketTrait,
@@ -15,8 +16,8 @@ use std::{
     net::SocketAddr,
 };
 
-use crate::connections::Connection;
 use soldank_shared::{
+    components,
     constants::SERVER_PORT,
     messages::{self, NetworkMessage},
     trace_dump_packet,
@@ -32,6 +33,25 @@ pub struct Networking {
     last_message_received: f64,
 
     connections: HashMap<SocketAddr, Connection>,
+}
+
+#[derive(Debug)]
+pub struct Connection {
+    pub last_message_received: f64,
+    pub authorized: bool,
+    pub nick: String,
+    pub entity: Option<Entity>,
+}
+
+impl Connection {
+    pub fn new() -> Connection {
+        Connection {
+            last_message_received: instant::now(),
+            authorized: false,
+            nick: Default::default(),
+            entity: None,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -129,7 +149,11 @@ impl Networking {
         }
     }
 
-    pub async fn process(&mut self, messages: &mut VecDeque<NetworkMessage>) {
+    pub async fn process(
+        &mut self,
+        messages: &mut VecDeque<NetworkMessage>,
+        command_buffer: &mut CommandBuffer,
+    ) {
         match self.server_socket.receive().await {
             Ok(packet) => {
                 self.last_message_received = instant::now();
@@ -172,7 +196,7 @@ impl Networking {
         while let Ok(event) = self.handler.event_receiver().try_recv() {
             match event {
                 SocketEvent::Packet(packet) => {
-                    if let Some(message) = self.process_packet(packet) {
+                    if let Some(message) = self.process_packet(packet, command_buffer) {
                         messages.push_back(message);
                     }
                 }
@@ -190,7 +214,11 @@ impl Networking {
         }
     }
 
-    fn process_packet(&mut self, packet: LaminarPacket) -> Option<NetworkMessage> {
+    fn process_packet(
+        &mut self,
+        packet: LaminarPacket,
+        command_buffer: &mut CommandBuffer,
+    ) -> Option<NetworkMessage> {
         let address = packet.addr();
         let data = packet.payload();
         let code = data[0];
@@ -214,11 +242,18 @@ impl Networking {
                                 NetworkMessage::ConnectionAuthorize { nick, key } => {
                                     let msg = if key == self.connection_key {
                                         connection.authorized = true;
-                                        connection.nick = nick;
+                                        connection.nick = nick.clone();
                                         log::info!(
                                             "<-> Authorized connection from [{:?}]",
                                             address
                                         );
+
+                                        connection.entity.replace(command_buffer.push((
+                                            components::Soldier {},
+                                            components::Nick(nick),
+                                            address,
+                                        )));
+
                                         messages::connection_authorized()
                                     } else {
                                         log::info!("<-> Rejecting connection from [{:?}]", address);

@@ -1,11 +1,10 @@
-use legion::{Resources, Schedule, World};
+use legion::{systems::CommandBuffer, Resources, Schedule, World};
 use simple_logger::SimpleLogger;
 use std::collections::VecDeque;
 
 use networking::Networking;
 use soldank_shared::{constants::DEFAULT_MAP, messages::NetworkMessage, systems::*};
 
-mod connections;
 mod networking;
 
 fn main() -> smol::io::Result<()> {
@@ -67,12 +66,15 @@ fn main() -> smol::io::Result<()> {
         let messages: VecDeque<NetworkMessage> = VecDeque::new();
         resources.insert(messages);
 
+        let mut command_buffer = CommandBuffer::new(&world);
+
         loop {
             {
                 let networking = &mut resources.get_mut::<Networking>().unwrap();
                 let messages = &mut resources.get_mut::<VecDeque<NetworkMessage>>().unwrap();
-                networking.process(messages).await; // loop is driven by incoming packets
+                networking.process(messages, &mut command_buffer).await; // loop is driven by incoming packets
             }
+            command_buffer.flush(&mut world, &mut resources);
             schedule.execute(&mut world, &mut resources); // TODO: limit to 30 ticks per second
         }
 
