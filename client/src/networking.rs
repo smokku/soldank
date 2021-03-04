@@ -170,9 +170,13 @@ impl Networking {
         }
 
         if self.state == ConnectionState::Connected {
-            let msg = messages::control_state(self.control);
             log::debug!("--> Sending control state: {:?}", self.control);
-            self.send(LaminarPacket::unreliable(self.server_address, msg.to_vec()));
+            self.send(LaminarPacket::unreliable(
+                self.server_address,
+                messages::encode_message(messages::NetworkMessage::ControlState(self.control))
+                    .unwrap()
+                    .to_vec(),
+            ));
         }
     }
 

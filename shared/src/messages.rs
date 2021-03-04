@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use enum_primitive_derive::Primitive;
 use nanoserde::{DeBin, SerBin};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use crate::control::Control;
 
@@ -23,6 +23,7 @@ pub enum OperationCode {
 #[derive(Debug)]
 pub enum NetworkMessage {
     ConnectionAuthorize { nick: String, key: String },
+    ControlState(Control),
 }
 
 pub fn encode_message(msg: NetworkMessage) -> Option<Bytes> {
@@ -33,23 +34,38 @@ pub fn encode_message(msg: NetworkMessage) -> Option<Bytes> {
             msg.extend(SerBin::serialize_bin(&pkt));
             Some(msg.into())
         }
+        NetworkMessage::ControlState(control) => {
+            let mut msg = vec![OperationCode::STT_CONTROL as u8];
+            msg.extend(control.bits().to_be_bytes().to_vec());
+            Some(msg.into())
+        }
     }
 }
 
 pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
     let code = data[0];
-    match OperationCode::try_from(code) {
-        Ok(op_code) => match op_code {
-            OperationCode::CCREQ_AUTHORIZE => match DeBin::deserialize_bin(&data[1..]) {
-                Ok(AuthPacket { nick, key }) => {
-                    Some(NetworkMessage::ConnectionAuthorize { nick, key })
+    if let Ok(op_code) = OperationCode::try_from(code) {
+        match op_code {
+            OperationCode::CCREQ_CONNECT
+            | OperationCode::CCREP_ACCEPT
+            | OperationCode::CCREP_REJECT
+            | OperationCode::CCREP_AUTHORIZED => {
+                panic!("Should not handle packet: 0x{:x} ({:?})", code, op_code)
+            }
+            OperationCode::CCREQ_AUTHORIZE => {
+                if let Ok(AuthPacket { nick, key }) = DeBin::deserialize_bin(&data[1..]) {
+                    return Some(NetworkMessage::ConnectionAuthorize { nick, key });
                 }
-                Err(_) => None,
-            },
-            _ => None,
-        },
-        Err(_) => None,
+            }
+            OperationCode::STT_CONTROL => {
+                if let Ok(data) = data[1..].try_into() {
+                    return Control::from_bits(u32::from_be_bytes(data))
+                        .map(|control| NetworkMessage::ControlState(control));
+                }
+            }
+        }
     }
+    None
 }
 
 pub fn connection_request() -> Bytes {
@@ -99,12 +115,6 @@ pub fn packet_verify(packet: &[u8]) -> bool {
 pub fn connection_authorized() -> Bytes {
     vec![OperationCode::CCREP_AUTHORIZED as u8].into()
     // TODO: send server info
-}
-
-pub fn control_state(control: Control) -> Bytes {
-    let mut msg = vec![OperationCode::STT_CONTROL as u8];
-    msg.extend(control.bits().to_be_bytes().to_vec());
-    msg.into()
 }
 
 #[derive(DeBin, SerBin)]

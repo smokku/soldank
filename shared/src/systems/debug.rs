@@ -5,12 +5,12 @@ use crate::messages::NetworkMessage;
 
 #[system]
 pub fn tick_debug() {
-    println!("tick");
+    log::info!("tick");
 }
 
 #[system]
 pub fn message_dump(#[resource] messages: &mut VecDeque<NetworkMessage>) {
     for message in messages.drain(..) {
-        println!("{:#?}", message);
+        log::warn!("{:#?}", message);
     }
 }

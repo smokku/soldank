@@ -5,7 +5,10 @@ use std::collections::VecDeque;
 use networking::Networking;
 use soldank_shared::{constants::DEFAULT_MAP, messages::NetworkMessage, systems::*};
 
+mod cheat;
 mod networking;
+mod systems;
+use systems::*;
 
 fn main() -> smol::io::Result<()> {
     smol::block_on(async {
@@ -59,6 +62,7 @@ fn main() -> smol::io::Result<()> {
 
         let mut schedule = Schedule::builder()
             .add_system(tick_debug_system())
+            .add_system(process_network_messages_system())
             .add_system(message_dump_system())
             .build();
 

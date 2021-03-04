@@ -22,3 +22,4 @@ clap = "2.33"
 instant = { version = "0.1", default-features = false, features = ["now"] }
 laminar = "0.4"
 legion = { version = "0.4", default-features = false, features = ["codegen"] }
+bitflags = "1.2"

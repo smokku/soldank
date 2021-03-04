@@ -16,6 +16,7 @@ use std::{
     net::SocketAddr,
 };
 
+use crate::cheat::Cheats;
 use soldank_shared::{
     components,
     constants::SERVER_PORT,
@@ -40,6 +41,7 @@ pub struct Connection {
     pub last_message_received: f64,
     pub authorized: bool,
     pub nick: String,
+    pub cheats: Cheats,
     pub entity: Option<Entity>,
 }
 
@@ -49,6 +51,7 @@ impl Connection {
             last_message_received: instant::now(),
             authorized: false,
             nick: Default::default(),
+            cheats: Default::default(),
             entity: None,
         }
     }
