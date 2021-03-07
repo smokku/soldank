@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use enum_primitive_derive::Primitive;
 use nanoserde::{DeBin, SerBin};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use crate::control::Control;
 
@@ -22,8 +22,15 @@ pub enum OperationCode {
 
 #[derive(Debug)]
 pub enum NetworkMessage {
-    ConnectionAuthorize { nick: String, key: String },
-    ControlState(Control),
+    ConnectionAuthorize {
+        nick: String,
+        key: String,
+    },
+    ControlState {
+        control: Control,
+        aim_x: i32,
+        aim_y: i32,
+    },
 }
 
 pub fn encode_message(msg: NetworkMessage) -> Option<Bytes> {
@@ -34,9 +41,18 @@ pub fn encode_message(msg: NetworkMessage) -> Option<Bytes> {
             msg.extend(SerBin::serialize_bin(&pkt));
             Some(msg.into())
         }
-        NetworkMessage::ControlState(control) => {
+        NetworkMessage::ControlState {
+            control,
+            aim_x,
+            aim_y,
+        } => {
             let mut msg = vec![OperationCode::STT_CONTROL as u8];
-            msg.extend(control.bits().to_be_bytes().to_vec());
+            let pkt = ControlPacket {
+                control,
+                aim_x,
+                aim_y,
+            };
+            msg.extend(SerBin::serialize_bin(&pkt));
             Some(msg.into())
         }
     }
@@ -58,9 +74,17 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                 }
             }
             OperationCode::STT_CONTROL => {
-                if let Ok(data) = data[1..].try_into() {
-                    return Control::from_bits(u32::from_be_bytes(data))
-                        .map(|control| NetworkMessage::ControlState(control));
+                if let Ok(ControlPacket {
+                    control,
+                    aim_x,
+                    aim_y,
+                }) = DeBin::deserialize_bin(&data[1..])
+                {
+                    return Some(NetworkMessage::ControlState {
+                        control,
+                        aim_x,
+                        aim_y,
+                    });
                 }
             }
         }
@@ -121,4 +145,11 @@ pub fn connection_authorized() -> Bytes {
 struct AuthPacket {
     nick: String,
     key: String,
+}
+
+#[derive(DeBin, SerBin)]
+struct ControlPacket {
+    control: Control,
+    aim_x: i32,
+    aim_y: i32,
 }

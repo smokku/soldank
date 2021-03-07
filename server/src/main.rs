@@ -3,7 +3,7 @@ extern crate clap;
 
 use legion::{systems::CommandBuffer, Resources, Schedule, World};
 use simple_logger::SimpleLogger;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, net::SocketAddr};
 
 use networking::Networking;
 use soldank_shared::{constants::DEFAULT_MAP, messages::NetworkMessage, systems::*};
@@ -68,7 +68,7 @@ fn main() -> smol::io::Result<()> {
             .build();
 
         resources.insert(networking);
-        let messages: VecDeque<NetworkMessage> = VecDeque::new();
+        let messages: VecDeque<(SocketAddr, NetworkMessage)> = VecDeque::new();
         resources.insert(messages);
 
         let mut command_buffer = CommandBuffer::new(&world);
@@ -76,7 +76,9 @@ fn main() -> smol::io::Result<()> {
         loop {
             {
                 let networking = &mut resources.get_mut::<Networking>().unwrap();
-                let messages = &mut resources.get_mut::<VecDeque<NetworkMessage>>().unwrap();
+                let messages = &mut resources
+                    .get_mut::<VecDeque<(SocketAddr, NetworkMessage)>>()
+                    .unwrap();
                 networking.process(messages, &mut command_buffer).await; // loop is driven by incoming packets
             }
             command_buffer.flush(&mut world, &mut resources);

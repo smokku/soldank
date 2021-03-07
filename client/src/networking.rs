@@ -36,6 +36,8 @@ pub struct Networking {
 
     // game state
     control: Control,
+    aim_x: i32,
+    aim_y: i32,
 }
 
 fn backoff_enabled(round: i32) -> bool {
@@ -110,6 +112,8 @@ impl Networking {
             last_message_received: 0.,
 
             control: Control::default(),
+            aim_x: 0,
+            aim_y: 0,
         }
     }
 
@@ -170,12 +174,15 @@ impl Networking {
         }
 
         if self.state == ConnectionState::Connected {
-            log::debug!("--> Sending control state: {:?}", self.control);
+            let msg = messages::NetworkMessage::ControlState {
+                control: self.control,
+                aim_x: self.aim_x,
+                aim_y: self.aim_y,
+            };
+            log::debug!("--> Sending: {:?}", msg);
             self.send(LaminarPacket::unreliable(
                 self.server_address,
-                messages::encode_message(messages::NetworkMessage::ControlState(self.control))
-                    .unwrap()
-                    .to_vec(),
+                messages::encode_message(msg).unwrap().to_vec(),
             ));
         }
     }
@@ -266,5 +273,7 @@ impl Networking {
         }
 
         self.control = flags;
+        self.aim_x = control.mouse_aim_x;
+        self.aim_y = control.mouse_aim_y;
     }
 }

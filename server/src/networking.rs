@@ -16,10 +16,11 @@ use std::{
     net::SocketAddr,
 };
 
-use crate::cheat::Cheats;
+use crate::{cheat::Cheats, systems};
 use soldank_shared::{
     components,
     constants::SERVER_PORT,
+    control::Control,
     messages::{self, NetworkMessage},
     trace_dump_packet,
 };
@@ -154,7 +155,7 @@ impl Networking {
 
     pub async fn process(
         &mut self,
-        messages: &mut VecDeque<NetworkMessage>,
+        messages: &mut VecDeque<(SocketAddr, NetworkMessage)>,
         command_buffer: &mut CommandBuffer,
     ) {
         match self.server_socket.receive().await {
@@ -199,8 +200,9 @@ impl Networking {
         while let Ok(event) = self.handler.event_receiver().try_recv() {
             match event {
                 SocketEvent::Packet(packet) => {
+                    let addr = packet.addr();
                     if let Some(message) = self.process_packet(packet, command_buffer) {
-                        messages.push_back(message);
+                        messages.push_back((addr, message));
                     }
                 }
                 SocketEvent::Connect(addr) => {
@@ -255,6 +257,7 @@ impl Networking {
                                             components::Soldier {},
                                             components::Nick(nick),
                                             address,
+                                            (Control::default(), 0, 0) as systems::ControlComponent,
                                         )));
 
                                         messages::connection_authorized()
