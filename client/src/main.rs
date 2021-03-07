@@ -10,6 +10,7 @@ mod bullet;
 mod calc;
 mod constants;
 mod control;
+mod cvars;
 mod debug;
 mod mapfile;
 mod networking;
@@ -127,9 +128,6 @@ async fn main() {
         networking.nick_name = nick.to_string();
     }
 
-    AnimData::initialize(&mut filesystem);
-    Soldier::initialize(&mut filesystem);
-
     let mut map_name = cmd.value_of("map").unwrap_or("ctf_Ash").to_owned();
     map_name.push_str(".pms");
 
@@ -137,6 +135,7 @@ async fn main() {
     log::info!("Using map: {}", map.mapname);
 
     let mut state = MainState {
+        config: cvars::Config::default(),
         map,
         game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),
         game_height: 480.0,
@@ -144,7 +143,6 @@ async fn main() {
         camera_prev: Vec2::zero(),
         mouse: Vec2::zero(),
         mouse_prev: Vec2::zero(),
-        gravity: constants::GRAV,
         zoom: 0.0,
         bullets: vec![],
         mouse_over_ui: false,
@@ -152,7 +150,18 @@ async fn main() {
     let mut debug_state = debug::DebugState::default();
     debug_state.ui_visible = cmd.is_present("debug");
 
-    let mut soldier = Soldier::new(&state.map.spawnpoints[0]);
+    log::info!("--- cvars:");
+    cvar::console::walk(&mut state.config, |path, node| match node.as_node() {
+        cvar::Node::Prop(prop) => {
+            log::info!("{} `{}`", path, prop.get());
+        }
+        _ => {}
+    });
+
+    AnimData::initialize(&mut filesystem);
+    Soldier::initialize(&mut filesystem, &state.config);
+
+    let mut soldier = Soldier::new(&state.map.spawnpoints[0], &state.config);
     state.camera = soldier.particle.pos;
 
     let mut emitter: Vec<EmitterItem> = Vec::new();
@@ -238,7 +247,9 @@ async fn main() {
             // create emitted objects
             for item in emitter.drain(..) {
                 match item {
-                    EmitterItem::Bullet(params) => state.bullets.push(Bullet::new(&params)),
+                    EmitterItem::Bullet(params) => {
+                        state.bullets.push(Bullet::new(&params, &state.config))
+                    }
                 };
             }
 

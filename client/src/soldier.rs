@@ -54,14 +54,14 @@ pub struct Soldier {
 }
 
 impl Soldier {
-    pub fn initialize(fs: &mut Filesystem) {
+    pub fn initialize(fs: &mut Filesystem, config: &cvars::Config) {
         unsafe {
             SOLDIER_SKELETON.replace(ParticleSystem::load_from_file(
                 fs,
                 "gostek.po",
                 4.5,
                 1.0,
-                1.06 * constants::GRAV,
+                1.06 * config.phys.gravity,
                 0.0,
                 0.9945,
             ));
@@ -104,14 +104,14 @@ impl Soldier {
         self.control.jets = mq::is_mouse_button_down(mq::MouseButton::Right);
     }
 
-    pub fn new(spawn: &MapSpawnpoint) -> Soldier {
+    pub fn new(spawn: &MapSpawnpoint, config: &cvars::Config) -> Soldier {
         let particle = Particle {
             active: true,
             pos: vec2(spawn.x as f32, spawn.y as f32),
             old_pos: vec2(spawn.x as f32, spawn.y as f32),
             one_over_mass: 1.0,
             timestep: 1.0,
-            gravity: constants::GRAV,
+            gravity: config.phys.gravity,
             e_damping: 0.99,
             ..Default::default()
         };
@@ -342,10 +342,10 @@ impl Soldier {
             self.on_ground = false;
 
             let (x, y) = self.particle.pos.into();
-            self.check_map_collision(map, x - 3.5, y - 12.0, 1);
+            self.check_map_collision(map, &state.config, x - 3.5, y - 12.0, 1);
 
             let (x, y) = self.particle.pos.into();
-            self.check_map_collision(map, x + 3.5, y - 12.0, 1);
+            self.check_map_collision(map, &state.config, x + 3.5, y - 12.0, 1);
 
             body_y = 0.0;
             arm_s = 0.0;
@@ -381,10 +381,12 @@ impl Soldier {
             }
 
             let (x, y) = self.particle.pos.into();
-            self.on_ground = self.check_map_collision(map, x + 2.0, y + 2.0 - body_y, 0);
+            self.on_ground =
+                self.check_map_collision(map, &state.config, x + 2.0, y + 2.0 - body_y, 0);
 
             let (x, y) = self.particle.pos.into();
-            self.on_ground |= self.check_map_collision(map, x - 2.0, y + 2.0 - arm_s, 0);
+            self.on_ground |=
+                self.check_map_collision(map, &state.config, x - 2.0, y + 2.0 - arm_s, 0);
 
             let (x, y) = self.particle.pos.into();
             let grounded = self.on_ground;
@@ -434,7 +436,14 @@ impl Soldier {
         }
     }
 
-    pub fn check_map_collision(&mut self, map: &MapFile, x: f32, y: f32, area: i32) -> bool {
+    pub fn check_map_collision(
+        &mut self,
+        map: &MapFile,
+        config: &cvars::Config,
+        x: f32,
+        y: f32,
+        area: i32,
+    ) -> bool {
         let pos = vec2(x, y) + self.particle.velocity;
         let rx = ((pos.x / map.sectors_division as f32).round()) as i32 + 25;
         let ry = ((pos.y / map.sectors_division as f32).round()) as i32 + 25;
@@ -496,7 +505,7 @@ impl Soldier {
                                     && (step.y > SLIDELIMIT)
                                 {
                                     self.particle.pos = self.particle.old_pos;
-                                    self.particle.force.y -= constants::GRAV;
+                                    self.particle.force.y -= config.phys.gravity;
                                 }
 
                                 if (step.y > SLIDELIMIT)

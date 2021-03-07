@@ -1,6 +1,7 @@
 pub mod components;
 pub mod constants;
 pub mod control;
+pub mod cvars;
 pub mod messages;
 
 pub mod systems {

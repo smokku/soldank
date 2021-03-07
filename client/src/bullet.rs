@@ -55,7 +55,7 @@ impl Default for BulletStyle {
 }
 
 impl Bullet {
-    pub fn new(params: &BulletParams) -> Bullet {
+    pub fn new(params: &BulletParams, config: &cvars::Config) -> Bullet {
         let particle = Particle {
             active: true,
             pos: params.position,
@@ -63,7 +63,7 @@ impl Bullet {
             velocity: params.velocity,
             one_over_mass: 1.0,
             timestep: 1.0,
-            gravity: constants::GRAV * 2.25,
+            gravity: config.phys.gravity * 2.25,
             e_damping: 0.99,
             ..Default::default()
         };

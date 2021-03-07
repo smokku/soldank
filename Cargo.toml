@@ -11,3 +11,4 @@ incremental = false
 
 [patch.crates-io]
 laminar = { git = "https://github.com/amethyst/laminar.git" }
+cvar = { git = "https://github.com/CasualX/cvar.git" }
