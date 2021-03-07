@@ -38,6 +38,8 @@ use gvfs::filesystem::{File, Filesystem};
 use megaui_macroquad::{draw_megaui, mouse_over_ui};
 use std::{env, path};
 
+use soldank_shared::constants::DEFAULT_MAP;
+
 fn config() -> mq::Conf {
     mq::Conf {
         sample_count: 4,
@@ -56,7 +58,8 @@ async fn main() {
                 .help("name of map to load")
                 .short("m")
                 .long("map")
-                .takes_value(true),
+                .takes_value(true)
+                .default_value(DEFAULT_MAP),
         )
         .arg(
             clap::Arg::with_name("debug")
@@ -84,6 +87,15 @@ async fn main() {
                 .short("n")
                 .long("nick")
                 .takes_value(true),
+        )
+        .arg(
+            clap::Arg::with_name("set")
+                .help("set cvar value [multiple]")
+                .long("set")
+                .takes_value(true)
+                .multiple(true)
+                .number_of_values(2)
+                .value_names(&["cvar", "value"]),
         )
         .get_matches();
 
@@ -128,14 +140,44 @@ async fn main() {
         networking.nick_name = nick.to_string();
     }
 
-    let mut map_name = cmd.value_of("map").unwrap_or("ctf_Ash").to_owned();
+    let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
     map_name.push_str(".pms");
 
     let map = MapFile::load_map_file(&mut filesystem, map_name.as_str());
     log::info!("Using map: {}", map.mapname);
 
+    let mut config = cvars::Config::default();
+    if let Some(values) = cmd.values_of("set") {
+        for chunk in values.collect::<Vec<_>>().chunks_exact(2) {
+            let cvar = chunk[0];
+            let value = chunk[1];
+            match cvar::console::set(&mut config, cvar, value) {
+                Ok(set) => {
+                    if !set {
+                        log::error!(
+                            "Cannot set cvar `{} = {}`: cvar not available.",
+                            cvar,
+                            value
+                        );
+                    }
+                }
+                Err(err) => {
+                    log::error!("Cannot parse `{} = {}`: {}.", cvar, value, err);
+                }
+            }
+        }
+    }
+
+    log::info!("--- cvars:");
+    cvar::console::walk(&mut config, |path, node| match node.as_node() {
+        cvar::Node::Prop(prop) => {
+            log::info!("{} `{}`", path, prop.get());
+        }
+        _ => {}
+    });
+
     let mut state = MainState {
-        config: cvars::Config::default(),
+        config,
         map,
         game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),
         game_height: 480.0,
@@ -149,14 +191,6 @@ async fn main() {
     };
     let mut debug_state = debug::DebugState::default();
     debug_state.ui_visible = cmd.is_present("debug");
-
-    log::info!("--- cvars:");
-    cvar::console::walk(&mut state.config, |path, node| match node.as_node() {
-        cvar::Node::Prop(prop) => {
-            log::info!("{} `{}`", path, prop.get());
-        }
-        _ => {}
-    });
 
     AnimData::initialize(&mut filesystem);
     Soldier::initialize(&mut filesystem, &state.config);

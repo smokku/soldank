@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate clap;
+
 use legion::{systems::CommandBuffer, Resources, Schedule, World};
 use simple_logger::SimpleLogger;
 use std::collections::VecDeque;
@@ -16,35 +19,33 @@ fn main() -> smol::io::Result<()> {
             .init()
             .expect("A logger was already initialized");
 
-        let cmd = clap::App::new("Soldank Server")
-            .about(clap::crate_description!())
-            .version(clap::crate_version!())
-            .author(clap::crate_authors!("\n"))
+        let cmd = clap::app_from_crate!()
             .arg(
                 clap::Arg::with_name("bind")
                     .value_name("address:port")
                     .help("IP address and port to bind")
                     .short("b")
                     .long("bind")
-                    .takes_value(true),
+                    .takes_value(true)
+                    .env("SOLDANK_SERVER_BIND"),
             )
             .arg(
                 clap::Arg::with_name("map")
                     .value_name("map name")
-                    .help(&format!(
-                        "Name of map to load (Defaults to `{}`)",
-                        DEFAULT_MAP
-                    ))
+                    .help("name of map to load")
                     .short("m")
                     .long("map")
-                    .takes_value(true),
+                    .takes_value(true)
+                    .default_value(DEFAULT_MAP)
+                    .env("SOLDANK_USE_MAP"),
             )
             .arg(
                 clap::Arg::with_name("key")
                     .help("server connection key")
                     .short("k")
                     .long("key")
-                    .takes_value(true),
+                    .takes_value(true)
+                    .env("SOLDANK_SERVER_KEY"),
             )
             .get_matches();
 
