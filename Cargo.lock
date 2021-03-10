@@ -1909,6 +1909,7 @@ dependencies = [
  "bytes",
  "cvar",
  "enum-primitive-derive",
+ "gfx2d",
  "hexdump",
  "legion",
  "log",

@@ -7,6 +7,8 @@ pub mod messages;
 pub mod systems {
     mod debug;
     pub use debug::*;
+    mod movement;
+    pub use movement::*;
 }
 
 use hexdump::hexdump_iter;

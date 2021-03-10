@@ -7,6 +7,7 @@ license = "MIT"
 publish = false
 
 [dependencies]
+gfx2d = { path = "../client/gfx2d" }
 log = "0.4"
 bytes = "1.0"
 hexdump = "0.1"
