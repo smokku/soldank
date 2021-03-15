@@ -16,6 +16,14 @@ mod networking;
 mod systems;
 use systems::*;
 
+pub const FIXED_RATE: f64 = 1.0 / 60.0; // fixed frame rate
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum GameState {
+    Lobby,
+    InGame,
+}
+
 fn main() -> smol::io::Result<()> {
     smol::block_on(async {
         SimpleLogger::from_env()
@@ -63,12 +71,6 @@ fn main() -> smol::io::Result<()> {
 
         let mut resources = Resources::default();
 
-        let mut schedule = Schedule::builder()
-            .add_system(tick_debug_system())
-            .add_system(process_network_messages_system())
-            .add_system(message_dump_system())
-            .build();
-
         resources.insert(networking);
         let messages: VecDeque<(SocketAddr, NetworkMessage)> = VecDeque::new();
         resources.insert(messages);
@@ -85,6 +87,26 @@ fn main() -> smol::io::Result<()> {
         let mut worlds = HashMap::<u64, World>::new();
         worlds.insert(tick, World::default());
         resources.insert(worlds);
+
+        resources.insert(GameState::Lobby);
+        let mut schedules: HashMap<GameState, Schedule> = HashMap::new();
+        schedules.insert(
+            GameState::Lobby,
+            Schedule::builder()
+                .add_system(process_network_messages_system())
+                .add_system(message_dump_system())
+                .add_system(lobby_system())
+                .build(),
+        );
+        schedules.insert(
+            GameState::InGame,
+            Schedule::builder()
+                .add_system(tick_debug_system())
+                .add_system(process_network_messages_system())
+                .add_system(message_dump_system())
+                .build(),
+        );
+        resources.insert(schedules);
 
         let running = true;
 
@@ -106,9 +128,12 @@ fn main() -> smol::io::Result<()> {
                 worlds.insert(tick, current_world);
             }
 
-            // FIXME: reset time when first player joins game and game switches to InGame scheduler, to avoid spinning unnecessary ticks
             timecur = current_time();
             timeacc += timecur - timeprv;
+            if *resources.get::<GameState>().unwrap() != GameState::InGame {
+                // avoid spinning unnecessary ticks outside game simulation
+                timeacc = f64::min(timeacc, FIXED_RATE);
+            }
             timeprv = timecur;
 
             while timeacc >= FIXED_RATE {
@@ -138,7 +163,20 @@ fn main() -> smol::io::Result<()> {
                 }
 
                 // current simulation frame
-                schedule.execute(&mut current_world, &mut resources);
+                let (game_state, mut scheduler) = {
+                    let game_state = *resources.get::<GameState>().unwrap();
+                    let scheduler = resources
+                        .get_mut::<HashMap<GameState, Schedule>>()
+                        .unwrap()
+                        .remove(&game_state)
+                        .unwrap();
+                    (game_state, scheduler)
+                };
+                scheduler.execute(&mut current_world, &mut resources);
+                resources
+                    .get_mut::<HashMap<GameState, Schedule>>()
+                    .unwrap()
+                    .insert(game_state, scheduler);
 
                 // store world for future reference (rollback)
                 {
@@ -161,5 +199,3 @@ fn main() -> smol::io::Result<()> {
         Ok(())
     })
 }
-
-pub const FIXED_RATE: f64 = 1.0 / 60.0; // fixed frame rate

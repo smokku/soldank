@@ -16,11 +16,9 @@ use std::{
     net::SocketAddr,
 };
 
-use crate::{cheat::Cheats, systems};
+use crate::cheat::Cheats;
 use soldank_shared::{
-    components,
     constants::SERVER_PORT,
-    control::Control,
     messages::{self, NetworkMessage},
     trace_dump_packet,
 };
@@ -34,7 +32,7 @@ pub struct Networking {
     pub connection_key: String,
     last_message_received: f64,
 
-    connections: HashMap<SocketAddr, Connection>,
+    pub connections: HashMap<SocketAddr, Connection>,
 }
 
 #[derive(Debug)]
@@ -246,19 +244,18 @@ impl Networking {
                             Some(message) => match message {
                                 NetworkMessage::ConnectionAuthorize { nick, key } => {
                                     let msg = if key == self.connection_key {
-                                        connection.authorized = true;
-                                        connection.nick = nick.clone();
-                                        log::info!(
-                                            "<-> Authorized connection from [{:?}]",
-                                            address
-                                        );
+                                        if !connection.authorized {
+                                            connection.authorized = true;
+                                            connection.nick = nick;
+                                            log::info!(
+                                                "<-> Authorized connection from [{:?}]",
+                                                address
+                                            );
 
-                                        connection.entity.replace(command_buffer.push((
-                                            components::Soldier {},
-                                            components::Nick(nick),
-                                            address,
-                                            (Control::default(), 0, 0) as systems::ControlComponent,
-                                        )));
+                                            connection
+                                                .entity
+                                                .replace(command_buffer.push((address,)));
+                                        }
 
                                         messages::connection_authorized()
                                     } else {

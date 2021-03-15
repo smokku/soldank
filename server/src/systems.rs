@@ -1,10 +1,11 @@
-use legion::{system, world::SubWorld, Query};
+use legion::{system, systems::CommandBuffer, world::SubWorld, Query};
 use std::{
     collections::{HashMap, VecDeque},
     net::SocketAddr,
 };
 
-use soldank_shared::{control::Control, messages::NetworkMessage};
+use crate::{systems, GameState, Networking};
+use soldank_shared::{components, control::Control, messages::NetworkMessage};
 
 pub type ControlComponent = (Control, i32, i32);
 
@@ -40,4 +41,37 @@ pub fn process_network_messages(
     }
 
     messages.extend(unprocessed);
+}
+
+#[system]
+pub fn lobby(
+    #[resource] game_state: &mut GameState,
+    #[resource] networking: &mut Networking,
+    cmd: &mut CommandBuffer,
+) {
+    if *game_state != GameState::Lobby {
+        log::error!("Running lobby system outside Lobby GameState");
+    }
+
+    let ready = networking.connections.len() > 0
+        && networking
+            .connections
+            .iter()
+            .all(|(_, conn)| conn.authorized && conn.entity.is_some());
+
+    if ready {
+        log::info!("All players ready - switching to InGame state");
+        *game_state = GameState::InGame;
+
+        for (addr, conn) in networking.connections.iter() {
+            let entity = conn.entity.unwrap();
+            cmd.add_component(entity, components::Soldier {});
+            cmd.add_component(entity, components::Nick(conn.nick.clone()));
+            cmd.add_component(entity, *addr);
+            cmd.add_component(
+                entity,
+                (Control::default(), 0, 0) as systems::ControlComponent,
+            );
+        }
+    }
 }
