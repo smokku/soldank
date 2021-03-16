@@ -331,7 +331,6 @@ impl Soldier {
             if (self.dead_meat || self.half_dead) && (i < 17) && (i != 7) && (i != 8) {
                 let (x, y) = self.particle.pos.into();
                 self.on_ground = self.check_skeleton_map_collision(map, i, x, y);
-                println!("ok");
             }
         }
 

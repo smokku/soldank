@@ -84,9 +84,7 @@ fn main() -> smol::io::Result<()> {
         let mut tick: u64 = 0;
         resources.insert(components::Time::default());
 
-        let mut worlds = HashMap::<u64, World>::new();
-        worlds.insert(tick, World::default());
-        resources.insert(worlds);
+        let mut world = World::default();
 
         resources.insert(GameState::Lobby);
         let mut schedules: HashMap<GameState, Schedule> = HashMap::new();
@@ -106,26 +104,20 @@ fn main() -> smol::io::Result<()> {
                 .add_system(message_dump_system())
                 .build(),
         );
-        resources.insert(schedules);
 
         let running = true;
-
         while running {
             {
-                let (mut current_world, mut command_buffer) = {
+                let mut command_buffer = {
                     let networking = &mut resources.get_mut::<Networking>().unwrap();
                     let messages = &mut resources
                         .get_mut::<VecDeque<(SocketAddr, NetworkMessage)>>()
                         .unwrap();
-                    let mut worlds = resources.get_mut::<HashMap<u64, World>>().unwrap();
-                    let current_world = worlds.remove(&tick).unwrap();
-                    let mut command_buffer = CommandBuffer::new(&current_world);
+                    let mut command_buffer = CommandBuffer::new(&world);
                     networking.process(messages, &mut command_buffer).await; // loop is driven by incoming packets
-                    (current_world, command_buffer)
+                    command_buffer
                 };
-                command_buffer.flush(&mut current_world, &mut resources);
-                let mut worlds = resources.get_mut::<HashMap<u64, World>>().unwrap();
-                worlds.insert(tick, current_world);
+                command_buffer.flush(&mut world, &mut resources);
             }
 
             timecur = current_time();
@@ -137,19 +129,6 @@ fn main() -> smol::io::Result<()> {
             timeprv = timecur;
 
             while timeacc >= FIXED_RATE {
-                // duplicate world for current simulation and store current for later reference
-                let mut current_world = {
-                    let mut worlds = resources.get_mut::<HashMap<u64, World>>().unwrap();
-                    let current_world = worlds.get_mut(&tick).unwrap();
-                    let mut new_world = World::default();
-                    new_world.clone_from(
-                        current_world,
-                        &legion::query::any(),
-                        &mut legion::world::Duplicate::default(),
-                    );
-                    new_world
-                };
-
                 // track time
                 tick += 1;
                 timeacc -= FIXED_RATE;
@@ -163,30 +142,11 @@ fn main() -> smol::io::Result<()> {
                 }
 
                 // current simulation frame
-                let (game_state, mut scheduler) = {
-                    let game_state = *resources.get::<GameState>().unwrap();
-                    let scheduler = resources
-                        .get_mut::<HashMap<GameState, Schedule>>()
-                        .unwrap()
-                        .remove(&game_state)
-                        .unwrap();
-                    (game_state, scheduler)
-                };
-                scheduler.execute(&mut current_world, &mut resources);
-                resources
-                    .get_mut::<HashMap<GameState, Schedule>>()
+                let game_state = *resources.get::<GameState>().unwrap();
+                schedules
+                    .get_mut(&game_state)
                     .unwrap()
-                    .insert(game_state, scheduler);
-
-                // store world for future reference (rollback)
-                {
-                    let mut worlds = resources.get_mut::<HashMap<u64, World>>().unwrap();
-                    worlds.insert(tick, current_world);
-
-                    // prune old worlds
-                    // TODO: iterate connections and get oldest confirmed tick
-                    worlds.retain(|&t, _| t > tick - u64::min(tick, 100));
-                }
+                    .execute(&mut world, &mut resources);
 
                 // update time for possibly next run
                 timecur = current_time();
