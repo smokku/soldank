@@ -201,12 +201,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "065374052e7df7ee4047b1160cca5e1467a12351a40b3da123c870ba0b8eda2a"
 
 [[package]]
-name = "atomic_refcell"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "681b971236e0f76b20fcafca0236b8718c9186ee778d67cd78bd5f28fd85427f"
-
-[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -241,18 +235,9 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87124d87d4baa369b13485ffc0237a1b41e51c1d8ded7c4e01c002f79ed20a19"
 dependencies = [
- "bit-vec 0.4.4",
+ "bit-vec",
  "generic-array",
  "typenum",
-]
-
-[[package]]
-name = "bit-set"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e11e16035ea35e4e5997b393eacbf6f63983188f7a2ad25bfb13465f5ad59de"
-dependencies = [
- "bit-vec 0.6.3",
 ]
 
 [[package]]
@@ -260,12 +245,6 @@ name = "bit-vec"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "02b4ff8b16e6076c3e14220b39fbc1fabb6737522281a388998046859400895f"
-
-[[package]]
-name = "bit-vec"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 
 [[package]]
 name = "bitflags"
@@ -579,12 +558,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "downcast-rs"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
-
-[[package]]
 name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -891,7 +864,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e40283dadb02f3af778878be1d717b17b4e4ab92e1d935ab03a730b0542905f2"
 dependencies = [
  "arrayvec",
- "itertools 0.4.19",
+ "itertools",
 ]
 
 [[package]]
@@ -947,15 +920,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4a9b56eb56058f43dc66e58f40a214b2ccbc9f3df51861b63d51dec7b65bc3f"
 
 [[package]]
-name = "itertools"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
-dependencies = [
- "either",
-]
-
-[[package]]
 name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -991,36 +955,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
-name = "legion"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bfd53bb4690a5ab2bd6d1c683461ee52763afe0d000929743708a256d9d9b1f"
-dependencies = [
- "atomic_refcell",
- "bit-set",
- "downcast-rs",
- "itertools 0.10.0",
- "legion_codegen",
- "parking_lot",
- "paste",
- "smallvec",
- "thiserror",
- "uuid",
-]
-
-[[package]]
-name = "legion_codegen"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ad5ad7a361d7b2522010335d95fa73135cb3c6816bef22cc7a5d5861587ae1b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
- "thiserror",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1031,15 +965,6 @@ name = "local_ipaddress"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f6a104730949fbc4c78e4fa98ed769ca0faa02e9818936b61032d2d77526afa9"
-
-[[package]]
-name = "lock_api"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd96ffd135b2fd7b973ac026d28085defbe8983df057ced3eb4f2130b0831312"
-dependencies = [
- "scopeguard",
-]
 
 [[package]]
 name = "log"
@@ -1053,7 +978,7 @@ dependencies = [
 [[package]]
 name = "macroquad"
 version = "0.3.0-alpha.15"
-source = "git+https://github.com/not-fl3/macroquad.git#3f8efebc8cd9a25dea2a747ecaf39f3fd09153ac"
+source = "git+https://github.com/not-fl3/macroquad.git#ddf6fbc203411effa29997883bffa8dfc05d4136"
 dependencies = [
  "bumpalo",
  "fontdue",
@@ -1067,7 +992,7 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.2"
-source = "git+https://github.com/not-fl3/macroquad.git#3f8efebc8cd9a25dea2a747ecaf39f3fd09153ac"
+source = "git+https://github.com/not-fl3/macroquad.git#ddf6fbc203411effa29997883bffa8dfc05d4136"
 
 [[package]]
 name = "maybe-uninit"
@@ -1110,8 +1035,7 @@ dependencies = [
 [[package]]
 name = "miniquad"
 version = "0.3.0-alpha.27"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8712df10371bc8c8735952942f9fbadf9a0e945634f914fbf665f07c58c3a38f"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 dependencies = [
  "sapp-android",
  "sapp-darwin",
@@ -1333,37 +1257,6 @@ name = "parking"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "427c3892f9e783d91cc128285287e70a59e206ca452770ece88a76f7a3eddd72"
-
-[[package]]
-name = "parking_lot"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d7744ac029df22dca6284efe4e898991d28e3085c706c972bcd7da4a27a15eb"
-dependencies = [
- "instant",
- "lock_api",
- "parking_lot_core",
-]
-
-[[package]]
-name = "parking_lot_core"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa7a782938e745763fe6907fc6ba86946d72f49fe7e21de074e08128a99fb018"
-dependencies = [
- "cfg-if 1.0.0",
- "instant",
- "libc",
- "redox_syscall 0.2.5",
- "smallvec",
- "winapi",
-]
-
-[[package]]
-name = "paste"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acbf547ad0c65e31259204bd90935776d1c693cec2f4ff7abb7a1bbbd40dfe58"
 
 [[package]]
 name = "pest"
@@ -1715,8 +1608,7 @@ dependencies = [
 [[package]]
 name = "sapp-android"
 version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2cfc3238f9450dba929931ea554552355ff65c4ab2ffd5d291ca5dfcb7cd3193"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 dependencies = [
  "cc",
 ]
@@ -1724,8 +1616,7 @@ dependencies = [
 [[package]]
 name = "sapp-darwin"
 version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf0d38a22937236c2ad6b90a12656a1f307efb144b6d7516104d2169f1dc3b18"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 dependencies = [
  "cc",
 ]
@@ -1733,8 +1624,7 @@ dependencies = [
 [[package]]
 name = "sapp-dummy"
 version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66f1ad26a5b6c682b9ca27c66db9aa91002b8d98a82ac7101ded57285215a478"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 dependencies = [
  "libc",
 ]
@@ -1742,8 +1632,7 @@ dependencies = [
 [[package]]
 name = "sapp-ios"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "081e6e5261c9ac2e938979b6a854a53b439f065fc3c897205ce7e69d3028b4a9"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 dependencies = [
  "cc",
 ]
@@ -1751,8 +1640,7 @@ dependencies = [
 [[package]]
 name = "sapp-linux"
 version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22b66fa7effb2823d80997912186494d4a19aa74d3ac1ff5aa1cfb648537be92"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 dependencies = [
  "libc",
 ]
@@ -1760,14 +1648,12 @@ dependencies = [
 [[package]]
 name = "sapp-wasm"
 version = "0.1.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56a3ed22620cb1d405424b9adca073139e4c62b603f66afee1852ad7197c73d1"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 
 [[package]]
 name = "sapp-windows"
 version = "0.2.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eac466bfa1ed7ae1cfb75ae7b12f1f1ec8b1a7bce69f49d20148e689cb9f300c"
+source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
 dependencies = [
  "winapi",
 ]
@@ -1905,12 +1791,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
-name = "smallvec"
-version = "1.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
-
-[[package]]
 name = "smol"
 version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1986,8 +1866,8 @@ dependencies = [
  "cvar",
  "enum-primitive-derive",
  "gfx2d",
+ "hecs",
  "hexdump",
- "legion",
  "log",
  "nanoserde",
  "num-traits",
@@ -2226,15 +2106,6 @@ name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
-
-[[package]]
-name = "uuid"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
-dependencies = [
- "getrandom 0.2.2",
-]
 
 [[package]]
 name = "vcpkg"
