@@ -3,13 +3,7 @@ pub mod constants;
 pub mod control;
 pub mod cvars;
 pub mod messages;
-
-pub mod systems {
-    mod debug;
-    pub use debug::*;
-    mod movement;
-    pub use movement::*;
-}
+pub mod systems;
 
 use hexdump::hexdump_iter;
 

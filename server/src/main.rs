@@ -1,20 +1,16 @@
 #[macro_use]
 extern crate clap;
 
-use legion::{systems::CommandBuffer, Resources, Schedule, World};
+use hecs::World;
 use simple_logger::SimpleLogger;
-use std::{
-    collections::{HashMap, VecDeque},
-    net::SocketAddr,
-};
+use std::{collections::VecDeque, net::SocketAddr};
 
 use networking::Networking;
-use soldank_shared::{components, constants::DEFAULT_MAP, messages::NetworkMessage, systems::*};
+use soldank_shared::{constants::DEFAULT_MAP, messages::NetworkMessage};
 
 mod cheat;
 mod networking;
 mod systems;
-use systems::*;
 
 pub const FIXED_RATE: f64 = 1.0 / 60.0; // fixed frame rate
 
@@ -69,11 +65,7 @@ fn main() -> smol::io::Result<()> {
             networking.connection_key = key.to_string();
         }
 
-        let mut resources = Resources::default();
-
-        resources.insert(networking);
-        let messages: VecDeque<(SocketAddr, NetworkMessage)> = VecDeque::new();
-        resources.insert(messages);
+        let mut messages: VecDeque<(SocketAddr, NetworkMessage)> = VecDeque::new();
 
         let time_start = instant::now();
         let current_time = || (instant::now() - time_start) / 1000.;
@@ -82,76 +74,50 @@ fn main() -> smol::io::Result<()> {
         let mut timeprv: f64 = timecur;
         let mut timeacc: f64 = 0.0;
         let mut tick: u64 = 0;
-        resources.insert(components::Time::default());
 
-        let mut world = World::default();
+        let mut world = World::new();
 
-        resources.insert(GameState::Lobby);
-        let mut schedules: HashMap<GameState, Schedule> = HashMap::new();
-        schedules.insert(
-            GameState::Lobby,
-            Schedule::builder()
-                .add_system(process_network_messages_system())
-                .add_system(message_dump_system())
-                .add_system(lobby_system())
-                .build(),
-        );
-        schedules.insert(
-            GameState::InGame,
-            Schedule::builder()
-                .add_system(tick_debug_system())
-                .add_system(process_network_messages_system())
-                .add_system(message_dump_system())
-                .build(),
-        );
+        let mut game_state = GameState::Lobby;
 
         let running = true;
         while running {
-            {
-                let mut command_buffer = {
-                    let networking = &mut resources.get_mut::<Networking>().unwrap();
-                    let messages = &mut resources
-                        .get_mut::<VecDeque<(SocketAddr, NetworkMessage)>>()
-                        .unwrap();
-                    let mut command_buffer = CommandBuffer::new(&world);
-                    networking.process(messages, &mut command_buffer).await; // loop is driven by incoming packets
-                    command_buffer
-                };
-                command_buffer.flush(&mut world, &mut resources);
-            }
+            tick += 1;
+
+            networking.process(&mut world, &mut messages).await; // loop is driven by incoming packets
 
             timecur = current_time();
             timeacc += timecur - timeprv;
-            if *resources.get::<GameState>().unwrap() != GameState::InGame {
-                // avoid spinning unnecessary ticks outside game simulation
-                timeacc = f64::min(timeacc, FIXED_RATE);
-            }
             timeprv = timecur;
 
-            while timeacc >= FIXED_RATE {
-                // track time
-                tick += 1;
-                timeacc -= FIXED_RATE;
+            match game_state {
+                GameState::Lobby => {
+                    timeacc = 0.; // avoid spinning unnecessary ticks outside game simulation
 
-                let p = f64::min(1.0, f64::max(0.0, timeacc / FIXED_RATE));
-                {
-                    let mut timer = resources.get_mut::<components::Time>().unwrap();
-                    timer.time = timecur;
-                    timer.tick = tick;
-                    timer.frame_percent = p;
+                    systems::process_network_messages(&mut world, &mut messages);
+                    systems::message_dump(&mut messages);
+                    systems::lobby(&mut world, &mut game_state, &networking);
                 }
+                GameState::InGame => {
+                    while timeacc >= FIXED_RATE {
+                        timeacc -= FIXED_RATE;
 
-                // current simulation frame
-                let game_state = *resources.get::<GameState>().unwrap();
-                schedules
-                    .get_mut(&game_state)
-                    .unwrap()
-                    .execute(&mut world, &mut resources);
+                        let time = systems::Time {
+                            time: timecur,
+                            tick,
+                            frame_percent: f64::min(1.0, f64::max(0.0, timeacc / FIXED_RATE)),
+                        };
 
-                // update time for possibly next run
-                timecur = current_time();
-                timeacc += timecur - timeprv;
-                timeprv = timecur;
+                        // current simulation frame
+                        systems::tick_debug(&time);
+                        systems::process_network_messages(&mut world, &mut messages);
+                        systems::message_dump(&mut messages);
+
+                        // update time for possibly next run
+                        timecur = current_time();
+                        timeacc += timecur - timeprv;
+                        timeprv = timecur;
+                    }
+                }
             }
         }
 

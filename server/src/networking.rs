@@ -1,9 +1,9 @@
+use hecs::{Entity, World};
 use instant::Instant;
 use laminar::{
     Config as LaminarConfig, ConnectionManager, DatagramSocket, Packet as LaminarPacket,
     SocketEvent, VirtualConnection,
 };
-use legion::{systems::CommandBuffer, Entity};
 use naia_server_socket::{
     find_my_ip_address, LinkConditionerConfig, MessageSender, Packet as NaiaPacket, ServerSocket,
     ServerSocketTrait,
@@ -153,8 +153,8 @@ impl Networking {
 
     pub async fn process(
         &mut self,
+        world: &mut World,
         messages: &mut VecDeque<(SocketAddr, NetworkMessage)>,
-        command_buffer: &mut CommandBuffer,
     ) {
         match self.server_socket.receive().await {
             Ok(packet) => {
@@ -199,7 +199,7 @@ impl Networking {
             match event {
                 SocketEvent::Packet(packet) => {
                     let addr = packet.addr();
-                    if let Some(message) = self.process_packet(packet, command_buffer) {
+                    if let Some(message) = self.process_packet(packet, world) {
                         messages.push_back((addr, message));
                     }
                 }
@@ -220,7 +220,7 @@ impl Networking {
     fn process_packet(
         &mut self,
         packet: LaminarPacket,
-        command_buffer: &mut CommandBuffer,
+        world: &mut World,
     ) -> Option<NetworkMessage> {
         let address = packet.addr();
         let data = packet.payload();
@@ -252,9 +252,7 @@ impl Networking {
                                                 address
                                             );
 
-                                            connection
-                                                .entity
-                                                .replace(command_buffer.push((address,)));
+                                            connection.entity.replace(world.reserve_entity());
                                         }
 
                                         messages::connection_authorized()

@@ -1,19 +1,18 @@
-use legion::{system, systems::CommandBuffer, world::SubWorld, Query};
+use hecs::World;
 use std::{
     collections::{HashMap, VecDeque},
     net::SocketAddr,
 };
 
 use crate::{systems, GameState, Networking};
+pub use soldank_shared::systems::*;
 use soldank_shared::{components, control::Control, messages::NetworkMessage};
 
 pub type ControlComponent = (Control, i32, i32);
 
-#[system]
 pub fn process_network_messages(
-    #[resource] messages: &mut VecDeque<(SocketAddr, NetworkMessage)>,
-    world: &mut SubWorld,
-    query: &mut Query<(&SocketAddr, &mut ControlComponent)>,
+    world: &mut World,
+    messages: &mut VecDeque<(SocketAddr, NetworkMessage)>,
 ) {
     let mut updates = HashMap::new();
     let mut unprocessed = Vec::new();
@@ -34,7 +33,7 @@ pub fn process_network_messages(
         }
     }
 
-    for (addr, control) in query.iter_mut(world) {
+    for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlComponent)>().iter() {
         if let Some(ctrl) = updates.get(addr) {
             *control = *ctrl;
         }
@@ -43,12 +42,7 @@ pub fn process_network_messages(
     messages.extend(unprocessed);
 }
 
-#[system]
-pub fn lobby(
-    #[resource] game_state: &mut GameState,
-    #[resource] networking: &mut Networking,
-    cmd: &mut CommandBuffer,
-) {
+pub fn lobby(world: &mut World, game_state: &mut GameState, networking: &Networking) {
     if *game_state != GameState::Lobby {
         log::error!("Running lobby system outside Lobby GameState");
     }
@@ -63,14 +57,16 @@ pub fn lobby(
         log::info!("All players ready - switching to InGame state");
         *game_state = GameState::InGame;
 
-        for (addr, conn) in networking.connections.iter() {
+        for (&addr, conn) in networking.connections.iter() {
             let entity = conn.entity.unwrap();
-            cmd.add_component(entity, components::Soldier {});
-            cmd.add_component(entity, components::Nick(conn.nick.clone()));
-            cmd.add_component(entity, *addr);
-            cmd.add_component(
+            world.spawn_at(
                 entity,
-                (Control::default(), 0, 0) as systems::ControlComponent,
+                (
+                    components::Soldier {},
+                    components::Nick(conn.nick.clone()),
+                    addr,
+                    (Control::default(), 0, 0) as systems::ControlComponent,
+                ),
             );
         }
     }

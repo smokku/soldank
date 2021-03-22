@@ -1,10 +1,10 @@
 use legion::system;
 use std::{collections::VecDeque, net::SocketAddr};
 
-use crate::{components, messages::NetworkMessage};
+use crate::{messages::NetworkMessage, systems};
 
 #[system]
-pub fn tick_debug(#[resource] time: &components::Time) {
+pub fn tick_debug(#[resource] time: &systems::Time) {
     log::debug!("tick {}", time.tick);
 }
 
