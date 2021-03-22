@@ -6,13 +6,11 @@ use simple_logger::SimpleLogger;
 use std::{collections::VecDeque, net::SocketAddr};
 
 use networking::Networking;
-use soldank_shared::{constants::DEFAULT_MAP, messages::NetworkMessage};
+use soldank_shared::{constants::*, messages::NetworkMessage};
 
 mod cheat;
 mod networking;
 mod systems;
-
-pub const FIXED_RATE: f64 = 1.0 / 60.0; // fixed frame rate
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum GameState {
