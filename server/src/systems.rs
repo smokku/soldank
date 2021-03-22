@@ -4,11 +4,11 @@ use std::{
     net::SocketAddr,
 };
 
-use crate::{systems, GameState, Networking};
+use crate::{GameState, Networking};
 pub use soldank_shared::systems::*;
 use soldank_shared::{components, control::Control, messages::NetworkMessage};
 
-pub type ControlComponent = (Control, i32, i32);
+pub type ControlComponent = HashMap<u64, (Control, i32, i32)>;
 
 pub fn process_network_messages(
     world: &mut World,
@@ -19,13 +19,9 @@ pub fn process_network_messages(
 
     for (addr, message) in messages.drain(..) {
         match message {
-            NetworkMessage::ControlState {
-                control,
-                aim_x,
-                aim_y,
-            } => {
+            NetworkMessage::ControlState { control } => {
                 // TODO: check constraints and update connection.cheats
-                updates.insert(addr, (control, aim_x, aim_y));
+                updates.insert(addr, control);
             }
             _ => {
                 unprocessed.push((addr, message));
@@ -34,8 +30,10 @@ pub fn process_network_messages(
     }
 
     for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlComponent)>().iter() {
-        if let Some(ctrl) = updates.get(addr) {
-            *control = *ctrl;
+        if let Some(mut ctrl) = updates.remove(addr) {
+            for (tick, c, x, y) in ctrl.drain(..) {
+                control.insert(tick, (c, x, y));
+            }
         }
     }
 
@@ -65,7 +63,7 @@ pub fn lobby(world: &mut World, game_state: &mut GameState, networking: &Network
                     components::Soldier {},
                     components::Nick(conn.nick.clone()),
                     addr,
-                    (Control::default(), 0, 0) as systems::ControlComponent,
+                    ControlComponent::default(),
                 ),
             );
         }

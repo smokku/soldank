@@ -27,9 +27,7 @@ pub enum NetworkMessage {
         key: String,
     },
     ControlState {
-        control: Control,
-        aim_x: i32,
-        aim_y: i32,
+        control: Vec<(u64, Control, i32, i32)>,
     },
 }
 
@@ -41,17 +39,9 @@ pub fn encode_message(msg: NetworkMessage) -> Option<Bytes> {
             msg.extend(SerBin::serialize_bin(&pkt));
             Some(msg.into())
         }
-        NetworkMessage::ControlState {
-            control,
-            aim_x,
-            aim_y,
-        } => {
+        NetworkMessage::ControlState { control } => {
             let mut msg = vec![OperationCode::STT_CONTROL as u8];
-            let pkt = ControlPacket {
-                control,
-                aim_x,
-                aim_y,
-            };
+            let pkt = ControlPacket { control };
             msg.extend(SerBin::serialize_bin(&pkt));
             Some(msg.into())
         }
@@ -74,17 +64,8 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                 }
             }
             OperationCode::STT_CONTROL => {
-                if let Ok(ControlPacket {
-                    control,
-                    aim_x,
-                    aim_y,
-                }) = DeBin::deserialize_bin(&data[1..])
-                {
-                    return Some(NetworkMessage::ControlState {
-                        control,
-                        aim_x,
-                        aim_y,
-                    });
+                if let Ok(ControlPacket { control }) = DeBin::deserialize_bin(&data[1..]) {
+                    return Some(NetworkMessage::ControlState { control });
                 }
             }
         }
@@ -149,7 +130,5 @@ struct AuthPacket {
 
 #[derive(DeBin, SerBin)]
 struct ControlPacket {
-    control: Control,
-    aim_x: i32,
-    aim_y: i32,
+    control: Vec<(u64, Control, i32, i32)>,
 }

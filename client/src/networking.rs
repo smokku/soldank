@@ -8,7 +8,7 @@ use naia_client_socket::{
     Packet as NaiaPacket,
 };
 use smol::channel::{unbounded, Receiver, Sender};
-use std::{convert::TryFrom, net::SocketAddr};
+use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
 use soldank_shared::{constants::SERVER_PORT, control::Control, messages, trace_dump_packet};
 
@@ -21,6 +21,8 @@ pub enum ConnectionState {
 
 type ReceiveEvent = <VirtualConnection as Connection>::ReceiveEvent;
 
+const MAX_INPUTS_PER_FRAME: u64 = 60;
+
 pub struct Networking {
     server_address: SocketAddr,
     client_socket: Box<dyn ClientSocketTrait>,
@@ -32,11 +34,10 @@ pub struct Networking {
     state: ConnectionState,
     backoff_round: i32,
     last_message_received: f64,
+    last_tick_received: u64,
 
     // game state
-    control: Control,
-    aim_x: i32,
-    aim_y: i32,
+    control: HashMap<u64, (Control, i32, i32)>,
 }
 
 fn backoff_enabled(round: i32) -> bool {
@@ -109,10 +110,9 @@ impl Networking {
             state: ConnectionState::Disconnected,
             backoff_round: 0,
             last_message_received: 0.,
+            last_tick_received: 0,
 
-            control: Control::default(),
-            aim_x: 0,
-            aim_y: 0,
+            control: Default::default(),
         }
     }
 
@@ -174,11 +174,13 @@ impl Networking {
 
         if self.state == ConnectionState::Connected {
             let msg = messages::NetworkMessage::ControlState {
-                control: self.control,
-                aim_x: self.aim_x,
-                aim_y: self.aim_y,
+                control: self
+                    .control
+                    .iter()
+                    .map(|(&key, v)| (key, v.0, v.1, v.2))
+                    .collect(),
             };
-            log::debug!("--> Sending: {:?}", msg);
+            log::debug!("--> Sending {:?}", msg);
             self.send(LaminarPacket::unreliable(
                 self.server_address,
                 messages::encode_message(msg).unwrap().to_vec(),
@@ -229,7 +231,7 @@ impl Networking {
         }
     }
 
-    pub fn set_input_state(&mut self, control: &crate::control::Control) {
+    pub fn set_input_state(&mut self, tick: u64, control: &crate::control::Control) {
         let mut flags = Control::default();
         if control.left {
             flags.insert(Control::LEFT);
@@ -271,8 +273,13 @@ impl Networking {
             flags.insert(Control::FLAG_THROW);
         }
 
-        self.control = flags;
-        self.aim_x = control.mouse_aim_x;
-        self.aim_y = control.mouse_aim_y;
+        self.control
+            .insert(tick, (flags, control.mouse_aim_x, control.mouse_aim_y));
+
+        let low_tick = u64::max(
+            self.last_tick_received,
+            tick - u64::min(tick, MAX_INPUTS_PER_FRAME),
+        );
+        self.control.retain(move |&t, _| t > low_tick);
     }
 }
