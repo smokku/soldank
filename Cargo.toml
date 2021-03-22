@@ -13,3 +13,6 @@ incremental = false
 laminar = { git = "https://github.com/amethyst/laminar.git" }
 cvar = { git = "https://github.com/CasualX/cvar.git" }
 hecs = { git = "https://github.com/Ralith/hecs.git" }
+macroquad = { git = "https://github.com/not-fl3/macroquad.git", default-features = false }
+megaui = { git = "https://github.com/not-fl3/megaui.git" }
+megaui-macroquad = { git = "https://github.com/not-fl3/megaui-macroquad.git" }

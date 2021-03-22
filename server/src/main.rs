@@ -2,7 +2,6 @@
 extern crate clap;
 
 use hecs::World;
-use simple_logger::SimpleLogger;
 use std::{collections::VecDeque, net::SocketAddr};
 
 use networking::Networking;
@@ -19,11 +18,9 @@ pub enum GameState {
 }
 
 fn main() -> smol::io::Result<()> {
-    smol::block_on(async {
-        SimpleLogger::from_env()
-            .init()
-            .expect("A logger was already initialized");
+    env_logger::init();
 
+    smol::block_on(async {
         let cmd = clap::app_from_crate!()
             .arg(
                 clap::Arg::with_name("bind")

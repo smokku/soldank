@@ -33,7 +33,7 @@ use soldier::*;
 use state::*;
 use weapons::*;
 
-use gfx2d::macroquad::{self as macroquad, logging as log, prelude as mq};
+use gfx2d::macroquad::{self as macroquad, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
 use megaui_macroquad::{draw_megaui, mouse_over_ui};
 use std::{env, path};
@@ -52,6 +52,8 @@ fn config() -> mq::Conf {
 
 #[macroquad::main(config)]
 async fn main() {
+    env_logger::init();
+
     let cmd = clap::app_from_crate!()
         .arg(
             clap::Arg::with_name("map")

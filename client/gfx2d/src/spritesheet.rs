@@ -1,7 +1,6 @@
 use super::*;
 use binpack::pack_rects;
 use image::{self, GenericImage, RgbaImage as Image};
-use macroquad::logging as log;
 use std::path::PathBuf;
 
 type Rect = binpack::Rect<(usize, usize)>;

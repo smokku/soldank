@@ -36,6 +36,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aho-corasick"
+version = "0.7.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7404febffaa47dac81aa44dba71523c9d069b1bdc50a77db41195149e17f68e5"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -393,19 +402,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "chrono"
-version = "0.4.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
-dependencies = [
- "libc",
- "num-integer",
- "num-traits",
- "time 0.1.43",
- "winapi",
-]
-
-[[package]]
 name = "clap"
 version = "2.33.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -425,17 +421,6 @@ name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
-
-[[package]]
-name = "colored"
-version = "1.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
-dependencies = [
- "atty",
- "lazy_static",
- "winapi",
-]
 
 [[package]]
 name = "concurrent-queue"
@@ -614,6 +599,19 @@ dependencies = [
  "num-traits",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17392a012ea30ef05a610aa97dfb49496e71c9f676b27879922ea5bdf60d9d3f"
+dependencies = [
+ "atty",
+ "humantime",
+ "log",
+ "regex",
+ "termcolor",
 ]
 
 [[package]]
@@ -799,6 +797,7 @@ version = "0.1.0"
 dependencies = [
  "gvfs",
  "image",
+ "log",
  "macroquad",
  "rgb",
 ]
@@ -905,6 +904,12 @@ dependencies = [
  "fnv",
  "itoa",
 ]
+
+[[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "image"
@@ -1048,8 +1053,7 @@ dependencies = [
 [[package]]
 name = "macroquad"
 version = "0.3.0-alpha.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a85f60e0bcf3c97a09b580d8655b80b4be26e7f648ece3a8a6df4baf3567f896"
+source = "git+https://github.com/not-fl3/macroquad.git#3f8efebc8cd9a25dea2a747ecaf39f3fd09153ac"
 dependencies = [
  "bumpalo",
  "fontdue",
@@ -1063,8 +1067,7 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88dc77cec2b364f6e0cba5701b20482ef5c7c87f5587ee9e9296240936eaaf8a"
+source = "git+https://github.com/not-fl3/macroquad.git#3f8efebc8cd9a25dea2a747ecaf39f3fd09153ac"
 
 [[package]]
 name = "maybe-uninit"
@@ -1075,8 +1078,7 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 [[package]]
 name = "megaui"
 version = "0.2.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2a64cb54511efc5e729be417569970153b5eee51ee4f060add0e652f4f50e22"
+source = "git+https://github.com/not-fl3/megaui.git#ae89df48f816c90abb5a3c270b8c1f6ac5e1ea67"
 dependencies = [
  "miniquad_text_rusttype",
 ]
@@ -1084,8 +1086,7 @@ dependencies = [
 [[package]]
 name = "megaui-macroquad"
 version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d4d035b874d829812dd3a9f6232285dc44bb943c9a66b278023a9e7b31e831f"
+source = "git+https://github.com/not-fl3/megaui-macroquad.git#2a33dc017ef6aec53e650ca24e68569f0865c00a"
 dependencies = [
  "macroquad",
  "megaui",
@@ -1611,6 +1612,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex"
+version = "1.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "957056ecddbeba1b26965114e191d2e8589ce74db242b6ea25fc4062427a5c19"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.6.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24d5f089152e60f62d28b835fbff2cd2e8dc0baf1ac13343bef92ab7eed84548"
+
+[[package]]
 name = "remove_dir_all"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1866,19 +1884,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "simple_logger"
-version = "1.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd57f17c093ead1d4a1499dc9acaafdd71240908d64775465543b8d9a9f1d198"
-dependencies = [
- "atty",
- "chrono",
- "colored",
- "log",
- "winapi",
-]
-
-[[package]]
 name = "skeptic"
 version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1941,10 +1946,12 @@ dependencies = [
  "byteorder",
  "clap",
  "cvar",
+ "env_logger",
  "gfx2d",
  "gvfs",
  "instant",
  "laminar",
+ "log",
  "megaui-macroquad",
  "naia-client-socket",
  "rust-ini",
@@ -1960,12 +1967,12 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "clap",
+ "env_logger",
  "hecs",
  "instant",
  "laminar",
  "log",
  "naia-server-socket",
- "simple_logger",
  "smol",
  "soldank-shared",
 ]
@@ -2082,6 +2089,15 @@ dependencies = [
  "redox_syscall 0.2.5",
  "remove_dir_all",
  "winapi",
+]
+
+[[package]]
+name = "termcolor"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2dfed899f0eb03f32ee8c6a0aabdb8a7949659e3466561fc0adf54e26d88c5f4"
+dependencies = [
+ "winapi-util",
 ]
 
 [[package]]

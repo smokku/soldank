@@ -1,4 +1,3 @@
-use gfx2d::macroquad::logging as log;
 use instant::Instant;
 use laminar::{
     Config as LaminarConfig, Connection, ConnectionMessenger, Packet as LaminarPacket,
