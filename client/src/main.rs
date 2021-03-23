@@ -221,7 +221,7 @@ async fn main() {
     let mut timecur: f64 = current_time();
     let mut timeprv: f64 = timecur;
     let mut timeacc: f64 = 0.0;
-    let mut tick: u64 = 0;
+    let mut tick: usize = 0;
 
     let mut zoomin_pressed;
     let mut zoomout_pressed;

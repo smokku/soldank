@@ -21,7 +21,7 @@ pub enum ConnectionState {
 
 type ReceiveEvent = <VirtualConnection as Connection>::ReceiveEvent;
 
-const MAX_INPUTS_PER_FRAME: u64 = 60;
+const MAX_INPUTS_RETAIN: usize = 60;
 
 pub struct Networking {
     server_address: SocketAddr,
@@ -34,10 +34,10 @@ pub struct Networking {
     state: ConnectionState,
     backoff_round: i32,
     last_message_received: f64,
-    last_tick_received: u64,
+    last_tick_received: usize,
 
     // game state
-    control: HashMap<u64, (Control, i32, i32)>,
+    control: HashMap<usize, (Control, i32, i32)>,
 }
 
 fn backoff_enabled(round: i32) -> bool {
@@ -173,18 +173,25 @@ impl Networking {
         }
 
         if self.state == ConnectionState::Connected {
-            let msg = messages::NetworkMessage::ControlState {
-                control: self
-                    .control
-                    .iter()
-                    .map(|(&key, v)| (key, v.0, v.1, v.2))
-                    .collect(),
-            };
-            log::debug!("--> Sending {:?}", msg);
-            self.send(LaminarPacket::unreliable(
-                self.server_address,
-                messages::encode_message(msg).unwrap().to_vec(),
-            ));
+            let mut inputs = self
+                .control
+                .iter()
+                .map(|(&key, v)| (key, v.0, v.1, v.2))
+                .collect::<Vec<(usize, Control, i32, i32)>>();
+
+            if !inputs.is_empty() {
+                inputs.sort_by_key(|v| v.0);
+
+                let msg = messages::NetworkMessage::ControlState {
+                    begin_tick: inputs[0].0,
+                    control: inputs.iter().map(|&(_t, c, x, y)| (c, x, y)).collect(),
+                };
+                log::debug!("--> Sending {:?}", msg);
+                self.send(LaminarPacket::unreliable(
+                    self.server_address,
+                    messages::encode_message(msg).unwrap().to_vec(),
+                ));
+            }
         }
     }
 
@@ -231,7 +238,7 @@ impl Networking {
         }
     }
 
-    pub fn set_input_state(&mut self, tick: u64, control: &crate::control::Control) {
+    pub fn set_input_state(&mut self, tick: usize, control: &crate::control::Control) {
         let mut flags = Control::default();
         if control.left {
             flags.insert(Control::LEFT);
@@ -276,9 +283,9 @@ impl Networking {
         self.control
             .insert(tick, (flags, control.mouse_aim_x, control.mouse_aim_y));
 
-        let low_tick = u64::max(
+        let low_tick = usize::max(
             self.last_tick_received,
-            tick - u64::min(tick, MAX_INPUTS_PER_FRAME),
+            tick - usize::min(tick, MAX_INPUTS_RETAIN),
         );
         self.control.retain(move |&t, _| t > low_tick);
     }

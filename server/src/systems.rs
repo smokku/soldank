@@ -8,7 +8,7 @@ use crate::{GameState, Networking};
 pub use soldank_shared::systems::*;
 use soldank_shared::{components, control::Control, messages::NetworkMessage};
 
-pub type ControlComponent = HashMap<u64, (Control, i32, i32)>;
+pub type ControlComponent = HashMap<usize, (Control, i32, i32)>;
 
 pub fn process_network_messages(
     world: &mut World,
@@ -19,9 +19,12 @@ pub fn process_network_messages(
 
     for (addr, message) in messages.drain(..) {
         match message {
-            NetworkMessage::ControlState { control } => {
+            NetworkMessage::ControlState {
+                begin_tick,
+                control,
+            } => {
                 // TODO: check constraints and update connection.cheats
-                updates.insert(addr, control);
+                updates.insert(addr, (begin_tick, control));
             }
             _ => {
                 unprocessed.push((addr, message));
@@ -30,9 +33,9 @@ pub fn process_network_messages(
     }
 
     for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlComponent)>().iter() {
-        if let Some(mut ctrl) = updates.remove(addr) {
-            for (tick, c, x, y) in ctrl.drain(..) {
-                control.insert(tick, (c, x, y));
+        if let Some((tick, mut ctrl)) = updates.remove(addr) {
+            for (i, (c, x, y)) in ctrl.drain(..).enumerate() {
+                control.insert(tick + i, (c, x, y));
             }
         }
     }
