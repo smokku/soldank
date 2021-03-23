@@ -8,7 +8,9 @@ use networking::Networking;
 use soldank_shared::{constants::*, messages::NetworkMessage};
 
 mod cheat;
+mod constants;
 mod networking;
+mod state;
 mod systems;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -93,19 +95,22 @@ fn main() -> smol::io::Result<()> {
                     systems::lobby(&mut world, &mut game_state, &networking);
                 }
                 GameState::InGame => {
-                    while timeacc >= FIXED_RATE {
-                        timeacc -= FIXED_RATE;
+                    while timeacc >= TIMESTEP_RATE {
+                        timeacc -= TIMESTEP_RATE;
 
                         let time = systems::Time {
                             time: timecur,
                             tick,
-                            frame_percent: f64::min(1.0, f64::max(0.0, timeacc / FIXED_RATE)),
+                            frame_percent: f64::min(1.0, f64::max(0.0, timeacc / TIMESTEP_RATE)),
                         };
 
                         // current simulation frame
                         systems::tick_debug(&time);
                         systems::process_network_messages(&mut world, &mut messages);
                         systems::message_dump(&mut messages);
+
+                        // update clients
+                        networking.broadcast_state(&world, &time);
 
                         // update time for possibly next run
                         timecur = current_time();

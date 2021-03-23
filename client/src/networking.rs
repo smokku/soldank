@@ -202,6 +202,10 @@ impl Networking {
 
     fn process_packet(&mut self, packet: LaminarPacket) {
         let data = packet.payload();
+        if data.len() < 1 {
+            return;
+        }
+
         let code = data[0];
         match messages::OperationCode::try_from(code) {
             Ok(op_code) => match op_code {

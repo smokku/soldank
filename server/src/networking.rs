@@ -16,7 +16,7 @@ use std::{
     net::SocketAddr,
 };
 
-use crate::cheat::Cheats;
+use crate::{cheat::Cheats, constants::*, state::build_state_message, systems};
 use soldank_shared::{
     constants::SERVER_PORT,
     messages::{self, NetworkMessage},
@@ -38,6 +38,7 @@ pub struct Networking {
 #[derive(Debug)]
 pub struct Connection {
     pub last_message_received: f64,
+    pub last_broadcast: f64,
     pub authorized: bool,
     pub nick: String,
     pub cheats: Cheats,
@@ -48,6 +49,7 @@ impl Connection {
     pub fn new() -> Connection {
         Connection {
             last_message_received: instant::now(),
+            last_broadcast: 0.0,
             authorized: false,
             nick: Default::default(),
             cheats: Default::default(),
@@ -224,6 +226,10 @@ impl Networking {
     ) -> Option<NetworkMessage> {
         let address = packet.addr();
         let data = packet.payload();
+        if data.len() < 1 {
+            return None;
+        }
+
         let code = data[0];
         match messages::OperationCode::try_from(code) {
             Ok(op_code) => match op_code {
@@ -287,5 +293,25 @@ impl Networking {
         }
 
         None
+    }
+
+    pub fn broadcast_state(&mut self, world: &World, time: &systems::Time) {
+        let mut packets = Vec::new();
+
+        for (&address, connection) in self.connections.iter_mut() {
+            if let Some(entity) = connection.entity {
+                let next_broadcast = connection.last_broadcast + BROADCAST_RATE;
+                if next_broadcast < time.time {
+                    connection.last_broadcast = next_broadcast;
+
+                    let msg = build_state_message(world, entity, time);
+                    packets.push(LaminarPacket::unreliable(address, msg.to_vec()));
+                }
+            }
+        }
+
+        for packet in packets.drain(..) {
+            self.send(packet);
+        }
     }
 }

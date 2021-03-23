@@ -23,3 +23,4 @@ instant = { version = "0.1", default-features = false, features = ["now"] }
 laminar = "0.4"
 hecs = { version = "0.3", features = [] }
 bitflags = "1.2"
+bytes = "1.0"

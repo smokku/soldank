@@ -262,8 +262,8 @@ async fn main() {
         timeacc += timecur - timeprv;
         timeprv = timecur;
 
-        while timeacc >= FIXED_RATE {
-            timeacc -= FIXED_RATE;
+        while timeacc >= TIMESTEP_RATE {
+            timeacc -= TIMESTEP_RATE;
 
             // remove inactive bullets
             let mut i = 0;
@@ -297,7 +297,7 @@ async fn main() {
             state.mouse_prev = state.mouse;
 
             if zoomin_pressed ^ zoomout_pressed {
-                state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * FIXED_RATE as f32;
+                state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * TIMESTEP_RATE as f32;
             }
 
             state.camera = {
@@ -323,13 +323,13 @@ async fn main() {
             timeprv = timecur;
         }
 
-        let p = f64::min(1.0, f64::max(0.0, timeacc / FIXED_RATE));
+        let p = f64::min(1.0, f64::max(0.0, timeacc / TIMESTEP_RATE));
 
         graphics.render_frame(
             &state,
             &debug_state,
             &soldier,
-            timecur - FIXED_RATE * (1.0 - p),
+            timecur - TIMESTEP_RATE * (1.0 - p),
             p as f32,
         );
 

@@ -777,9 +777,9 @@ dependencies = [
 
 [[package]]
 name = "gif"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02efba560f227847cb41463a7395c514d127d4f74fff12ef0137fff1b84b96c4"
+checksum = "5a668f699973d0f573d15749b7002a9ac9e1f9c6b220e7b165601334c173d8de"
 dependencies = [
  "color_quant",
  "weezl",
@@ -956,9 +956,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.90"
+version = "0.2.91"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba4aede83fc3617411dc6993bc8c70919750c1c257c6ca6a502aed6e0e2394ae"
+checksum = "8916b1f6ca17130ec6568feccee27c156ad12037880833a3b842a823236502e7"
 
 [[package]]
 name = "local_ipaddress"
@@ -977,8 +977,8 @@ dependencies = [
 
 [[package]]
 name = "macroquad"
-version = "0.3.0-alpha.15"
-source = "git+https://github.com/not-fl3/macroquad.git#ddf6fbc203411effa29997883bffa8dfc05d4136"
+version = "0.3.0-alpha.16"
+source = "git+https://github.com/not-fl3/macroquad.git#7adc0885ca0527331a30ec0bc8b929baf3dd2a14"
 dependencies = [
  "bumpalo",
  "fontdue",
@@ -992,7 +992,7 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.2"
-source = "git+https://github.com/not-fl3/macroquad.git#ddf6fbc203411effa29997883bffa8dfc05d4136"
+source = "git+https://github.com/not-fl3/macroquad.git#7adc0885ca0527331a30ec0bc8b929baf3dd2a14"
 
 [[package]]
 name = "maybe-uninit"
@@ -1034,8 +1034,8 @@ dependencies = [
 
 [[package]]
 name = "miniquad"
-version = "0.3.0-alpha.27"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+version = "0.3.0-alpha.28"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 dependencies = [
  "sapp-android",
  "sapp-darwin",
@@ -1120,18 +1120,18 @@ dependencies = [
 
 [[package]]
 name = "nanoserde"
-version = "0.1.22"
+version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cadfbf6f15cee144bb4b4a8d8885b25d9338cf05021fa6b9e40d527c812fc7c5"
+checksum = "b2fe39f13d2f33cea80b6fae64e1db34d32e8953a57dcd5b50a77642c9d0e951"
 dependencies = [
  "nanoserde-derive",
 ]
 
 [[package]]
 name = "nanoserde-derive"
-version = "0.1.14"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14c89882788bb83c0eb07ee5c5e690910210f5425d9651b525d7ad9f4041dd68"
+checksum = "71c29c140bb2a43bdc554ca5a34ecfe678bb6e6c6a3dc8d6856852ba2c74f20f"
 
 [[package]]
 name = "nb-connect"
@@ -1608,7 +1608,7 @@ dependencies = [
 [[package]]
 name = "sapp-android"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 dependencies = [
  "cc",
 ]
@@ -1616,7 +1616,7 @@ dependencies = [
 [[package]]
 name = "sapp-darwin"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 dependencies = [
  "cc",
 ]
@@ -1624,7 +1624,7 @@ dependencies = [
 [[package]]
 name = "sapp-dummy"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 dependencies = [
  "libc",
 ]
@@ -1632,7 +1632,7 @@ dependencies = [
 [[package]]
 name = "sapp-ios"
 version = "0.1.2"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 dependencies = [
  "cc",
 ]
@@ -1640,20 +1640,20 @@ dependencies = [
 [[package]]
 name = "sapp-linux"
 version = "0.1.12"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "sapp-wasm"
-version = "0.1.22"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+version = "0.1.23"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 
 [[package]]
 name = "sapp-windows"
-version = "0.2.15"
-source = "git+https://github.com/not-fl3/miniquad.git#88d9a7c812c1888665c9decc0469bb4f791b4205"
+version = "0.2.16"
+source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
 dependencies = [
  "winapi",
 ]
@@ -1706,18 +1706,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.124"
+version = "1.0.125"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd761ff957cb2a45fbb9ab3da6512de9de55872866160b23c25f1a841e99d29f"
+checksum = "558dc50e1a5a5fa7112ca2ce4effcb321b0300c0d4ccf0776a9f60cd89031171"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.124"
+version = "1.0.125"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1800f7693e94e186f5e25a28291ae1570da908aff7d97a095dec1e56ff99069b"
+checksum = "b093b7a2bb58203b5da3056c05b4ec1fed827dcfdb37347a8841695263b3d06d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1846,6 +1846,7 @@ name = "soldank-server"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "bytes",
  "clap",
  "env_logger",
  "hecs",
@@ -2139,9 +2140,9 @@ checksum = "9d5b2c62b4012a3e1eca5a7e077d13b3bf498c4073e33ccd58626607748ceeca"
 
 [[package]]
 name = "walkdir"
-version = "2.3.1"
+version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "777182bc735b6424e1a57516d35ed72cb8019d85c8c9bf536dccb3445c1a2f7d"
+checksum = "808cf2735cd4b6866113f648b791c6adc5714537bc222d9347bb203386ffda56"
 dependencies = [
  "same-file",
  "winapi",
