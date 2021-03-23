@@ -5,8 +5,8 @@ use laminar::{
     SocketEvent, VirtualConnection,
 };
 use naia_server_socket::{
-    find_my_ip_address, LinkConditionerConfig, MessageSender, Packet as NaiaPacket, ServerSocket,
-    ServerSocketTrait,
+    find_my_ip_address, LinkConditionerConfig, MessageSender, NaiaServerSocketError,
+    Packet as NaiaPacket, ServerSocket, ServerSocketTrait,
 };
 use smol::channel::{unbounded, Receiver, Sender, TryRecvError};
 use std::{
@@ -173,6 +173,15 @@ impl Networking {
             }
             Err(error) => {
                 log::error!("Server error: {}", error);
+                match error {
+                    NaiaServerSocketError::Wrapped(error) => {
+                        log::error!("Naia socket error: {}", error);
+                    }
+                    NaiaServerSocketError::SendError(addr) => {
+                        log::info!("Error sending packet to [{}] - disconnecting", addr);
+                        self.connections.remove(&addr);
+                    }
+                };
             }
         }
 

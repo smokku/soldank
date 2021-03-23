@@ -2,10 +2,11 @@
 extern crate clap;
 
 use hecs::World;
+use smol::future;
 use std::{collections::VecDeque, net::SocketAddr};
 
-use networking::Networking;
-use soldank_shared::{constants::*, messages::NetworkMessage};
+use soldank_shared::messages::NetworkMessage;
+use {constants::*, networking::Networking};
 
 mod cheat;
 mod constants;
@@ -76,11 +77,15 @@ fn main() -> smol::io::Result<()> {
 
         let mut game_state = GameState::Lobby;
 
-        let running = true;
+        let mut running = true;
         while running {
-            tick += 1;
-
-            networking.process(&mut world, &mut messages).await; // loop is driven by incoming packets
+            future::race(
+                networking.process(&mut world, &mut messages), // loop is driven by incoming packets
+                async {
+                    smol::Timer::after(MAX_NETWORK_IDLE).await; // or timeout
+                },
+            )
+            .await;
 
             timecur = current_time();
             timeacc += timecur - timeprv;
@@ -88,7 +93,7 @@ fn main() -> smol::io::Result<()> {
 
             match game_state {
                 GameState::Lobby => {
-                    timeacc = 0.; // avoid spinning unnecessary ticks outside game simulation
+                    timeacc = 0.; // avoid spinning unnecessary ticks after starting game simulation
 
                     systems::process_network_messages(&mut world, &mut messages);
                     systems::message_dump(&mut messages);
@@ -97,6 +102,7 @@ fn main() -> smol::io::Result<()> {
                 GameState::InGame => {
                     while timeacc >= TIMESTEP_RATE {
                         timeacc -= TIMESTEP_RATE;
+                        tick += 1;
 
                         let time = systems::Time {
                             time: timecur,
@@ -116,6 +122,11 @@ fn main() -> smol::io::Result<()> {
                         timecur = current_time();
                         timeacc += timecur - timeprv;
                         timeprv = timecur;
+                    }
+
+                    if networking.connections.iter().count() == 0 {
+                        log::info!("No connections left - exiting");
+                        running = false;
                     }
                 }
             }
