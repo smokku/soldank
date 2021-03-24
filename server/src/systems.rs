@@ -4,7 +4,10 @@ use std::{
     net::SocketAddr,
 };
 
-use crate::{GameState, Networking};
+use crate::{
+    networking::{Connection, Networking},
+    GameState,
+};
 pub use soldank_shared::systems::*;
 use soldank_shared::{components, control::Control, messages::NetworkMessage};
 
@@ -13,18 +16,26 @@ pub type ControlComponent = HashMap<usize, (Control, i32, i32)>;
 pub fn process_network_messages(
     world: &mut World,
     messages: &mut VecDeque<(SocketAddr, NetworkMessage)>,
+    connections: &mut HashMap<SocketAddr, Connection>,
 ) {
-    let mut updates = HashMap::new();
+    let mut control_updates = HashMap::new();
     let mut unprocessed = Vec::new();
 
     for (addr, message) in messages.drain(..) {
         match message {
             NetworkMessage::ControlState {
+                ack_tick,
                 begin_tick,
                 control,
             } => {
+                if let Some(conn) = connections.get_mut(&addr) {
+                    conn.ack_tick = ack_tick;
+                } else {
+                    log::error!("Processing message from unknown connection: [{}]", addr);
+                }
+
                 // TODO: check constraints and update connection.cheats
-                updates.insert(addr, (begin_tick, control));
+                control_updates.insert(addr, (begin_tick, control));
             }
             _ => {
                 unprocessed.push((addr, message));
@@ -33,11 +44,18 @@ pub fn process_network_messages(
     }
 
     for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlComponent)>().iter() {
-        if let Some((tick, mut ctrl)) = updates.remove(addr) {
+        if let Some((tick, mut ctrl)) = control_updates.remove(addr) {
             for (i, (c, x, y)) in ctrl.drain(..).enumerate() {
                 control.insert(tick + i, (c, x, y));
             }
         }
+    }
+
+    if !control_updates.is_empty() {
+        log::error!(
+            "Still have {} control updates for not existing entities",
+            control_updates.len()
+        );
     }
 
     messages.extend(unprocessed);

@@ -10,7 +10,12 @@ use naia_client_socket::{
 use smol::channel::{unbounded, Receiver, Sender};
 use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
-use soldank_shared::{constants::SERVER_PORT, control::Control, messages, trace_dump_packet};
+use soldank_shared::{
+    constants::SERVER_PORT,
+    control::Control,
+    messages::{self, NetworkMessage},
+    trace_dump_packet,
+};
 
 #[derive(PartialEq)]
 pub enum ConnectionState {
@@ -34,6 +39,7 @@ pub struct Networking {
     state: ConnectionState,
     backoff_round: i32,
     last_message_received: f64,
+    authorized: bool,
     last_tick_received: usize,
 
     // game state
@@ -110,6 +116,7 @@ impl Networking {
             state: ConnectionState::Disconnected,
             backoff_round: 0,
             last_message_received: 0.,
+            authorized: false,
             last_tick_received: 0,
 
             control: Default::default(),
@@ -182,14 +189,15 @@ impl Networking {
             if !inputs.is_empty() {
                 inputs.sort_by_key(|v| v.0);
 
-                let msg = messages::NetworkMessage::ControlState {
+                let msg = NetworkMessage::ControlState {
+                    ack_tick: self.last_tick_received,
                     begin_tick: inputs[0].0,
                     control: inputs.iter().map(|&(_t, c, x, y)| (c, x, y)).collect(),
                 };
                 log::debug!("--> Sending {:?}", msg);
                 self.send(LaminarPacket::unreliable(
                     self.server_address,
-                    messages::encode_message(msg).unwrap().to_vec(),
+                    messages::encode_message(msg).to_vec(),
                 ));
             }
         }
@@ -217,13 +225,10 @@ impl Networking {
 
                         self.send(LaminarPacket::reliable_unordered(
                             self.server_address,
-                            messages::encode_message(
-                                messages::NetworkMessage::ConnectionAuthorize {
-                                    nick: self.nick_name.clone(),
-                                    key: self.connection_key.clone(),
-                                },
-                            )
-                            .unwrap()
+                            messages::encode_message(NetworkMessage::ConnectionAuthorize {
+                                nick: self.nick_name.clone(),
+                                key: self.connection_key.clone(),
+                            })
                             .to_vec(),
                         ));
                     }
@@ -232,8 +237,22 @@ impl Networking {
                     log::info!("<-> Connection rejected");
                     self.state = ConnectionState::Error;
                 }
+                messages::OperationCode::CCREP_AUTHORIZED => {
+                    self.authorized = true;
+                }
                 _ => {
-                    log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                    if let Some(msg) = messages::decode_message(data) {
+                        match msg {
+                            NetworkMessage::ConnectionAuthorize { .. }
+                            | NetworkMessage::ControlState { .. } => unreachable!(),
+                            NetworkMessage::GameState { tick } => {
+                                self.last_tick_received = tick;
+                                // TODO: fix current tick to server tick and reshuffle control ticks
+                            }
+                        }
+                    } else {
+                        log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                    }
                 }
             },
             Err(_) => {

@@ -14,6 +14,7 @@ pub enum OperationCode {
     CCREQ_CONNECT = 0x01,
     CCREQ_AUTHORIZE = 0x02,
     STT_CONTROL = 0x10,
+    STT_ENTITIES = 0x11,
     // outgoing
     CCREP_ACCEPT = 0x81,
     CCREP_REJECT = 0x82,
@@ -27,30 +28,42 @@ pub enum NetworkMessage {
         key: String,
     },
     ControlState {
+        ack_tick: usize,
         begin_tick: usize,
         control: Vec<(Control, i32, i32)>,
     },
+    GameState {
+        tick: usize,
+    },
 }
 
-pub fn encode_message(msg: NetworkMessage) -> Option<Bytes> {
+pub fn encode_message(msg: NetworkMessage) -> Bytes {
     match msg {
         NetworkMessage::ConnectionAuthorize { nick, key } => {
             let mut msg = vec![OperationCode::CCREQ_AUTHORIZE as u8];
             let pkt = AuthPacket { nick, key };
             msg.extend(SerBin::serialize_bin(&pkt));
-            Some(msg.into())
+            msg.into()
         }
         NetworkMessage::ControlState {
+            ack_tick,
             begin_tick,
             control,
         } => {
             let mut msg = vec![OperationCode::STT_CONTROL as u8];
             let pkt = ControlPacket {
+                ack_tick,
                 begin_tick,
                 control,
             };
             msg.extend(SerBin::serialize_bin(&pkt));
-            Some(msg.into())
+            msg.into()
+        }
+        NetworkMessage::GameState { tick } => {
+            let mut msg = vec![OperationCode::STT_ENTITIES as u8];
+            let pkt = StatePacket { tick };
+            msg.extend(SerBin::serialize_bin(&pkt));
+            msg.into()
         }
     }
 }
@@ -72,14 +85,21 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
             }
             OperationCode::STT_CONTROL => {
                 if let Ok(ControlPacket {
+                    ack_tick,
                     begin_tick,
                     control,
                 }) = DeBin::deserialize_bin(&data[1..])
                 {
                     return Some(NetworkMessage::ControlState {
+                        ack_tick,
                         begin_tick,
                         control,
                     });
+                }
+            }
+            OperationCode::STT_ENTITIES => {
+                if let Ok(StatePacket { tick }) = DeBin::deserialize_bin(&data[1..]) {
+                    return Some(NetworkMessage::GameState { tick });
                 }
             }
         }
@@ -144,6 +164,12 @@ struct AuthPacket {
 
 #[derive(DeBin, SerBin)]
 struct ControlPacket {
+    ack_tick: usize,
     begin_tick: usize,
     control: Vec<(Control, i32, i32)>,
+}
+
+#[derive(DeBin, SerBin)]
+struct StatePacket {
+    tick: usize,
 }

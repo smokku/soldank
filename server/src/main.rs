@@ -95,7 +95,11 @@ fn main() -> smol::io::Result<()> {
                 GameState::Lobby => {
                     timeacc = 0.; // avoid spinning unnecessary ticks after starting game simulation
 
-                    systems::process_network_messages(&mut world, &mut messages);
+                    systems::process_network_messages(
+                        &mut world,
+                        &mut messages,
+                        &mut networking.connections,
+                    );
                     systems::message_dump(&mut messages);
                     systems::lobby(&mut world, &mut game_state, &networking);
                 }
@@ -112,7 +116,11 @@ fn main() -> smol::io::Result<()> {
 
                         // current simulation frame
                         systems::tick_debug(&time);
-                        systems::process_network_messages(&mut world, &mut messages);
+                        systems::process_network_messages(
+                            &mut world,
+                            &mut messages,
+                            &mut networking.connections,
+                        );
                         systems::message_dump(&mut messages);
 
                         // update clients
