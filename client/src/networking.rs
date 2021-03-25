@@ -40,6 +40,8 @@ pub struct Networking {
     backoff_round: i32,
     last_message_received: f64,
     authorized: bool,
+
+    pub tick: usize,
     last_tick_received: usize,
 
     // game state
@@ -117,6 +119,8 @@ impl Networking {
             backoff_round: 0,
             last_message_received: 0.,
             authorized: false,
+
+            tick: 0,
             last_tick_received: 0,
 
             control: Default::default(),
@@ -154,7 +158,7 @@ impl Networking {
         self.connection.update(messenger, time);
     }
 
-    pub fn process(&mut self) {
+    pub fn tick(&mut self) {
         if self.state == ConnectionState::Disconnected {
             if backoff_enabled(self.backoff_round) {
                 let msg = messages::connection_request();
@@ -244,10 +248,11 @@ impl Networking {
                     if let Some(msg) = messages::decode_message(data) {
                         match msg {
                             NetworkMessage::ConnectionAuthorize { .. }
-                            | NetworkMessage::ControlState { .. } => unreachable!(),
+                            | NetworkMessage::ControlState { .. } => {
+                                log::error!("Should not receive message: {:?}", msg);
+                            }
                             NetworkMessage::GameState { tick } => {
-                                self.last_tick_received = tick;
-                                // TODO: fix current tick to server tick and reshuffle control ticks
+                                self.update_tick(tick);
                             }
                         }
                     } else {
@@ -261,7 +266,7 @@ impl Networking {
         }
     }
 
-    pub fn set_input_state(&mut self, tick: usize, control: &crate::control::Control) {
+    pub fn set_input_state(&mut self, control: &crate::control::Control) {
         let mut flags = Control::default();
         if control.left {
             flags.insert(Control::LEFT);
@@ -304,12 +309,32 @@ impl Networking {
         }
 
         self.control
-            .insert(tick, (flags, control.mouse_aim_x, control.mouse_aim_y));
+            .insert(self.tick, (flags, control.mouse_aim_x, control.mouse_aim_y));
+    }
 
+    fn update_tick(&mut self, tick: usize) {
+        if tick > self.last_tick_received {
+            self.last_tick_received = tick;
+
+            let delta = tick as isize - self.tick as isize;
+            if delta != 0 {
+                let mut fixed_control = HashMap::new();
+                for (tick, ctrl) in self.control.drain() {
+                    fixed_control.insert(isize::max(0, tick as isize + delta) as usize, ctrl);
+                }
+                self.control = fixed_control;
+                self.tick = tick;
+            }
+            // no tick_cleanup() here - we need to send fixed control to server
+        }
+    }
+
+    pub fn tick_cleanup(&mut self) {
         let low_tick = usize::max(
             self.last_tick_received,
-            tick - usize::min(tick, MAX_INPUTS_RETAIN),
+            self.tick - usize::min(self.tick, MAX_INPUTS_RETAIN),
         );
+
         self.control.retain(move |&t, _| t > low_tick);
     }
 }

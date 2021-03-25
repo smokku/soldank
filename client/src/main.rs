@@ -221,7 +221,6 @@ async fn main() {
     let mut timecur: f64 = current_time();
     let mut timeprv: f64 = timecur;
     let mut timeacc: f64 = 0.0;
-    let mut tick: usize = 0;
 
     let mut zoomin_pressed;
     let mut zoomout_pressed;
@@ -233,7 +232,7 @@ async fn main() {
 
     let mut running = true;
     while running {
-        tick += 1;
+        networking.tick += 1;
 
         networking.update();
 
@@ -345,8 +344,9 @@ async fn main() {
             ctx.show_mouse(state.mouse_over_ui);
         }
 
-        networking.set_input_state(tick, &soldier.control);
-        networking.process();
+        networking.set_input_state(&soldier.control);
+        networking.tick();
+        networking.tick_cleanup();
 
         macroquad::window::next_frame().await
     }
