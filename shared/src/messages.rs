@@ -8,6 +8,7 @@ use crate::control::Control;
 const NET_PROTOCOL_VERSION: u8 = 0x01;
 
 #[allow(non_camel_case_types)]
+#[repr(u8)]
 #[derive(Debug, Eq, PartialEq, Primitive)]
 pub enum OperationCode {
     // incoming

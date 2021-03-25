@@ -833,9 +833,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3de7a9a685bb301f5cb29587f13833270c59e7d2c6f457a66372996afad4504"
+checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
  "ahash 0.7.2",
 ]
@@ -845,7 +845,7 @@ name = "hecs"
 version = "0.3.2"
 source = "git+https://github.com/Ralith/hecs.git#982b64485cb56981f4a18cfe830d9410c14b92c2"
 dependencies = [
- "hashbrown 0.11.1",
+ "hashbrown 0.11.2",
 ]
 
 [[package]]
@@ -977,8 +977,8 @@ dependencies = [
 
 [[package]]
 name = "macroquad"
-version = "0.3.0-alpha.16"
-source = "git+https://github.com/not-fl3/macroquad.git#7adc0885ca0527331a30ec0bc8b929baf3dd2a14"
+version = "0.3.0-alpha.17"
+source = "git+https://github.com/not-fl3/macroquad.git#fa486ff74caa8b94b2eeee3cad1da50eb393b53b"
 dependencies = [
  "bumpalo",
  "fontdue",
@@ -992,7 +992,7 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.2"
-source = "git+https://github.com/not-fl3/macroquad.git#7adc0885ca0527331a30ec0bc8b929baf3dd2a14"
+source = "git+https://github.com/not-fl3/macroquad.git#fa486ff74caa8b94b2eeee3cad1da50eb393b53b"
 
 [[package]]
 name = "maybe-uninit"
@@ -1034,8 +1034,8 @@ dependencies = [
 
 [[package]]
 name = "miniquad"
-version = "0.3.0-alpha.28"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+version = "0.3.0-alpha.29"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 dependencies = [
  "sapp-android",
  "sapp-darwin",
@@ -1608,15 +1608,15 @@ dependencies = [
 [[package]]
 name = "sapp-android"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 dependencies = [
  "cc",
 ]
 
 [[package]]
 name = "sapp-darwin"
-version = "0.1.5"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+version = "0.1.6"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 dependencies = [
  "cc",
 ]
@@ -1624,7 +1624,7 @@ dependencies = [
 [[package]]
 name = "sapp-dummy"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 dependencies = [
  "libc",
 ]
@@ -1632,7 +1632,7 @@ dependencies = [
 [[package]]
 name = "sapp-ios"
 version = "0.1.2"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 dependencies = [
  "cc",
 ]
@@ -1640,7 +1640,7 @@ dependencies = [
 [[package]]
 name = "sapp-linux"
 version = "0.1.12"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 dependencies = [
  "libc",
 ]
@@ -1648,12 +1648,12 @@ dependencies = [
 [[package]]
 name = "sapp-wasm"
 version = "0.1.23"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 
 [[package]]
 name = "sapp-windows"
 version = "0.2.16"
-source = "git+https://github.com/not-fl3/miniquad.git#3d0502b7dee991f1bc8ded1f20dbe2eee583ebd6"
+source = "git+https://github.com/not-fl3/miniquad.git#17435f2812069e060e30de989f0da7d85a1c9a41"
 dependencies = [
  "winapi",
 ]
