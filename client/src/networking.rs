@@ -42,7 +42,7 @@ pub struct Networking {
     authorized: bool,
 
     pub tick: usize,
-    last_tick_received: usize,
+    server_tick_received: usize,
 
     // game state
     control: HashMap<usize, (Control, i32, i32)>,
@@ -121,7 +121,7 @@ impl Networking {
             authorized: false,
 
             tick: 0,
-            last_tick_received: 0,
+            server_tick_received: 0,
 
             control: Default::default(),
         }
@@ -194,7 +194,7 @@ impl Networking {
                 inputs.sort_by_key(|v| v.0);
 
                 let msg = NetworkMessage::ControlState {
-                    ack_tick: self.last_tick_received,
+                    ack_tick: self.server_tick_received,
                     begin_tick: inputs[0].0,
                     control: inputs.iter().map(|&(_t, c, x, y)| (c, x, y)).collect(),
                 };
@@ -252,7 +252,11 @@ impl Networking {
                                 log::error!("Should not receive message: {:?}", msg);
                             }
                             NetworkMessage::GameState { tick } => {
-                                self.update_tick(tick);
+                                if tick > self.server_tick_received {
+                                    self.server_tick_received = tick;
+                                    self.tick = tick;
+                                    // TODO: integrate game state to ECS world
+                                }
                             }
                         }
                     } else {
@@ -312,29 +316,14 @@ impl Networking {
             .insert(self.tick, (flags, control.mouse_aim_x, control.mouse_aim_y));
     }
 
-    fn update_tick(&mut self, tick: usize) {
-        if tick > self.last_tick_received {
-            self.last_tick_received = tick;
-
-            let delta = tick as isize - self.tick as isize;
-            if delta != 0 {
-                let mut fixed_control = HashMap::new();
-                for (tick, ctrl) in self.control.drain() {
-                    fixed_control.insert(isize::max(0, tick as isize + delta) as usize, ctrl);
-                }
-                self.control = fixed_control;
-                self.tick = tick;
-            }
-            // no tick_cleanup() here - we need to send fixed control to server
-        }
-    }
-
     pub fn tick_cleanup(&mut self) {
         let low_tick = usize::max(
-            self.last_tick_received,
+            self.server_tick_received,
             self.tick - usize::min(self.tick, MAX_INPUTS_RETAIN),
         );
+        let high_tick = self.tick;
 
-        self.control.retain(move |&t, _| t > low_tick);
+        self.control
+            .retain(move |&t, _| t > low_tick && t <= high_tick);
     }
 }
