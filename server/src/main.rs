@@ -115,7 +115,7 @@ fn main() -> smol::io::Result<()> {
                         };
 
                         // current simulation frame
-                        systems::tick_debug(&time);
+                        systems::tick_debug(&world, &time);
                         systems::process_network_messages(
                             &mut world,
                             &mut messages,
