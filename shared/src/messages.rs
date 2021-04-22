@@ -1,8 +1,10 @@
 use bytes::Bytes;
 use enum_primitive_derive::Primitive;
+use hecs::Entity;
 use nanoserde::{DeBin, SerBin};
-use std::convert::TryFrom;
+use std::{collections::HashMap, convert::TryFrom, mem::size_of};
 
+use crate::components;
 use crate::control::Control;
 
 const NET_PROTOCOL_VERSION: u8 = 0x01;
@@ -35,7 +37,14 @@ pub enum NetworkMessage {
     },
     GameState {
         tick: usize,
+        entities: HashMap<Entity, Vec<ComponentValue>>,
     },
+}
+
+#[derive(Debug)]
+pub enum ComponentValue {
+    Soldier(components::Soldier),
+    Nick(components::Nick),
 }
 
 pub fn encode_message(msg: NetworkMessage) -> Bytes {
@@ -60,10 +69,30 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
             msg.extend(SerBin::serialize_bin(&pkt));
             msg.into()
         }
-        NetworkMessage::GameState { tick } => {
+        NetworkMessage::GameState { tick, entities } => {
             let mut msg = vec![OperationCode::STT_ENTITIES as u8];
             let pkt = StatePacket { tick };
+
             msg.extend(SerBin::serialize_bin(&pkt));
+
+            msg.push(entities.len() as u8); // max 255 entities in packet
+            for (entity, components) in entities {
+                msg.extend(entity.to_bits().to_be_bytes().to_vec());
+                msg.push(components.len() as u8);
+                for component in components {
+                    match component {
+                        ComponentValue::Soldier(soldier) => {
+                            msg.push(1);
+                            msg.extend(SerBin::serialize_bin(&soldier));
+                        }
+                        ComponentValue::Nick(nick) => {
+                            msg.push(2);
+                            msg.extend(SerBin::serialize_bin(&nick));
+                        }
+                    }
+                }
+            }
+
             msg.into()
         }
     }
@@ -99,8 +128,107 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                 }
             }
             OperationCode::STT_ENTITIES => {
-                if let Ok(StatePacket { tick }) = DeBin::deserialize_bin(&data[1..]) {
-                    return Some(NetworkMessage::GameState { tick });
+                let mut offset = 1;
+                if let Ok(StatePacket { tick }) = DeBin::de_bin(&mut offset, data) {
+                    let mut entities = HashMap::new();
+                    if offset < data.len() {
+                        let mut entities_count = data[offset];
+                        offset += 1;
+                        while entities_count > 0 {
+                            entities_count -= 1;
+
+                            let entity = if offset + size_of::<u64>() < data.len() {
+                                let data: [u8; size_of::<u64>()] = [
+                                    data[offset],
+                                    data[offset + 1],
+                                    data[offset + 2],
+                                    data[offset + 3],
+                                    data[offset + 4],
+                                    data[offset + 5],
+                                    data[offset + 6],
+                                    data[offset + 7],
+                                ];
+                                offset += size_of::<u64>();
+                                Entity::from_bits(u64::from_be_bytes(data))
+                            } else {
+                                log::error!(
+                                    "@{}: Cannot deserialize {} entity id",
+                                    offset,
+                                    entities_count
+                                );
+                                return None;
+                            };
+
+                            if offset < data.len() {
+                                let mut components = Vec::new();
+
+                                let mut components_count = data[offset];
+                                offset += 1;
+                                while components_count > 0 {
+                                    components_count -= 1;
+
+                                    if offset < data.len() {
+                                        let component_type = data[offset];
+                                        offset += 1;
+                                        match component_type {
+                                            1 => {
+                                                if let Ok(soldier) =
+                                                    components::Soldier::de_bin(&mut offset, data)
+                                                {
+                                                    components
+                                                        .push(ComponentValue::Soldier(soldier))
+                                                } else {
+                                                    log::error!(
+                                                        "@{}: Cannot deserialize Soldier component",
+                                                        offset
+                                                    );
+                                                    return None;
+                                                }
+                                            }
+                                            2 => {
+                                                if let Ok(nick) =
+                                                    components::Nick::de_bin(&mut offset, data)
+                                                {
+                                                    components.push(ComponentValue::Nick(nick))
+                                                } else {
+                                                    log::error!(
+                                                        "@{}: Cannot deserialize Nick component",
+                                                        offset
+                                                    );
+                                                    return None;
+                                                }
+                                            }
+                                            t => {
+                                                log::error!(
+                                                    "@{}: Unhandled component type: {}",
+                                                    offset,
+                                                    t
+                                                );
+                                                return None;
+                                            }
+                                        }
+                                    } else {
+                                        log::error!(
+                                            "@{}: Not enough data to deserialize {} component",
+                                            offset,
+                                            components_count
+                                        );
+                                        return None;
+                                    }
+                                }
+
+                                entities.insert(entity, components);
+                            } else {
+                                log::error!("@{}: Not enough data to get components count", offset);
+                                return None;
+                            }
+                        }
+
+                        return Some(NetworkMessage::GameState { tick, entities });
+                    } else {
+                        log::error!("@{}: Not enough data to get entities count", offset);
+                        return None;
+                    }
                 }
             }
         }

@@ -251,16 +251,24 @@ impl Networking {
                             | NetworkMessage::ControlState { .. } => {
                                 log::error!("Should not receive message: {:?}", msg);
                             }
-                            NetworkMessage::GameState { tick } => {
+                            NetworkMessage::GameState { tick, entities } => {
                                 if tick > self.server_tick_received {
                                     self.server_tick_received = tick;
                                     self.tick = tick;
+
                                     // TODO: integrate game state to ECS world
+                                    log::debug!("Entity sync: {:?}", entities);
                                 }
                             }
                         }
                     } else {
-                        log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                        log::error!(
+                            "Unhandled packet: 0x{:x} ({:?}) {} bytes",
+                            code,
+                            op_code,
+                            data.len()
+                        );
+                        trace_dump_packet(data);
                     }
                 }
             },

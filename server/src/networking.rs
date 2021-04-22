@@ -289,7 +289,13 @@ impl Networking {
                                 }
                             },
                             None => {
-                                log::error!("Unhandled packet: 0x{:x} ({:?})", code, op_code);
+                                log::error!(
+                                    "Unhandled packet: 0x{:x} ({:?}) {} bytes",
+                                    code,
+                                    op_code,
+                                    data.len()
+                                );
+                                trace_dump_packet(data);
                             }
                         }
                     }

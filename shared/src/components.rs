@@ -1,7 +1,10 @@
 use gfx2d::math::*;
+use nanoserde::{DeBin, SerBin};
 
+#[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Nick(pub String);
 
+#[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Soldier {}
 
 #[derive(Debug, Copy, Clone)]
