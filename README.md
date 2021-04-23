@@ -13,6 +13,10 @@
 
 ## build and run
 
+This repository is configured to store `*.smod` and `*.smap` files in LFS. You will need to install https://git-lfs.github.com/ to handle these.
+
+Alternatively you can build `soldat.smod` from [soldat-base](https://github.com/Soldat/base) and copy to `soldank/client/resources` directory
+
 ### Server
 
     env RUST_LOG=debug cargo run --manifest-path server/Cargo.toml
