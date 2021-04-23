@@ -52,6 +52,7 @@ fn config() -> mq::Conf {
 
 #[macroquad::main(config)]
 async fn main() {
+    better_panic::install();
     env_logger::init();
 
     let cmd = clap::app_from_crate!()

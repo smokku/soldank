@@ -21,6 +21,7 @@ pub enum GameState {
 }
 
 fn main() -> smol::io::Result<()> {
+    better_panic::install();
     env_logger::init();
 
     smol::block_on(async {
