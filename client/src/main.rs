@@ -114,21 +114,30 @@ async fn main() {
 
     let soldat_smod = path::Path::new("/soldat.smod");
     if filesystem.is_file(soldat_smod) {
-        mods.push(filesystem.open(soldat_smod).unwrap());
+        mods.push((
+            filesystem.open(soldat_smod).unwrap(),
+            soldat_smod.to_string_lossy().to_string(),
+        ));
     }
 
     for f in filesystem.read_dir(path::Path::new("/")).unwrap() {
         let f = f.as_path();
         if let Some(name) = f.to_str() {
             if filesystem.is_file(f) && f != soldat_smod && name.ends_with(".smod") {
-                mods.push(filesystem.open(f).unwrap());
+                mods.push((filesystem.open(f).unwrap(), name.to_string()));
             }
         }
     }
-    for m in mods.drain(..) {
-        match m {
+    for (md, path) in mods.drain(..) {
+        match md {
             File::VfsFile(file) => {
-                filesystem.add_zip_file(file).unwrap();
+                filesystem.add_zip_file(file).expect(
+                    format!(
+                        "Failed to add `{}` file to VFS. Make sure it is a proper ZIP file.",
+                        path
+                    )
+                    .as_str(),
+                );
             }
         }
     }
