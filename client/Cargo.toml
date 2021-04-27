@@ -20,7 +20,7 @@ zip = { version = "0.5", features = [
 ] }
 byteorder = "1.4"
 instant = { version = "0.1", default-features = false, features = ["now"] }
-rust-ini = "0.16"
+rust-ini = "0.17"
 bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"

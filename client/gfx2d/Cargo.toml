@@ -7,7 +7,7 @@ license = "MIT"
 publish = false
 
 [dependencies]
-macroquad = { version = "0.3.0-alpha.0", default-features = false }
+macroquad = { version = "=0.3.0-alpha.17", default-features = false }
 image = "0.23"
 rgb = "0.8"
 gvfs = "0.1"
