@@ -23,7 +23,7 @@ Alternatively you can build `soldat.smod` from [soldat-base](https://github.com/
 
 ### Client
 
-    cargo run --manifest-path client/Cargo.toml -- --debug
+    env RUST_LOG=debug cargo run --manifest-path client/Cargo.toml -- --debug
 
 Use `--help` option to display command line help.
 
@@ -76,3 +76,4 @@ You can use `--set cvar value` option (multiple times) to override config variab
 - [x] Use `cvar`s for configuration
 - [ ] Implement game interface
 - [ ] Server-authoritative networking
+- [ ] [Rhai](http://rhai.rs) scripted gameplay and console

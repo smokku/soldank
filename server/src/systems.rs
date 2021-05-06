@@ -8,10 +8,10 @@ use crate::{
     networking::{Connection, Networking},
     GameState,
 };
-pub use soldank_shared::systems::*;
-use soldank_shared::{components, control::Control, messages::NetworkMessage};
+pub use soldank_shared::systems::{Time, *};
+use soldank_shared::{components, messages::NetworkMessage, systems};
 
-pub type ControlComponent = HashMap<usize, (Control, i32, i32)>;
+pub type ControlBuffer = HashMap<usize, components::ControlComponent>;
 
 pub fn process_network_messages(
     world: &mut World,
@@ -43,10 +43,15 @@ pub fn process_network_messages(
         }
     }
 
-    for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlComponent)>().iter() {
+    for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlBuffer)>().iter() {
         if let Some((tick, mut ctrl)) = control_updates.remove(addr) {
-            for (i, (c, x, y)) in ctrl.drain(..).enumerate() {
-                control.insert(tick + i, (c, x, y));
+            if let Some(connection) = connections.get(addr) {
+                for (i, (c, x, y)) in ctrl.drain(..).enumerate() {
+                    let t = tick + i;
+                    if t > connection.last_processed_tick {
+                        control.insert(tick + i, (c, x, y));
+                    }
+                }
             }
         }
     }
@@ -84,8 +89,27 @@ pub fn lobby(world: &mut World, game_state: &mut GameState, networking: &Network
                     components::Soldier {},
                     components::Nick(conn.nick.clone()),
                     addr,
-                    ControlComponent::default(),
+                    ControlBuffer::default(),
                 ),
+            );
+        }
+    }
+}
+
+pub fn apply_input(world: &World, time: &Time) {
+    let tick = time.tick;
+
+    for (entity, buffer) in world.query::<&mut ControlBuffer>().iter() {
+        // FIXME: apply all queued inputs in rollback manner
+        if let Some(control) = buffer.get(&tick) {
+            systems::apply_input(world.entity(entity).unwrap(), control);
+        } else {
+            let max_tick = buffer.keys().max().unwrap();
+            log::warn!(
+                "Missed input for tick {}({}) on entity {:?}",
+                tick,
+                max_tick,
+                entity
             );
         }
     }

@@ -2,6 +2,8 @@ mod debug;
 pub use debug::*;
 mod movement;
 pub use movement::*;
+mod input;
+pub use input::*;
 
 #[derive(Debug)]
 pub struct Time {

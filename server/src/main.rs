@@ -123,6 +123,7 @@ fn main() -> smol::io::Result<()> {
                             &mut networking.connections,
                         );
                         systems::message_dump(&mut messages);
+                        systems::apply_input(&mut world, &time);
 
                         // update clients
                         networking.broadcast_state(&world, &time);
