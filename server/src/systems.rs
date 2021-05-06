@@ -90,6 +90,7 @@ pub fn lobby(world: &mut World, game_state: &mut GameState, networking: &Network
                     components::Nick(conn.nick.clone()),
                     addr,
                     ControlBuffer::default(),
+                    components::Position { x: 0, y: 0 }, // FIXME: remove this
                 ),
             );
         }
@@ -101,10 +102,10 @@ pub fn apply_input(world: &World, time: &Time) {
 
     for (entity, buffer) in world.query::<&mut ControlBuffer>().iter() {
         // FIXME: apply all queued inputs in rollback manner
-        if let Some(control) = buffer.get(&tick) {
+        let max_tick = buffer.keys().max().unwrap();
+        if let Some(control) = buffer.get(&max_tick) {
             systems::apply_input(world.entity(entity).unwrap(), control);
         } else {
-            let max_tick = buffer.keys().max().unwrap();
             log::warn!(
                 "Missed input for tick {}({}) on entity {:?}",
                 tick,

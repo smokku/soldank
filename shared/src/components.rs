@@ -11,8 +11,8 @@ pub struct Soldier {}
 
 #[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Position {
-    x: i32,
-    y: i32,
+    pub x: i32,
+    pub y: i32,
 }
 
 pub type ControlComponent = (Control, i32, i32);
