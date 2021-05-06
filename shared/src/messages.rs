@@ -2,6 +2,7 @@ use bytes::Bytes;
 use enum_primitive_derive::Primitive;
 use hecs::Entity;
 use nanoserde::{DeBin, SerBin};
+use num_traits::{FromPrimitive, ToPrimitive};
 use std::{collections::HashMap, convert::TryFrom, mem::size_of};
 
 use crate::components;
@@ -39,6 +40,13 @@ pub enum NetworkMessage {
         tick: usize,
         entities: HashMap<Entity, Vec<ComponentValue>>,
     },
+}
+
+#[derive(Debug, Eq, PartialEq, Primitive)]
+pub enum ComponentType {
+    Soldier = 1,
+    Nick = 2,
+    Pos = 3,
 }
 
 #[derive(Debug)]
@@ -83,15 +91,15 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
                 for component in components {
                     match component {
                         ComponentValue::Soldier(soldier) => {
-                            msg.push(1);
+                            msg.push(ComponentType::Soldier.to_u8().unwrap());
                             msg.extend(SerBin::serialize_bin(&soldier));
                         }
                         ComponentValue::Nick(nick) => {
-                            msg.push(2);
+                            msg.push(ComponentType::Nick.to_u8().unwrap());
                             msg.extend(SerBin::serialize_bin(&nick));
                         }
                         ComponentValue::Pos(pos) => {
-                            msg.push(3);
+                            msg.push(ComponentType::Pos.to_u8().unwrap());
                             msg.extend(SerBin::serialize_bin(&pos));
                         }
                     }
@@ -175,55 +183,60 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                                     if offset < data.len() {
                                         let component_type = data[offset];
                                         offset += 1;
-                                        match component_type {
-                                            1 => {
-                                                if let Ok(soldier) =
-                                                    components::Soldier::de_bin(&mut offset, data)
-                                                {
-                                                    components
-                                                        .push(ComponentValue::Soldier(soldier))
-                                                } else {
-                                                    log::error!(
+                                        if let Some(component_type) =
+                                            ComponentType::from_u8(component_type)
+                                        {
+                                            match component_type {
+                                                ComponentType::Soldier => {
+                                                    if let Ok(soldier) = components::Soldier::de_bin(
+                                                        &mut offset,
+                                                        data,
+                                                    ) {
+                                                        components
+                                                            .push(ComponentValue::Soldier(soldier))
+                                                    } else {
+                                                        log::error!(
                                                         "@{}: Cannot deserialize Soldier component",
                                                         offset
                                                     );
-                                                    return None;
+                                                        return None;
+                                                    }
                                                 }
-                                            }
-                                            2 => {
-                                                if let Ok(nick) =
-                                                    components::Nick::de_bin(&mut offset, data)
-                                                {
-                                                    components.push(ComponentValue::Nick(nick))
-                                                } else {
-                                                    log::error!(
+                                                ComponentType::Nick => {
+                                                    if let Ok(nick) =
+                                                        components::Nick::de_bin(&mut offset, data)
+                                                    {
+                                                        components.push(ComponentValue::Nick(nick))
+                                                    } else {
+                                                        log::error!(
                                                         "@{}: Cannot deserialize Nick component",
                                                         offset
                                                     );
-                                                    return None;
+                                                        return None;
+                                                    }
                                                 }
-                                            }
-                                            3 => {
-                                                if let Ok(pos) =
-                                                    components::Position::de_bin(&mut offset, data)
-                                                {
-                                                    components.push(ComponentValue::Pos(pos))
-                                                } else {
-                                                    log::error!(
+                                                ComponentType::Pos => {
+                                                    if let Ok(pos) = components::Position::de_bin(
+                                                        &mut offset,
+                                                        data,
+                                                    ) {
+                                                        components.push(ComponentValue::Pos(pos))
+                                                    } else {
+                                                        log::error!(
                                                         "@{}: Cannot deserialize Position component",
                                                         offset
                                                     );
-                                                    return None;
+                                                        return None;
+                                                    }
                                                 }
                                             }
-                                            t => {
-                                                log::error!(
-                                                    "@{}: Unhandled component type: {}",
-                                                    offset,
-                                                    t
-                                                );
-                                                return None;
-                                            }
+                                        } else {
+                                            log::error!(
+                                                "@{}: Unhandled component type: {}",
+                                                offset,
+                                                component_type
+                                            );
+                                            return None;
                                         }
                                     } else {
                                         log::error!(
