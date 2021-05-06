@@ -18,6 +18,9 @@ pub fn build_state_message(world: &World, _client_entity: Entity, time: &systems
         if let Some(nick) = entity_ref.get::<components::Nick>() {
             components.push(ComponentValue::Nick((*nick).clone()));
         }
+        if let Some(pos) = entity_ref.get::<components::Position>() {
+            components.push(ComponentValue::Pos((*pos).clone()));
+        }
     }
 
     encode_message(NetworkMessage::GameState {

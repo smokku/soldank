@@ -45,6 +45,7 @@ pub enum NetworkMessage {
 pub enum ComponentValue {
     Soldier(components::Soldier),
     Nick(components::Nick),
+    Pos(components::Position),
 }
 
 pub fn encode_message(msg: NetworkMessage) -> Bytes {
@@ -88,6 +89,10 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
                         ComponentValue::Nick(nick) => {
                             msg.push(2);
                             msg.extend(SerBin::serialize_bin(&nick));
+                        }
+                        ComponentValue::Pos(pos) => {
+                            msg.push(3);
+                            msg.extend(SerBin::serialize_bin(&pos));
                         }
                     }
                 }
@@ -193,6 +198,19 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                                                 } else {
                                                     log::error!(
                                                         "@{}: Cannot deserialize Nick component",
+                                                        offset
+                                                    );
+                                                    return None;
+                                                }
+                                            }
+                                            3 => {
+                                                if let Ok(pos) =
+                                                    components::Position::de_bin(&mut offset, data)
+                                                {
+                                                    components.push(ComponentValue::Pos(pos))
+                                                } else {
+                                                    log::error!(
+                                                        "@{}: Cannot deserialize Position component",
                                                         offset
                                                     );
                                                     return None;
