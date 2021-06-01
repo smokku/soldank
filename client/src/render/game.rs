@@ -2,8 +2,9 @@ use super::*;
 use crate::debug::DebugState;
 use gfx::SpriteData;
 use gfx2d::macroquad::prelude::*;
+use hocon::{Hocon, HoconLoader};
 use ini::Ini;
-use std::str::FromStr;
+use std::{collections::HashMap, io::Read, str::FromStr};
 
 pub trait QuadGlProjectionExt {
     fn set_projection_from_transform(&mut self, transform: &Mat2d) -> Mat4;
@@ -66,6 +67,7 @@ pub struct GameGraphics {
     soldier_graphics: SoldierGraphics,
     sprites: Vec<Vec<Sprite>>,
     batch: DrawBatch,
+    dynamic_sprites: HashMap<String, HashMap<String, Sprite>>,
 }
 
 impl GameGraphics {
@@ -75,6 +77,7 @@ impl GameGraphics {
             soldier_graphics: SoldierGraphics::new(),
             sprites: Vec::new(),
             batch: DrawBatch::new(),
+            dynamic_sprites: HashMap::new(),
         }
     }
 
@@ -200,6 +203,7 @@ impl GameGraphics {
     pub fn load_sprites(&mut self, fs: &mut Filesystem) {
         let mut main: Vec<SpriteInfo> = Vec::new();
         let mut intf: Vec<SpriteInfo> = Vec::new();
+        let mut dynm: Vec<SpriteInfo> = Vec::new();
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
             let fname = filename_override(fs, "", fname);
@@ -227,11 +231,6 @@ impl GameGraphics {
                     .iter()
                     .map(|v| v.filename())
                     .for_each(|f| add_to(&mut main, f)),
-
-                gfx::Group::Marker => gfx::Marker::values()
-                    .iter()
-                    .map(|v| v.filename())
-                    .for_each(|f| add_to(&mut intf, f)),
 
                 gfx::Group::Interface => gfx::Interface::values()
                     .iter()
@@ -263,8 +262,86 @@ impl GameGraphics {
             }
         }
 
+        let mut sprites_config = String::new();
+        match fs.open("/sprites.conf") {
+            Ok(mut file) => {
+                if let Err(err) = file.read_to_string(&mut sprites_config) {
+                    log::error!("Cannot read sprites.conf: {}", err);
+                    std::process::exit(-1);
+                }
+            }
+            Err(err) => {
+                log::error!("Cannot open sprites.conf: {}", err);
+                std::process::exit(-1);
+            }
+        }
+
+        let mut loader = HoconLoader::new().no_system().no_url_include();
+        loader = match loader.load_str(&sprites_config) {
+            Ok(loader) => loader,
+            Err(err) => {
+                log::error!("Cannot load sprites.conf: {}", err);
+                std::process::exit(-1);
+            }
+        };
+
+        let sprites_config = match loader.hocon() {
+            Ok(hocon) => hocon,
+            Err(err) => {
+                log::error!("Cannot parse sprites.conf: {}", err);
+                std::process::exit(-1);
+            }
+        };
+        log::trace!("Parsed sprites.conf: {:#?}", sprites_config);
+
+        let groups = match sprites_config {
+            Hocon::Hash(groups) => groups,
+            _ => {
+                log::error!("Error parsing sprites.conf groups: not a Hash");
+                std::process::exit(-1);
+            }
+        };
+
+        let mut dynamic_sprites: HashMap<String, HashMap<String, usize>> = HashMap::new();
+        for group in groups.keys() {
+            let sprites = match &groups[group] {
+                Hocon::Hash(sprites) => sprites,
+                _ => {
+                    log::error!("Error parsing sprites.conf group {}: not a Hash", group);
+                    std::process::exit(-1);
+                }
+            };
+            for sprite in sprites.keys() {
+                let fname = match &sprites[sprite] {
+                    Hocon::String(fname) => fname,
+                    Hocon::Hash(data) => match &data["path"] {
+                        Hocon::String(fname) => fname,
+                        _ => {
+                            log::error!(
+                                "Error parsing sprites.conf sprite {}/{}: Missing 'path'",
+                                group,
+                                sprite
+                            );
+                            std::process::exit(-1);
+                        }
+                    },
+                    _ => {
+                        log::error!("Error parsing sprites.conf sprite {}/{}", group, sprite);
+                        std::process::exit(-1);
+                    }
+                };
+                dynamic_sprites
+                    .entry((*group).clone())
+                    .or_default()
+                    .insert((*sprite).clone(), dynm.len());
+                let fname = filename_override(fs, "", fname);
+                dynm.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
+            }
+        }
+
         let main = Spritesheet::new(fs, 8, FilterMode::Linear, &main);
         let intf = Spritesheet::new(fs, 8, FilterMode::Linear, &intf);
+        let dynm = Spritesheet::new(fs, 8, FilterMode::Linear, &dynm);
 
         self.sprites.clear();
         self.sprites.resize(gfx::Group::values().len(), Vec::new());
@@ -300,12 +377,6 @@ impl GameGraphics {
                         imain += 1;
                     }
                 }
-                gfx::Group::Marker => {
-                    for _ in gfx::Marker::values() {
-                        self.sprites[index].push(intf.sprites[iintf].clone());
-                        iintf += 1;
-                    }
-                }
                 gfx::Group::Interface => {
                     for _ in gfx::Interface::values() {
                         self.sprites[index].push(intf.sprites[iintf].clone());
@@ -314,9 +385,25 @@ impl GameGraphics {
                 }
             }
         }
+
+        for group in dynamic_sprites.keys() {
+            for (sprite, &index) in dynamic_sprites[group].iter() {
+                self.dynamic_sprites
+                    .entry((*group).clone())
+                    .or_default()
+                    .insert((*sprite).clone(), dynm.sprites[index].clone());
+            }
+        }
     }
 
-    pub fn get_sprite(&self, sprite: &dyn SpriteData) -> &gfx2d::Sprite {
-        &self.sprites[sprite.group().id()][sprite.id()]
+    pub fn get_dynamic_sprite<S: Into<String>>(&self, group: S, sprite: S) -> &gfx2d::Sprite {
+        let group = group.into();
+        let sprite = sprite.into();
+        &self
+            .dynamic_sprites
+            .get(&group)
+            .expect(format!("Sprite group '{}' unavailable", group).as_str())
+            .get(&sprite)
+            .expect(format!("Sprite '{} / {}' unavailable", group, sprite).as_str())
     }
 }

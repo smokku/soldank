@@ -4,14 +4,6 @@ macro_rules! sprites {
             $($id:ident = $file:tt)+
         })+
     ) => {
-        pub trait SpriteData: Send + Sync + std::fmt::Debug {
-            fn id(&self) -> usize;
-            fn group(&self) -> Group;
-            fn filename(&self) -> &'static str;
-            fn values() -> &'static [Self]
-                where Self: ::std::marker::Sized;
-        }
-
         #[derive(Debug, Copy, Clone)]
         pub enum Group {
             $($enm,)+
@@ -122,25 +114,6 @@ macro_rules! soldier_parts {
 
                 DATA
             }
-        }
-
-        impl ::std::convert::From<usize> for SoldierPart {
-            fn from(id: usize) -> SoldierPart {
-                match SoldierPart::values().get(id as usize) {
-                    Some(&v) => v,
-                    _ => panic!("Invalid sprite identifier."),
-                }
-            }
-        }
-
-        impl ::std::ops::Add<usize> for SoldierPart {
-            type Output = SoldierPart;
-            fn add(self, x: usize) -> SoldierPart { SoldierPart::from(self.id() + x) }
-        }
-
-        impl ::std::ops::Sub<usize> for SoldierPart {
-            type Output = SoldierPart;
-            fn sub(self, x: usize) -> SoldierPart { SoldierPart::from(self.id() - x) }
         }
     }
 }

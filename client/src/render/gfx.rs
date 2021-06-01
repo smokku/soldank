@@ -1,6 +1,38 @@
 use super::*;
 
+pub trait SpriteData: Send + Sync + std::fmt::Debug {
+    fn id(&self) -> usize;
+    fn group(&self) -> Group;
+    fn filename(&self) -> &'static str;
+    fn values() -> &'static [Self]
+    where
+        Self: std::marker::Sized;
+}
+
 include!("gfx_macro.rs");
+
+impl std::convert::From<usize> for SoldierPart {
+    fn from(id: usize) -> SoldierPart {
+        match SoldierPart::values().get(id as usize) {
+            Some(&v) => v,
+            _ => panic!("Invalid sprite identifier."),
+        }
+    }
+}
+
+impl std::ops::Add<usize> for SoldierPart {
+    type Output = SoldierPart;
+    fn add(self, x: usize) -> SoldierPart {
+        SoldierPart::from(self.id() + x)
+    }
+}
+
+impl std::ops::Sub<usize> for SoldierPart {
+    type Output = SoldierPart;
+    fn sub(self, x: usize) -> SoldierPart {
+        SoldierPart::from(self.id() - x)
+    }
+}
 
 // Note: images that have a "2" version go together (opposite gostek direction).
 sprites! {
@@ -338,26 +370,6 @@ sprites! {
         FlagHandle         = "objects-gfx/flag"
     }
 
-    Marker {
-        SpawnGeneral       = "/markers/0"
-        SpawnAlpha         = "/markers/1"
-        SpawnBravo         = "/markers/2"
-        SpawnCharlie       = "/markers/3"
-        SpawnDelta         = "/markers/4"
-        FlagAlpha          = "/markers/5"
-        FlagBravo          = "/markers/6"
-        Grenades           = "/markers/7"
-        Medkits            = "/markers/8"
-        Clusters           = "/markers/9"
-        Vest               = "/markers/10"
-        Flamer             = "/markers/11"
-        Berserker          = "/markers/12"
-        Predator           = "/markers/13"
-        FlagYellow         = "/markers/14"
-        RamboBow           = "/markers/15"
-        StatGun            = "/markers/16"
-    }
-
     // Preserve order of Guns*
 
     Interface {
@@ -410,6 +422,7 @@ sprites! {
         TitleR             = "interface-gfx/title-r"
     }
 }
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 soldier_parts! {
     SecondaryDeagles       = Sprite(None),                    Point( 5, 10), Center( 0.300,  0.500), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )

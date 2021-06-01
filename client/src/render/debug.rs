@@ -1,5 +1,5 @@
 use crate::{
-    constants, debug::DebugState, gfx, mapfile::PolyType, mq, vec2, GameGraphics, MainState, Vec2,
+    constants, debug::DebugState, mapfile::PolyType, mq, vec2, GameGraphics, MainState, Vec2,
 };
 use gfx2d::{
     macroquad::prelude::{color_u8, Color, DrawMode, QuadGl, Vertex},
@@ -91,28 +91,27 @@ pub fn debug_render(
                     f32::exp(game.zoom) * constants::GAME_WIDTH / constants::WINDOW_WIDTH as f32;
                 let size = 8. * scale;
                 let sprite = match spawn.team {
-                    0 => Some(&gfx::Marker::SpawnGeneral),
-                    1 => Some(&gfx::Marker::SpawnAlpha),
-                    2 => Some(&gfx::Marker::SpawnBravo),
-                    3 => Some(&gfx::Marker::SpawnCharlie),
-                    4 => Some(&gfx::Marker::SpawnDelta),
-                    5 => Some(&gfx::Marker::FlagAlpha),
-                    6 => Some(&gfx::Marker::FlagBravo),
-                    7 => Some(&gfx::Marker::Grenades),
-                    8 => Some(&gfx::Marker::Medkits),
-                    9 => Some(&gfx::Marker::Clusters),
-                    10 => Some(&gfx::Marker::Vest),
-                    11 => Some(&gfx::Marker::Flamer),
-                    12 => Some(&gfx::Marker::Berserker),
-                    13 => Some(&gfx::Marker::Predator),
-                    14 => Some(&gfx::Marker::FlagYellow),
-                    15 => Some(&gfx::Marker::RamboBow),
-                    16 => Some(&gfx::Marker::StatGun),
+                    0 => Some(graphics.get_dynamic_sprite("Marker", "SpawnGeneral")),
+                    1 => Some(graphics.get_dynamic_sprite("Marker", "SpawnAlpha")),
+                    2 => Some(graphics.get_dynamic_sprite("Marker", "SpawnBravo")),
+                    3 => Some(graphics.get_dynamic_sprite("Marker", "SpawnCharlie")),
+                    4 => Some(graphics.get_dynamic_sprite("Marker", "SpawnDelta")),
+                    5 => Some(graphics.get_dynamic_sprite("Marker", "FlagAlpha")),
+                    6 => Some(graphics.get_dynamic_sprite("Marker", "FlagBravo")),
+                    7 => Some(graphics.get_dynamic_sprite("Marker", "Grenades")),
+                    8 => Some(graphics.get_dynamic_sprite("Marker", "Medkits")),
+                    9 => Some(graphics.get_dynamic_sprite("Marker", "Clusters")),
+                    10 => Some(graphics.get_dynamic_sprite("Marker", "Vest")),
+                    11 => Some(graphics.get_dynamic_sprite("Marker", "Flamer")),
+                    12 => Some(graphics.get_dynamic_sprite("Marker", "Berserker")),
+                    13 => Some(graphics.get_dynamic_sprite("Marker", "Predator")),
+                    14 => Some(graphics.get_dynamic_sprite("Marker", "FlagYellow")),
+                    15 => Some(graphics.get_dynamic_sprite("Marker", "RamboBow")),
+                    16 => Some(graphics.get_dynamic_sprite("Marker", "StatGun")),
                     _ => None,
                 };
 
                 let (texture, tx, ty) = if let Some(sprite) = sprite {
-                    let sprite = graphics.get_sprite(sprite);
                     (
                         sprite.texture.clone(),
                         sprite.texcoords_x,
