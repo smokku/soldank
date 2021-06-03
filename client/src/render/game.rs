@@ -7,30 +7,14 @@ use ini::Ini;
 use std::{collections::HashMap, io::Read, str::FromStr};
 
 pub trait QuadGlProjectionExt {
-    fn set_projection_from_transform(&mut self, transform: &Mat2d) -> Mat4;
-    fn draw_batch(&mut self, slice: &mut DrawSlice, transform: &Mat2d);
+    fn draw_batch(&mut self, slice: &mut DrawSlice);
 }
 
 impl QuadGlProjectionExt for QuadGl {
-    fn set_projection_from_transform(&mut self, transform: &Mat2d) -> Mat4 {
-        let prj = self.get_projection_matrix();
-
-        self.set_projection_matrix(Mat4::from_cols_array_2d(&[
-            [(transform.0).0, (transform.1).0, 0.0, 0.0],
-            [(transform.0).1, (transform.1).1, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [(transform.0).2, (transform.1).2, 0.0, 1.0],
-        ]));
-
-        prj
-    }
-
-    fn draw_batch(&mut self, slice: &mut DrawSlice, transform: &Mat2d) {
+    fn draw_batch(&mut self, slice: &mut DrawSlice) {
         let buffer = slice.buffer();
 
         self.draw_mode(DrawMode::Triangles);
-
-        let prj = self.set_projection_from_transform(transform);
 
         for cmd in slice.commands() {
             self.texture(
@@ -57,8 +41,6 @@ impl QuadGlProjectionExt for QuadGl {
 
             self.geometry(vertices.as_ref(), indices.as_ref());
         }
-
-        self.set_projection_matrix(prj);
     }
 }
 
@@ -93,8 +75,6 @@ impl GameGraphics {
         let cam = lerp(state.camera_prev, state.camera, frame_percent);
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
         let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
-        let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
-        let transform_bg = Transform::ortho(0.0, 1.0, dy, dy + h).matrix();
 
         self.batch.clear();
 
@@ -126,40 +106,43 @@ impl GameGraphics {
 
         clear_background(BLACK);
 
+        set_camera(Camera2D::from_display_rect(Rect::new(0.0, dy, 1.0, h)));
         if !debug_state.render.disable_background {
-            gl.draw_batch(&mut self.map.background(), &transform_bg);
+            gl.draw_batch(&mut self.map.background());
         }
+
+        set_camera(Camera2D::from_display_rect(Rect::new(dx, dy, w, h)));
+
         if !debug_state.render.disable_polygon {
             if !debug_state.render.disable_texture {
-                gl.draw_batch(&mut self.map.polys_back(), &transform);
+                gl.draw_batch(&mut self.map.polys_back());
             } else {
-                // gl.draw_batch(&mut self.map.polys_back(), &transform);
+                // gl.draw_batch(&mut self.map.polys_back());
             }
         }
         if !debug_state.render.disable_scenery_back {
-            gl.draw_batch(&mut self.map.scenery_back(), &transform);
+            gl.draw_batch(&mut self.map.scenery_back());
         }
-        gl.draw_batch(&mut self.batch.all(), &transform);
+        gl.draw_batch(&mut self.batch.all());
         if !debug_state.render.disable_scenery_middle {
-            gl.draw_batch(&mut self.map.scenery_mid(), &transform);
+            gl.draw_batch(&mut self.map.scenery_mid());
         }
         if !debug_state.render.disable_polygon {
             if !debug_state.render.disable_texture {
-                gl.draw_batch(&mut self.map.polys_front(), &transform);
+                gl.draw_batch(&mut self.map.polys_front());
             } else {
-                // gl.draw_batch(&mut self.map.polys_front(), &transform);
+                // gl.draw_batch(&mut self.map.polys_front());
             }
         }
         if !debug_state.render.disable_scenery_front {
-            gl.draw_batch(&mut self.map.scenery_front(), &transform);
+            gl.draw_batch(&mut self.map.scenery_front());
         }
 
         if debug_state.ui_visible {
-            let prj = gl.set_projection_from_transform(&transform);
             debug::debug_render(gl, debug_state, state, self);
-            gl.set_projection_matrix(prj);
         }
 
+        set_default_camera();
         self.render_cursor(gl, state);
     }
 
@@ -169,7 +152,6 @@ impl GameGraphics {
         let size = vec2(screen_width(), screen_height());
         let x = zoom * f32::floor(state.mouse.x * size.x / w);
         let y = zoom * f32::floor(state.mouse.y * size.y / h);
-        let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();
 
         self.batch.clear();
 
@@ -193,7 +175,7 @@ impl GameGraphics {
             ],
         );
 
-        gl.draw_batch(&mut self.batch.all(), &screen);
+        gl.draw_batch(&mut self.batch.all());
     }
 
     pub fn load_map(&mut self, fs: &mut Filesystem, map: &MapFile) {
