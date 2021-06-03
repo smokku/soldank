@@ -21,13 +21,13 @@ zip = { version = "0.5", features = [
 byteorder = "1.4"
 instant = { version = "0.1", default-features = false, features = ["now"] }
 rust-ini = "0.17"
-hocon = "0.5"
+hocon = { version = "0.5", default-features = false }
 bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"
 megaui-macroquad = "0.1"
-naia-client-socket = "0.5"
-laminar = "0.4"
+naia-client-socket = "0.6"
+laminar = "0.5"
 smol = "1.2"
 cvar = "0.3"
 log = "0.4"

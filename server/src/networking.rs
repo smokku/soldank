@@ -116,7 +116,12 @@ impl Networking {
             SocketAddr::new(addr, SERVER_PORT)
         };
 
-        let mut server_socket = ServerSocket::listen(bind_address).await;
+        let mut webrtc_listen_address = bind_address.clone();
+        webrtc_listen_address.set_port(webrtc_listen_address.port() + 1);
+        let public_webrtc_address = webrtc_listen_address.clone();
+
+        let mut server_socket =
+            ServerSocket::listen(bind_address, webrtc_listen_address, public_webrtc_address).await;
         if cfg!(debug_assertions) {
             server_socket =
                 server_socket.with_link_conditioner(&LinkConditionerConfig::good_condition());

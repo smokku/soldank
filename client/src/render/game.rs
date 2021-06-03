@@ -258,7 +258,7 @@ impl GameGraphics {
             }
         }
 
-        let mut loader = HoconLoader::new().no_system().no_url_include();
+        let mut loader = HoconLoader::new().no_system();
         loader = match loader.load_str(&sprites_config) {
             Ok(loader) => loader,
             Err(err) => {
