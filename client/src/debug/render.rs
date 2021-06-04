@@ -47,6 +47,66 @@ pub struct RenderState {
     pub hlt_poly_flag_coll: bool,
 }
 
+impl IVisit for RenderState {
+    fn visit(&mut self, f: &mut dyn FnMut(&mut dyn INode)) {
+        f(&mut cvar::Property(
+            "render_skeleton",
+            &mut self.render_skeleton,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "render_position",
+            &mut self.render_position,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "disable_background",
+            &mut self.disable_background,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "disable_polygon",
+            &mut self.disable_polygon,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "disable_texture",
+            &mut self.disable_texture,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "render_wireframe",
+            &mut self.render_wireframe,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "render_colliders",
+            &mut self.render_colliders,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "disable_scenery",
+            &mut self.disable_scenery,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "disable_scenery_back",
+            &mut self.disable_scenery_back,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "disable_scenery_middle",
+            &mut self.disable_scenery_middle,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "disable_scenery_front",
+            &mut self.disable_scenery_front,
+            false,
+        ));
+    }
+}
+
 pub fn build_ui(state: &mut DebugState) {
     if state.render_visible {
         let state = &mut state.render;

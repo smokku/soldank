@@ -1,4 +1,5 @@
 use super::*;
+use cvar::{INode, IVisit};
 use megaui_macroquad::{
     draw_window,
     megaui::{hash, Vector2},
@@ -25,28 +26,40 @@ pub struct DebugState {
     fps_count: u32,
 }
 
-pub fn build_ui(
-    state: &mut DebugState,
-    game: &MainState,
-    seconds_since_startup: u32,
-    overstep_percentage: f32,
-) {
+impl IVisit for DebugState {
+    fn visit(&mut self, f: &mut dyn FnMut(&mut dyn INode)) {
+        f(&mut cvar::Property(
+            "ui_visible",
+            &mut self.ui_visible,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "render_visible",
+            &mut self.render_visible,
+            false,
+        ));
+        f(&mut cvar::List("render", &mut self.render));
+        f(&mut cvar::ReadOnlyProp("fps", &mut self.fps, 0));
+    }
+}
+
+pub fn build_ui(game: &mut MainState, seconds_since_startup: u32, overstep_percentage: f32) {
     if mq::is_key_pressed(mq::KeyCode::GraveAccent) && mq::is_key_down(mq::KeyCode::LeftControl) {
-        state.ui_visible = !state.ui_visible;
+        game.config.debug.ui_visible = !game.config.debug.ui_visible;
     }
 
     let (mouse_x, mouse_y) = mq::mouse_position();
     let game_x = mouse_x * GAME_WIDTH / WINDOW_WIDTH as f32;
     let game_y = mouse_y * GAME_HEIGHT / WINDOW_HEIGHT as f32;
 
-    if state.fps_second != seconds_since_startup {
-        state.fps = state.fps_count;
-        state.fps_second = seconds_since_startup;
-        state.fps_count = 0;
+    if game.config.debug.fps_second != seconds_since_startup {
+        game.config.debug.fps = game.config.debug.fps_count;
+        game.config.debug.fps_second = seconds_since_startup;
+        game.config.debug.fps_count = 0;
     }
-    state.fps_count += 1;
+    game.config.debug.fps_count += 1;
 
-    if state.ui_visible {
+    if game.config.debug.ui_visible {
         draw_window(
             hash!(),
             vec2(10., 10.),
@@ -58,27 +71,31 @@ pub fn build_ui(
             |ui| {
                 if ui.button(
                     None,
-                    toggle_button_label(state.spawner_visible, "Spawn").as_str(),
+                    toggle_button_label(game.config.debug.spawner_visible, "Spawn").as_str(),
                 ) {
-                    state.spawner_visible = !state.spawner_visible;
+                    game.config.debug.spawner_visible = !game.config.debug.spawner_visible;
                 }
                 if ui.button(
                     Vector2::new(60., 2.),
-                    toggle_button_label(state.entities_visible, "Entities").as_str(),
+                    toggle_button_label(game.config.debug.entities_visible, "Entities").as_str(),
                 ) {
-                    state.entities_visible = !state.entities_visible;
+                    game.config.debug.entities_visible = !game.config.debug.entities_visible;
                 }
                 if ui.button(
                     Vector2::new(139., 2.),
-                    toggle_button_label(state.render_visible, "Render").as_str(),
+                    toggle_button_label(game.config.debug.render_visible, "Render").as_str(),
                 ) {
-                    state.render_visible = !state.render_visible;
+                    game.config.debug.render_visible = !game.config.debug.render_visible;
                 }
 
                 ui.separator();
                 ui.label(
                     None,
-                    format!("{:4}FPS \u{B1}{}", state.fps, overstep_percentage).as_str(),
+                    format!(
+                        "{:4}FPS \u{B1}{}",
+                        game.config.debug.fps, overstep_percentage
+                    )
+                    .as_str(),
                 );
 
                 ui.label(
@@ -105,7 +122,7 @@ pub fn build_ui(
         );
 
         // spawner::build_ui();
-        render::build_ui(state);
+        render::build_ui(&mut game.config.debug);
     }
 
     // entities::build_ui();

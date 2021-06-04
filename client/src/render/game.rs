@@ -1,5 +1,4 @@
 use super::*;
-use crate::debug::DebugState;
 use gfx::SpriteData;
 use gfx2d::macroquad::prelude::*;
 use hocon::{Hocon, HoconLoader};
@@ -66,7 +65,6 @@ impl GameGraphics {
     pub fn render_frame(
         &mut self,
         state: &MainState,
-        debug_state: &DebugState,
         soldier: &Soldier,
         elapsed: f64,
         frame_percent: f32,
@@ -75,6 +73,8 @@ impl GameGraphics {
         let cam = lerp(state.camera_prev, state.camera, frame_percent);
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
         let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
+
+        let debug_state = &state.config.debug;
 
         self.batch.clear();
 

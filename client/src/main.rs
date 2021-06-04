@@ -159,6 +159,9 @@ async fn main() {
     log::info!("Using map: {}", map.mapname);
 
     let mut config = cvars::Config::default();
+
+    config.debug.ui_visible = cmd.is_present("debug");
+
     if let Some(values) = cmd.values_of("set") {
         for chunk in values.collect::<Vec<_>>().chunks_exact(2) {
             let cvar = chunk[0];
@@ -201,8 +204,6 @@ async fn main() {
         bullets: vec![],
         mouse_over_ui: false,
     };
-    let mut debug_state = debug::DebugState::default();
-    debug_state.ui_visible = cmd.is_present("debug");
 
     AnimData::initialize(&mut filesystem);
     Soldier::initialize(&mut filesystem, &state.config);
@@ -336,14 +337,13 @@ async fn main() {
 
         graphics.render_frame(
             &state,
-            &debug_state,
             &soldier,
             timecur - TIMESTEP_RATE * (1.0 - p),
             p as f32,
         );
 
         if cfg!(debug_assertions) {
-            debug::build_ui(&mut debug_state, &state, timecur as u32, p as f32);
+            debug::build_ui(&mut state, timecur as u32, p as f32);
         }
 
         draw_megaui();
@@ -358,6 +358,6 @@ async fn main() {
         networking.tick();
         networking.tick_cleanup();
 
-        macroquad::window::next_frame().await
+        macroquad::window::next_frame().await;
     }
 }
