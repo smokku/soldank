@@ -43,23 +43,26 @@ impl IVisit for DebugState {
     }
 }
 
-pub fn build_ui(game: &mut MainState, seconds_since_startup: u32, overstep_percentage: f32) {
+pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_percentage: f32) {
+    let game = resources.get::<MainState>().unwrap();
+    let mut config = resources.get_mut::<Config>().unwrap();
+
     if mq::is_key_pressed(mq::KeyCode::GraveAccent) && mq::is_key_down(mq::KeyCode::LeftControl) {
-        game.config.debug.ui_visible = !game.config.debug.ui_visible;
+        config.debug.ui_visible = !config.debug.ui_visible;
     }
 
     let (mouse_x, mouse_y) = mq::mouse_position();
     let game_x = mouse_x * GAME_WIDTH / WINDOW_WIDTH as f32;
     let game_y = mouse_y * GAME_HEIGHT / WINDOW_HEIGHT as f32;
 
-    if game.config.debug.fps_second != seconds_since_startup {
-        game.config.debug.fps = game.config.debug.fps_count;
-        game.config.debug.fps_second = seconds_since_startup;
-        game.config.debug.fps_count = 0;
+    if config.debug.fps_second != seconds_since_startup {
+        config.debug.fps = config.debug.fps_count;
+        config.debug.fps_second = seconds_since_startup;
+        config.debug.fps_count = 0;
     }
-    game.config.debug.fps_count += 1;
+    config.debug.fps_count += 1;
 
-    if game.config.debug.ui_visible {
+    if config.debug.ui_visible {
         draw_window(
             hash!(),
             vec2(10., 10.),
@@ -71,31 +74,27 @@ pub fn build_ui(game: &mut MainState, seconds_since_startup: u32, overstep_perce
             |ui| {
                 if ui.button(
                     None,
-                    toggle_button_label(game.config.debug.spawner_visible, "Spawn").as_str(),
+                    toggle_button_label(config.debug.spawner_visible, "Spawn").as_str(),
                 ) {
-                    game.config.debug.spawner_visible = !game.config.debug.spawner_visible;
+                    config.debug.spawner_visible = !config.debug.spawner_visible;
                 }
                 if ui.button(
                     Vector2::new(60., 2.),
-                    toggle_button_label(game.config.debug.entities_visible, "Entities").as_str(),
+                    toggle_button_label(config.debug.entities_visible, "Entities").as_str(),
                 ) {
-                    game.config.debug.entities_visible = !game.config.debug.entities_visible;
+                    config.debug.entities_visible = !config.debug.entities_visible;
                 }
                 if ui.button(
                     Vector2::new(139., 2.),
-                    toggle_button_label(game.config.debug.render_visible, "Render").as_str(),
+                    toggle_button_label(config.debug.render_visible, "Render").as_str(),
                 ) {
-                    game.config.debug.render_visible = !game.config.debug.render_visible;
+                    config.debug.render_visible = !config.debug.render_visible;
                 }
 
                 ui.separator();
                 ui.label(
                     None,
-                    format!(
-                        "{:4}FPS \u{B1}{}",
-                        game.config.debug.fps, overstep_percentage
-                    )
-                    .as_str(),
+                    format!("{:4}FPS \u{B1}{}", config.debug.fps, overstep_percentage).as_str(),
                 );
 
                 ui.label(
@@ -122,7 +121,7 @@ pub fn build_ui(game: &mut MainState, seconds_since_startup: u32, overstep_perce
         );
 
         // spawner::build_ui();
-        render::build_ui(&mut game.config.debug);
+        render::build_ui(&mut config.debug);
     }
 
     // entities::build_ui();

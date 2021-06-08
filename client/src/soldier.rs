@@ -54,7 +54,7 @@ pub struct Soldier {
 }
 
 impl Soldier {
-    pub fn initialize(fs: &mut Filesystem, config: &cvars::Config) {
+    pub fn initialize(fs: &mut Filesystem, config: &Config) {
         unsafe {
             SOLDIER_SKELETON.replace(ParticleSystem::load_from_file(
                 fs,
@@ -104,7 +104,7 @@ impl Soldier {
         self.control.jets = mq::is_mouse_button_down(mq::MouseButton::Right);
     }
 
-    pub fn new(spawn: &MapSpawnpoint, config: &cvars::Config) -> Soldier {
+    pub fn new(spawn: &MapSpawnpoint, config: &Config) -> Soldier {
         let particle = Particle {
             active: true,
             pos: vec2(spawn.x as f32, spawn.y as f32),
@@ -183,13 +183,15 @@ impl Soldier {
         }
     }
 
-    pub fn update(&mut self, state: &MainState, emitter: &mut Vec<EmitterItem>) {
-        let map = &state.map;
+    pub fn update(&mut self, resources: &Resources) {
+        let map = &*resources.get::<MapFile>().unwrap();
+        let config = &*resources.get::<Config>().unwrap();
+
         let mut body_y = 0.0;
         let mut arm_s;
 
         self.particle.euler();
-        self.control(state, emitter);
+        self.control(resources);
 
         *self.skeleton.old_pos_mut(21) = self.skeleton.pos(21);
         *self.skeleton.old_pos_mut(23) = self.skeleton.pos(23);
@@ -341,10 +343,10 @@ impl Soldier {
             self.on_ground = false;
 
             let (x, y) = self.particle.pos.into();
-            self.check_map_collision(map, &state.config, x - 3.5, y - 12.0, 1);
+            self.check_map_collision(map, config, x - 3.5, y - 12.0, 1);
 
             let (x, y) = self.particle.pos.into();
-            self.check_map_collision(map, &state.config, x + 3.5, y - 12.0, 1);
+            self.check_map_collision(map, config, x + 3.5, y - 12.0, 1);
 
             body_y = 0.0;
             arm_s = 0.0;
@@ -380,12 +382,10 @@ impl Soldier {
             }
 
             let (x, y) = self.particle.pos.into();
-            self.on_ground =
-                self.check_map_collision(map, &state.config, x + 2.0, y + 2.0 - body_y, 0);
+            self.on_ground = self.check_map_collision(map, config, x + 2.0, y + 2.0 - body_y, 0);
 
             let (x, y) = self.particle.pos.into();
-            self.on_ground |=
-                self.check_map_collision(map, &state.config, x - 2.0, y + 2.0 - arm_s, 0);
+            self.on_ground |= self.check_map_collision(map, config, x - 2.0, y + 2.0 - arm_s, 0);
 
             let (x, y) = self.particle.pos.into();
             let grounded = self.on_ground;
@@ -438,7 +438,7 @@ impl Soldier {
     pub fn check_map_collision(
         &mut self,
         map: &MapFile,
-        config: &cvars::Config,
+        config: &Config,
         x: f32,
         y: f32,
         area: i32,

@@ -44,7 +44,11 @@ pub struct Control {
 }
 
 impl Soldier {
-    pub fn control(&mut self, state: &MainState, emitter: &mut Vec<EmitterItem>) {
+    pub fn control(&mut self, resources: &resources::Resources) {
+        let state = resources.get::<MainState>().unwrap();
+        let config = resources.get::<Config>().unwrap();
+        let emitter = &mut *resources.get_mut::<Vec<EmitterItem>>().unwrap();
+
         let mut player_pressed_left_right = false;
 
         if self.legs_animation.speed < 1 {
@@ -146,22 +150,22 @@ impl Soldier {
             if self.on_ground {
                 self.particle.force.y = -2.5
                     * iif!(
-                        state.config.phys.gravity > 0.05,
+                        config.phys.gravity > 0.05,
                         JETSPEED,
-                        state.config.phys.gravity * 2.0
+                        config.phys.gravity * 2.0
                     );
             } else if self.position != POS_PRONE {
                 self.particle.force.y -= iif!(
-                    state.config.phys.gravity > 0.05,
+                    config.phys.gravity > 0.05,
                     JETSPEED,
-                    state.config.phys.gravity * 2.0
+                    config.phys.gravity * 2.0
                 );
             } else {
                 self.particle.force.x += f32::from(self.direction)
                     * iif!(
-                        state.config.phys.gravity > 0.05,
+                        config.phys.gravity > 0.05,
                         JETSPEED / 2.0,
-                        state.config.phys.gravity
+                        config.phys.gravity
                     );
             }
 

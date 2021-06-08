@@ -21,8 +21,6 @@ pub enum EmitterItem {
 }
 
 pub struct MainState {
-    pub config: cvars::Config,
-    pub map: MapFile,
     pub camera: Vec2,
     pub camera_prev: Vec2,
     pub mouse: Vec2,
@@ -30,7 +28,6 @@ pub struct MainState {
     pub game_width: f32,
     pub game_height: f32,
     pub zoom: f32,
-    pub bullets: Vec<Bullet>,
     pub mouse_over_ui: bool,
 }
 

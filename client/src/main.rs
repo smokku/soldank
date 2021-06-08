@@ -33,9 +33,11 @@ use soldier::*;
 use state::*;
 use weapons::*;
 
+use cvars::Config;
 use gfx2d::macroquad::{self as macroquad, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
 use megaui_macroquad::{draw_megaui, mouse_over_ui};
+use resources::Resources;
 use std::{env, path};
 
 use soldank_shared::constants::DEFAULT_MAP;
@@ -158,7 +160,7 @@ async fn main() {
     let map = MapFile::load_map_file(&mut filesystem, map_name.as_str());
     log::info!("Using map: {}", map.mapname);
 
-    let mut config = cvars::Config::default();
+    let mut config = Config::default();
 
     config.debug.ui_visible = cmd.is_present("debug");
 
@@ -192,8 +194,6 @@ async fn main() {
     });
 
     let mut state = MainState {
-        config,
-        map,
         game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),
         game_height: 480.0,
         camera: Vec2::zero(),
@@ -201,17 +201,16 @@ async fn main() {
         mouse: Vec2::zero(),
         mouse_prev: Vec2::zero(),
         zoom: 0.0,
-        bullets: vec![],
         mouse_over_ui: false,
     };
 
     AnimData::initialize(&mut filesystem);
-    Soldier::initialize(&mut filesystem, &state.config);
+    Soldier::initialize(&mut filesystem, &config);
 
-    let mut soldier = Soldier::new(&state.map.spawnpoints[0], &state.config);
+    let mut soldier = Soldier::new(&map.spawnpoints[0], &config);
     state.camera = soldier.particle.pos;
 
-    let mut emitter: Vec<EmitterItem> = Vec::new();
+    let emitter: Vec<EmitterItem> = Vec::new();
 
     // setup window, renderer & main loop
 
@@ -224,7 +223,7 @@ async fn main() {
 
     let mut graphics = GameGraphics::new();
     graphics.load_sprites(&mut filesystem);
-    graphics.load_map(&mut filesystem, &state.map);
+    graphics.load_map(&mut filesystem, &map);
 
     let time_start = instant::now();
     let current_time = || (instant::now() - time_start) / 1000.;
@@ -241,32 +240,48 @@ async fn main() {
         .map(|k| Weapon::new(*k, false))
         .collect();
 
+    let bullets: Vec<Bullet> = Vec::new();
+
+    let mut resources = Resources::new();
+    resources.insert(map);
+    resources.insert(config);
+    resources.insert(state);
+    resources.insert(emitter);
+    resources.insert(weapons);
+    resources.insert(bullets);
+    let resources = resources; // This shadows the mutable binding with an immutable one.
+
     let mut running = true;
     while running {
         networking.tick += 1;
 
         networking.update();
 
-        //             WindowEvent::CloseRequested => running = false,
+        {
+            let mut state = resources.get_mut::<MainState>().unwrap();
 
-        if mq::is_key_pressed(mq::KeyCode::Escape) {
-            running = false;
-        }
-        zoomin_pressed = mq::is_key_down(mq::KeyCode::Equal);
-        zoomout_pressed = mq::is_key_down(mq::KeyCode::Minus);
-        if mq::is_key_pressed(mq::KeyCode::Tab) {
-            let index = soldier.primary_weapon().kind.index();
-            let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
-            soldier.weapons[soldier.active_weapon] = weapons[index];
-        }
-        if !state.mouse_over_ui {
-            soldier.update_keys();
-            soldier.update_mouse_button();
-        }
+            //             WindowEvent::CloseRequested => running = false,
 
-        let (mouse_x, mouse_y) = mq::mouse_position();
-        state.mouse.x = mouse_x * state.game_width / WINDOW_WIDTH as f32;
-        state.mouse.y = mouse_y * state.game_height / WINDOW_HEIGHT as f32;
+            if mq::is_key_pressed(mq::KeyCode::Escape) {
+                running = false;
+            }
+            zoomin_pressed = mq::is_key_down(mq::KeyCode::Equal);
+            zoomout_pressed = mq::is_key_down(mq::KeyCode::Minus);
+            if mq::is_key_pressed(mq::KeyCode::Tab) {
+                let index = soldier.primary_weapon().kind.index();
+                let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
+                soldier.weapons[soldier.active_weapon] =
+                    resources.get_mut::<Vec<Weapon>>().unwrap()[index];
+            }
+            if !state.mouse_over_ui {
+                soldier.update_keys();
+                soldier.update_mouse_button();
+            }
+
+            let (mouse_x, mouse_y) = mq::mouse_position();
+            state.mouse.x = mouse_x * state.game_width / WINDOW_WIDTH as f32;
+            state.mouse.y = mouse_y * state.game_height / WINDOW_HEIGHT as f32;
+        }
 
         timecur = current_time();
         timeacc += timecur - timeprv;
@@ -275,58 +290,69 @@ async fn main() {
         while timeacc >= TIMESTEP_RATE {
             timeacc -= TIMESTEP_RATE;
 
-            // remove inactive bullets
-            let mut i = 0;
-            while i < state.bullets.len() {
-                if !state.bullets[i].active {
-                    state.bullets.swap_remove(i);
-                } else {
-                    i += 1;
+            {
+                // remove inactive bullets
+                let mut bullets = resources.get_mut::<Vec<Bullet>>().unwrap();
+                let mut i = 0;
+                while i < bullets.len() {
+                    if !bullets[i].active {
+                        bullets.swap_remove(i);
+                    } else {
+                        i += 1;
+                    }
                 }
             }
 
             // update soldiers
-            soldier.update(&state, &mut emitter);
+            soldier.update(&resources);
 
-            // update bullets
-            for bullet in state.bullets.iter_mut() {
-                bullet.update(&state.map);
+            {
+                let mut bullets = resources.get_mut::<Vec<Bullet>>().unwrap();
+
+                // update bullets
+                for bullet in bullets.iter_mut() {
+                    bullet.update(&resources);
+                }
+
+                // create emitted objects
+                for item in resources.get_mut::<Vec<EmitterItem>>().unwrap().drain(..) {
+                    match item {
+                        EmitterItem::Bullet(params) => {
+                            bullets.push(Bullet::new(&params, &*resources.get::<Config>().unwrap()))
+                        }
+                    };
+                }
             }
 
-            // create emitted objects
-            for item in emitter.drain(..) {
-                match item {
-                    EmitterItem::Bullet(params) => {
-                        state.bullets.push(Bullet::new(&params, &state.config))
-                    }
+            {
+                // update camera
+                let mut state = resources.get_mut::<MainState>().unwrap();
+
+                state.camera_prev = state.camera;
+                state.mouse_prev = state.mouse;
+
+                if zoomin_pressed ^ zoomout_pressed {
+                    state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * TIMESTEP_RATE as f32;
+                }
+
+                state.camera = {
+                    let z = f32::exp(state.zoom);
+                    let mut m = Vec2::zero();
+
+                    m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
+                        * ((2.0 * 640.0 / state.game_width - 1.0)
+                            + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
+                    m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
+
+                    let mut cam_v = state.camera;
+                    let p = soldier.particle.pos;
+                    let norm = p - cam_v;
+                    let s = norm * 0.14;
+                    cam_v += s;
+                    cam_v += m;
+                    cam_v
                 };
             }
-
-            // update camera
-            state.camera_prev = state.camera;
-            state.mouse_prev = state.mouse;
-
-            if zoomin_pressed ^ zoomout_pressed {
-                state.zoom += iif!(zoomin_pressed, -1.0, 1.0) * TIMESTEP_RATE as f32;
-            }
-
-            state.camera = {
-                let z = f32::exp(state.zoom);
-                let mut m = Vec2::zero();
-
-                m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
-                    * ((2.0 * 640.0 / state.game_width - 1.0)
-                        + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
-                m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
-
-                let mut cam_v = state.camera;
-                let p = soldier.particle.pos;
-                let norm = p - cam_v;
-                let s = norm * 0.14;
-                cam_v += s;
-                cam_v += m;
-                cam_v
-            };
 
             timecur = current_time();
             timeacc += timecur - timeprv;
@@ -336,22 +362,25 @@ async fn main() {
         let p = f64::min(1.0, f64::max(0.0, timeacc / TIMESTEP_RATE));
 
         graphics.render_frame(
-            &state,
+            &resources,
             &soldier,
             timecur - TIMESTEP_RATE * (1.0 - p),
             p as f32,
         );
 
         if cfg!(debug_assertions) {
-            debug::build_ui(&mut state, timecur as u32, p as f32);
+            debug::build_ui(&resources, timecur as u32, p as f32);
         }
 
-        draw_megaui();
+        {
+            draw_megaui();
 
-        let mouse_over_ui = mouse_over_ui();
-        if state.mouse_over_ui != mouse_over_ui {
-            state.mouse_over_ui = mouse_over_ui;
-            ctx.show_mouse(state.mouse_over_ui);
+            let mut state = resources.get_mut::<MainState>().unwrap();
+            let mouse_over_ui = mouse_over_ui();
+            if state.mouse_over_ui != mouse_over_ui {
+                state.mouse_over_ui = mouse_over_ui;
+                ctx.show_mouse(state.mouse_over_ui);
+            }
         }
 
         networking.set_input_state(&soldier.control);

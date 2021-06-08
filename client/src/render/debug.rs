@@ -1,5 +1,6 @@
 use crate::{
-    constants, debug::DebugState, mapfile::PolyType, mq, vec2, GameGraphics, MainState, Vec2,
+    constants, debug::DebugState, mapfile::PolyType, mq, vec2, GameGraphics, MainState, MapFile,
+    Vec2,
 };
 use gfx2d::{
     macroquad::prelude::{color_u8, Color, DrawMode, QuadGl, Vertex},
@@ -11,10 +12,10 @@ pub fn debug_render(
     gl: &mut QuadGl,
     state: &DebugState,
     game: &MainState,
+    map: &MapFile,
     graphics: &GameGraphics,
 ) {
     let state = &state.render;
-    let map = &game.map;
 
     if state.render_wireframe || state.highlight_polygons {
         // TODO: merge to single gl.geometry() calls for all vertices

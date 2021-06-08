@@ -55,7 +55,7 @@ impl Default for BulletStyle {
 }
 
 impl Bullet {
-    pub fn new(params: &BulletParams, config: &cvars::Config) -> Bullet {
+    pub fn new(params: &BulletParams, config: &Config) -> Bullet {
         let particle = Particle {
             active: true,
             pos: params.position,
@@ -86,7 +86,9 @@ impl Bullet {
         }
     }
 
-    pub fn update(&mut self, map: &MapFile) {
+    pub fn update(&mut self, resources: &Resources) {
+        let map = &*resources.get::<MapFile>().unwrap();
+
         self.velocity_prev = self.particle.velocity;
         self.particle.euler();
 

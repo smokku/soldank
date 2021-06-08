@@ -64,17 +64,22 @@ impl GameGraphics {
 
     pub fn render_frame(
         &mut self,
-        state: &MainState,
+        resources: &Resources,
         soldier: &Soldier,
         elapsed: f64,
         frame_percent: f32,
     ) {
+        let state = resources.get::<MainState>().unwrap();
+        let config = resources.get::<Config>().unwrap();
+        let bullets = resources.get::<Vec<Bullet>>().unwrap();
+        let map = resources.get::<MapFile>().unwrap();
+
         let zoom = f32::exp(state.zoom);
         let cam = lerp(state.camera_prev, state.camera, frame_percent);
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
         let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
 
-        let debug_state = &state.config.debug;
+        let debug_state = &config.debug;
 
         self.batch.clear();
 
@@ -91,7 +96,7 @@ impl GameGraphics {
             render_skeleton(soldier, &mut self.batch, px, frame_percent);
         }
 
-        for bullet in &state.bullets {
+        for bullet in bullets.iter() {
             render_bullet(
                 bullet,
                 &self.sprites,
@@ -139,11 +144,11 @@ impl GameGraphics {
         }
 
         if debug_state.ui_visible {
-            debug::debug_render(gl, debug_state, state, self);
+            debug::debug_render(gl, debug_state, &*state, &*map, self);
         }
 
         set_default_camera();
-        self.render_cursor(gl, state);
+        self.render_cursor(gl, &*state);
     }
 
     fn render_cursor(&mut self, gl: &mut QuadGl, state: &MainState) {
