@@ -24,4 +24,4 @@ laminar = "0.5"
 hecs = { version = "0.5", features = [] }
 bitflags = "1.2"
 bytes = "1.0"
-better-panic = "0.2"
+color-eyre = "0.5"

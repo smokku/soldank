@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate clap;
 
+use color_eyre::eyre::Result;
 use hecs::World;
 use smol::future;
 use std::{collections::VecDeque, net::SocketAddr};
@@ -20,8 +21,8 @@ pub enum GameState {
     InGame,
 }
 
-fn main() -> smol::io::Result<()> {
-    better_panic::install();
+fn main() -> Result<()> {
+    color_eyre::install()?;
     env_logger::init();
 
     smol::block_on(async {
