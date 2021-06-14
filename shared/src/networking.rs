@@ -4,7 +4,7 @@ use crystalorb::{
     world::{DisplayState, World},
 };
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, net::SocketAddr};
+use std::fmt::Debug;
 
 #[derive(Default)]
 pub struct MyWorld {

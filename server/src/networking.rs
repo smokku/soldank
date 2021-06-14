@@ -12,6 +12,7 @@ use naia_server_socket::{
 use serde::{de::DeserializeOwned, Serialize};
 use smol::channel::{unbounded, Receiver, Sender, TryRecvError};
 use std::{
+    any::{Any, TypeId},
     collections::{HashMap, VecDeque},
     convert::TryFrom,
     fmt::Debug,
@@ -23,7 +24,6 @@ use crate::{cheat::Cheats, constants::*, state::build_state_message, systems};
 use soldank_shared::{
     constants::SERVER_PORT,
     messages::{self, NetworkMessage},
-    networking::MyCommand,
     trace_dump_packet,
 };
 
@@ -49,6 +49,9 @@ pub struct Connection {
     pub nick: String,
     pub cheats: Cheats,
     pub entity: Option<Entity>,
+
+    incoming: HashMap<TypeId, VecDeque<Box<dyn Any>>>,
+    outgoing: HashMap<TypeId, VecDeque<Box<dyn Any>>>,
 }
 
 impl Connection {
@@ -62,6 +65,8 @@ impl Connection {
             nick: Default::default(),
             cheats: Default::default(),
             entity: None,
+            incoming: Default::default(),
+            outgoing: Default::default(),
         }
     }
 }
@@ -351,21 +356,30 @@ impl<'a> ConnectionTrait for ConnectionRef<'a> {
     where
         MessageType: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static,
     {
-        todo!()
+        self.0
+            .incoming
+            .entry(TypeId::of::<MessageType>())
+            .or_default()
+            .pop_front()
+            .map(|b| *b.downcast().expect("MessageType is of the right type"))
     }
 
     fn send<MessageType>(&mut self, message: MessageType) -> Option<MessageType>
     where
         MessageType: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static,
     {
-        todo!()
+        self.0
+            .outgoing
+            .entry(TypeId::of::<MessageType>())
+            .or_default()
+            .push_back(Box::new(message));
+        None
     }
 
     fn flush<MessageType>(&mut self)
     where
         MessageType: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static,
     {
-        todo!()
     }
 }
 
@@ -388,6 +402,8 @@ impl NetworkResource for Networking {
         &mut self,
         handle: Self::ConnectionHandleType,
     ) -> Option<Self::ConnectionType<'_>> {
-        todo!()
+        self.connections
+            .get_mut(&handle)
+            .map(|connection| ConnectionRef(connection))
     }
 }
