@@ -1,8 +1,11 @@
+#![feature(generic_associated_types)]
+
 pub mod components;
 pub mod constants;
 pub mod control;
 pub mod cvars;
 pub mod messages;
+pub mod networking;
 pub mod systems;
 
 use hexdump::hexdump_iter;

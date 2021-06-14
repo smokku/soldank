@@ -1,12 +1,15 @@
+#![feature(generic_associated_types)]
+
 #[macro_use]
 extern crate clap;
 
 use color_eyre::eyre::Result;
+use crystalorb::{server::Server, Config, TweeningMethod};
 use hecs::World;
 use smol::future;
 use std::{collections::VecDeque, net::SocketAddr};
 
-use soldank_shared::messages::NetworkMessage;
+use soldank_shared::{messages::NetworkMessage, networking::MyWorld};
 use {constants::*, networking::Networking};
 
 mod cheat;
@@ -79,6 +82,25 @@ fn main() -> Result<()> {
 
         let mut game_state = GameState::Lobby;
 
+        // ----------------------------------------------------------------
+        let config = Config {
+            lag_compensation_latency: 0.3,
+            blend_latency: 0.2,
+            timestep_seconds: 1.0 / 60.0,
+            clock_sync_needed_sample_count: 32,
+            clock_sync_request_period: 0.2,
+            clock_sync_assumed_outlier_rate: 0.2,
+            max_tolerable_clock_deviation: 0.1,
+            snapshot_send_period: 0.1,
+            update_delta_seconds_max: 0.25,
+            timestamp_skip_threshold_seconds: 1.0,
+            fastforward_max_per_step: 10,
+            tweening_method: TweeningMethod::Interpolated,
+        };
+
+        let mut server = Server::<MyWorld>::new(config.clone(), 0.0);
+        // ----------------------------------------------------------------
+
         let mut running = true;
         while running {
             future::race(
@@ -92,6 +114,12 @@ fn main() -> Result<()> {
             timecur = current_time();
             timeacc += timecur - timeprv;
             timeprv = timecur;
+
+            // ----------------------------------------------------------------
+            let server_display_state = server.display_state();
+            log::info!("server_display_state: {:?}", server_display_state);
+            server.update(timeacc, timecur, &mut networking);
+            // ----------------------------------------------------------------
 
             match game_state {
                 GameState::Lobby => {

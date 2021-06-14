@@ -1,3 +1,4 @@
+use crystalorb::network_resource::{Connection as ConnectionTrait, NetworkResource};
 use hecs::{Entity, World};
 use instant::Instant;
 use laminar::{
@@ -8,10 +9,12 @@ use naia_server_socket::{
     find_my_ip_address, LinkConditionerConfig, MessageSender, NaiaServerSocketError,
     Packet as NaiaPacket, ServerSocket, ServerSocketTrait,
 };
+use serde::{de::DeserializeOwned, Serialize};
 use smol::channel::{unbounded, Receiver, Sender, TryRecvError};
 use std::{
     collections::{HashMap, VecDeque},
     convert::TryFrom,
+    fmt::Debug,
     io,
     net::SocketAddr,
 };
@@ -20,6 +23,7 @@ use crate::{cheat::Cheats, constants::*, state::build_state_message, systems};
 use soldank_shared::{
     constants::SERVER_PORT,
     messages::{self, NetworkMessage},
+    networking::MyCommand,
     trace_dump_packet,
 };
 
@@ -337,5 +341,53 @@ impl Networking {
         for packet in packets.drain(..) {
             self.send(packet);
         }
+    }
+}
+
+pub struct ConnectionRef<'a>(&'a mut Connection);
+
+impl<'a> ConnectionTrait for ConnectionRef<'a> {
+    fn recv<MessageType>(&mut self) -> Option<MessageType>
+    where
+        MessageType: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static,
+    {
+        todo!()
+    }
+
+    fn send<MessageType>(&mut self, message: MessageType) -> Option<MessageType>
+    where
+        MessageType: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static,
+    {
+        todo!()
+    }
+
+    fn flush<MessageType>(&mut self)
+    where
+        MessageType: Debug + Clone + Serialize + DeserializeOwned + Send + Sync + 'static,
+    {
+        todo!()
+    }
+}
+
+impl NetworkResource for Networking {
+    type ConnectionType<'a> = ConnectionRef<'a>;
+    type ConnectionHandleType = SocketAddr;
+
+    fn connections<'a>(
+        &'a mut self,
+    ) -> Box<dyn Iterator<Item = (Self::ConnectionHandleType, Self::ConnectionType<'a>)> + 'a> {
+        Box::new(
+            self.connections
+                .iter_mut()
+                .filter(|(_handle, connection)| connection.authorized)
+                .map(|(handle, connection)| (*handle, ConnectionRef(connection))),
+        )
+    }
+
+    fn get_connection(
+        &mut self,
+        handle: Self::ConnectionHandleType,
+    ) -> Option<Self::ConnectionType<'_>> {
+        todo!()
     }
 }
