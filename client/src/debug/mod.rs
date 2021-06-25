@@ -1,10 +1,6 @@
 use super::*;
 use cvar::{INode, IVisit};
-use megaui_macroquad::{
-    draw_window,
-    megaui::{hash, Vector2},
-    WindowParams,
-};
+use macroquad::ui::{hash, root_ui, widgets};
 
 // mod entities;
 mod render;
@@ -63,15 +59,9 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
     config.debug.fps_count += 1;
 
     if config.debug.ui_visible {
-        draw_window(
-            hash!(),
-            vec2(10., 10.),
-            vec2(296., 89.),
-            WindowParams {
-                titlebar: false,
-                ..Default::default()
-            },
-            |ui| {
+        widgets::Window::new(hash!(), vec2(10., 10.), vec2(296., 91.))
+            .titlebar(false)
+            .ui(&mut *root_ui(), |ui| {
                 if ui.button(
                     None,
                     toggle_button_label(config.debug.spawner_visible, "Spawn").as_str(),
@@ -79,13 +69,13 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
                     config.debug.spawner_visible = !config.debug.spawner_visible;
                 }
                 if ui.button(
-                    Vector2::new(60., 2.),
+                    Vec2::new(60., 2.),
                     toggle_button_label(config.debug.entities_visible, "Entities").as_str(),
                 ) {
                     config.debug.entities_visible = !config.debug.entities_visible;
                 }
                 if ui.button(
-                    Vector2::new(139., 2.),
+                    Vec2::new(139., 2.),
                     toggle_button_label(config.debug.render_visible, "Render").as_str(),
                 ) {
                     config.debug.render_visible = !config.debug.render_visible;
@@ -105,7 +95,7 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
                     )
                     .as_str(),
                 );
-                if ui.button(Vector2::new(6., 47.), "\u{86}") {
+                if ui.button(Vec2::new(6., 47.), "\u{86}") {
                     let mq::InternalGlContext {
                         quad_context: ctx, ..
                     } = unsafe { mq::get_internal_gl() };
@@ -117,8 +107,7 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
                     None,
                     format!(" \u{AC} {:4.3} {:3.3} ({:.3},{:.3})", x, y, dx, dy).as_str(),
                 );
-            },
-        );
+            });
 
         // spawner::build_ui();
         render::build_ui(&mut config.debug);

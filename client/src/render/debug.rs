@@ -148,7 +148,7 @@ pub fn debug_render(
                 let m = Transform::FromOrigin {
                     pos,
                     scale: vec2(1.0, 1.0),
-                    rot: ((2. * PI / STEPS as f32) * step as f32, Vec2::zero()),
+                    rot: ((2. * PI / STEPS as f32) * step as f32, Vec2::ZERO),
                 }
                 .matrix();
 

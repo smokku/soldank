@@ -111,12 +111,12 @@ impl GameGraphics {
 
         clear_background(BLACK);
 
-        set_camera(Camera2D::from_display_rect(Rect::new(0.0, dy, 1.0, h)));
+        set_camera(&Camera2D::from_display_rect(Rect::new(0.0, dy, 1.0, h)));
         if !debug_state.render.disable_background {
             gl.draw_batch(&mut self.map.background());
         }
 
-        set_camera(Camera2D::from_display_rect(Rect::new(dx, dy, w, h)));
+        set_camera(&Camera2D::from_display_rect(Rect::new(dx, dy, w, h)));
 
         if !debug_state.render.disable_polygon {
             if !debug_state.render.disable_texture {
@@ -163,20 +163,20 @@ impl GameGraphics {
         self.batch.add_quad(
             None,
             &[
-                vertex(vec2(x, y) + vec2(0.0, -8.0), Vec2::zero(), rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(1.0, -8.0), Vec2::zero(), rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(1.0, 9.0), Vec2::zero(), rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(0.0, 9.0), Vec2::zero(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(0.0, -8.0), Vec2::ZERO, rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(1.0, -8.0), Vec2::ZERO, rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(1.0, 9.0), Vec2::ZERO, rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(0.0, 9.0), Vec2::ZERO, rgb(0, 0, 0)),
             ],
         );
 
         self.batch.add_quad(
             None,
             &[
-                vertex(vec2(x, y) + vec2(-8.0, 0.0), Vec2::zero(), rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(9.0, 0.0), Vec2::zero(), rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(9.0, 1.0), Vec2::zero(), rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(-8.0, 1.0), Vec2::zero(), rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(-8.0, 0.0), Vec2::ZERO, rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(9.0, 0.0), Vec2::ZERO, rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(9.0, 1.0), Vec2::ZERO, rgb(0, 0, 0)),
+                vertex(vec2(x, y) + vec2(-8.0, 1.0), Vec2::ZERO, rgb(0, 0, 0)),
             ],
         );
 

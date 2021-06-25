@@ -36,7 +36,6 @@ use weapons::*;
 use cvars::Config;
 use gfx2d::macroquad::{self as macroquad, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
-use megaui_macroquad::{draw_megaui, mouse_over_ui};
 use resources::Resources;
 use std::{env, path};
 
@@ -196,10 +195,10 @@ async fn main() {
     let mut state = MainState {
         game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),
         game_height: 480.0,
-        camera: Vec2::zero(),
-        camera_prev: Vec2::zero(),
-        mouse: Vec2::zero(),
-        mouse_prev: Vec2::zero(),
+        camera: Vec2::ZERO,
+        camera_prev: Vec2::ZERO,
+        mouse: Vec2::ZERO,
+        mouse_prev: Vec2::ZERO,
         zoom: 0.0,
         mouse_over_ui: false,
     };
@@ -337,7 +336,7 @@ async fn main() {
 
                 state.camera = {
                     let z = f32::exp(state.zoom);
-                    let mut m = Vec2::zero();
+                    let mut m = Vec2::ZERO;
 
                     m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
                         * ((2.0 * 640.0 / state.game_width - 1.0)
@@ -373,10 +372,9 @@ async fn main() {
         }
 
         {
-            draw_megaui();
-
             let mut state = resources.get_mut::<MainState>().unwrap();
-            let mouse_over_ui = mouse_over_ui();
+            let mouse_over_ui =
+                macroquad::ui::root_ui().is_mouse_over(Vec2::from(mq::mouse_position()));
             if state.mouse_over_ui != mouse_over_ui {
                 state.mouse_over_ui = mouse_over_ui;
                 ctx.show_mouse(state.mouse_over_ui);

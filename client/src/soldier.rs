@@ -243,7 +243,7 @@ impl Soldier {
 
         for i in 1..21 {
             if self.skeleton.active(i) && !self.dead_meat {
-                let mut pos = Vec2::zero();
+                let mut pos = Vec2::ZERO;
                 *self.skeleton.old_pos_mut(i) = self.skeleton.pos(i);
 
                 if !self.half_dead && ((i >= 1 && i <= 6) || (i == 17) || (i == 18)) {

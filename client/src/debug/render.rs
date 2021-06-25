@@ -1,5 +1,5 @@
 use super::*;
-use megaui_macroquad::megaui::{hash, Ui, Vector2};
+use macroquad::ui::{hash, root_ui, widgets, Ui};
 
 #[derive(Default)]
 pub struct RenderState {
@@ -110,14 +110,9 @@ impl IVisit for RenderState {
 pub fn build_ui(state: &mut DebugState) {
     if state.render_visible {
         let state = &mut state.render;
-        draw_window(
-            hash!(),
+        widgets::Window::new(hash!(),
             vec2(980., 10.),
-            vec2(270., 680.),
-            WindowParams {
-                label: "Renderer".to_string(),
-                ..Default::default()
-            },
+            vec2(270., 680.)).label("Renderer").ui(&mut *root_ui(),
             |ui| {
                 toggle_state(ui, None, &mut state.render_skeleton, "Skeleton");
                 toggle_state(ui, None, &mut state.render_position, "Position");
@@ -216,18 +211,13 @@ pub fn build_ui(state: &mut DebugState) {
     }
 }
 
-fn toggle_state<P: Into<Option<Vector2>>>(ui: &mut Ui, position: P, state: &mut bool, label: &str) {
+fn toggle_state<P: Into<Option<Vec2>>>(ui: &mut Ui, position: P, state: &mut bool, label: &str) {
     if ui.button(position, checkbox_label(*state, label).as_str()) {
         *state = !*state;
     }
 }
 
-fn toggle_state_i<P: Into<Option<Vector2>>>(
-    ui: &mut Ui,
-    position: P,
-    state: &mut bool,
-    label: &str,
-) {
+fn toggle_state_i<P: Into<Option<Vec2>>>(ui: &mut Ui, position: P, state: &mut bool, label: &str) {
     if ui.button(position, checkbox_label(!*state, label).as_str()) {
         *state = !*state;
     }

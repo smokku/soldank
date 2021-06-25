@@ -11,11 +11,11 @@ pub fn vec2length(v: Vec2) -> f32 {
 
 pub fn vec2normalize(v: Vec2) -> Vec2 {
     let magnitude = v.length();
-    iif!(magnitude < 0.001, Vec2::zero(), v / magnitude)
+    iif!(magnitude < 0.001, Vec2::ZERO, v / magnitude)
 }
 
 pub fn vec2angle(v: Vec2) -> Rad {
-    Vec2::unit_x().angle_between(v)
+    Vec2::X.angle_between(v)
 }
 
 pub fn point_line_distance(p1: Vec2, p2: Vec2, p3: Vec2) -> f32 {

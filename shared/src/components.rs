@@ -35,10 +35,10 @@ impl Default for Particle {
     fn default() -> Particle {
         Particle {
             active: false,
-            pos: Vec2::zero(),
-            old_pos: Vec2::zero(),
-            velocity: Vec2::zero(),
-            force: Vec2::zero(),
+            pos: Vec2::ZERO,
+            old_pos: Vec2::ZERO,
+            velocity: Vec2::ZERO,
+            force: Vec2::ZERO,
             one_over_mass: 0.0,
             timestep: 0.0,
             gravity: 0.0,
@@ -55,7 +55,7 @@ impl Particle {
         self.velocity += self.force * self.one_over_mass * self.timestep.powi(2);
         self.pos += self.velocity;
         self.velocity *= self.e_damping;
-        self.force = Vec2::zero();
+        self.force = Vec2::ZERO;
     }
 
     pub fn verlet(&mut self) {
@@ -65,6 +65,6 @@ impl Particle {
         self.old_pos = self.pos;
         self.force.y += self.gravity;
         self.pos = a - b + self.force * self.one_over_mass * self.timestep.powi(2);
-        self.force = Vec2::zero();
+        self.force = Vec2::ZERO;
     }
 }

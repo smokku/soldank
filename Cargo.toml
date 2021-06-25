@@ -11,10 +11,8 @@ codegen-units = 1
 incremental = false
 
 [patch.crates-io]
-laminar = { git = "https://github.com/amethyst/laminar.git" }
+# laminar = { git = "https://github.com/amethyst/laminar.git" }
 cvar = { git = "https://github.com/CasualX/cvar.git" }
 # hecs = { git = "https://github.com/Ralith/hecs.git" }
 # miniquad = { git = "https://github.com/not-fl3/miniquad.git" }
-macroquad = { git = "https://github.com/not-fl3/macroquad.git", rev = "02d777f1" }
-megaui = { git = "https://github.com/not-fl3/megaui.git" }
-megaui-macroquad = { git = "https://github.com/not-fl3/megaui-macroquad.git" }
+# macroquad = { git = "https://github.com/not-fl3/macroquad.git" }
