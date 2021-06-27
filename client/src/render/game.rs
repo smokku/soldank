@@ -143,7 +143,7 @@ impl GameGraphics {
             gl.draw_batch(&mut self.map.scenery_front());
         }
 
-        if debug_state.ui_visible {
+        if debug_state.visible {
             debug::debug_render(gl, debug_state, &*state, &*map, self);
         }
 

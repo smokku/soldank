@@ -161,7 +161,7 @@ async fn main() {
 
     let mut config = Config::default();
 
-    config.debug.ui_visible = cmd.is_present("debug");
+    config.debug.visible = cmd.is_present("debug");
 
     if let Some(values) = cmd.values_of("set") {
         for chunk in values.collect::<Vec<_>>().chunks_exact(2) {

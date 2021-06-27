@@ -1,20 +1,17 @@
 use super::*;
 use cvar::{INode, IVisit};
-use macroquad::ui::{hash, root_ui, widgets};
+use macroquad::ui::{hash, root_ui, widgets, Ui};
 
 // mod entities;
+mod cli;
 mod render;
-// mod spawner;
 
 pub use render::RenderState;
 
 #[derive(Default)]
 pub struct DebugState {
-    pub ui_visible: bool,
-    spawner_visible: bool,
-    // spawner: spawner::SpawnerState,
-    entities_visible: bool,
-    render_visible: bool,
+    pub visible: bool,
+    cli: cli::CliState,
     pub render: RenderState,
 
     pub fps: u32,
@@ -24,16 +21,8 @@ pub struct DebugState {
 
 impl IVisit for DebugState {
     fn visit(&mut self, f: &mut dyn FnMut(&mut dyn INode)) {
-        f(&mut cvar::Property(
-            "ui_visible",
-            &mut self.ui_visible,
-            false,
-        ));
-        f(&mut cvar::Property(
-            "render_visible",
-            &mut self.render_visible,
-            false,
-        ));
+        f(&mut cvar::Property("visible", &mut self.visible, false));
+        f(&mut cvar::List("cli", &mut self.cli));
         f(&mut cvar::List("render", &mut self.render));
         f(&mut cvar::ReadOnlyProp("fps", &mut self.fps, 0));
     }
@@ -44,7 +33,7 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
     let mut config = resources.get_mut::<Config>().unwrap();
 
     if mq::is_key_pressed(mq::KeyCode::GraveAccent) && mq::is_key_down(mq::KeyCode::LeftControl) {
-        config.debug.ui_visible = !config.debug.ui_visible;
+        config.debug.visible = !config.debug.visible;
     }
 
     let (mouse_x, mouse_y) = mq::mouse_position();
@@ -58,27 +47,28 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
     }
     config.debug.fps_count += 1;
 
-    if config.debug.ui_visible {
+    if config.debug.visible {
         widgets::Window::new(hash!(), vec2(10., 10.), vec2(296., 91.))
             .titlebar(false)
             .ui(&mut *root_ui(), |ui| {
                 if ui.button(
                     None,
-                    toggle_button_label(config.debug.spawner_visible, "Spawn").as_str(),
+                    toggle_button_label(config.debug.cli.visible, "CLI").as_str(),
                 ) {
-                    config.debug.spawner_visible = !config.debug.spawner_visible;
+                    config.debug.cli.visible = !config.debug.cli.visible;
                 }
                 if ui.button(
-                    Vec2::new(60., 2.),
-                    toggle_button_label(config.debug.entities_visible, "Entities").as_str(),
+                    vec2(45., 2.),
+                    toggle_button_label(false /*config.debug.entities.visible*/, "Entities")
+                        .as_str(),
                 ) {
-                    config.debug.entities_visible = !config.debug.entities_visible;
+                    // config.debug.entities.visible = !config.debug.entities.visible;
                 }
                 if ui.button(
-                    Vec2::new(139., 2.),
-                    toggle_button_label(config.debug.render_visible, "Render").as_str(),
+                    vec2(123., 2.),
+                    toggle_button_label(config.debug.render.visible, "Render").as_str(),
                 ) {
-                    config.debug.render_visible = !config.debug.render_visible;
+                    config.debug.render.visible = !config.debug.render.visible;
                 }
 
                 ui.separator();
@@ -95,7 +85,7 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
                     )
                     .as_str(),
                 );
-                if ui.button(Vec2::new(6., 47.), "\u{86}") {
+                if ui.button(vec2(6., 47.), "\u{86}") {
                     let mq::InternalGlContext {
                         quad_context: ctx, ..
                     } = unsafe { mq::get_internal_gl() };
@@ -109,11 +99,10 @@ pub fn build_ui(resources: &Resources, seconds_since_startup: u32, overstep_perc
                 );
             });
 
-        // spawner::build_ui();
-        render::build_ui(&mut config.debug);
+        config.debug.cli.build_ui();
+        // entities::build_ui();
+        config.debug.render.build_ui();
     }
-
-    // entities::build_ui();
 }
 
 pub(crate) fn toggle_button_label<S: std::fmt::Display>(state: bool, label: S) -> String {
@@ -129,5 +118,22 @@ pub(crate) fn checkbox_label<S: std::fmt::Display>(state: bool, label: S) -> Str
         format!("[x] {}", label)
     } else {
         format!("[ ] {}", label)
+    }
+}
+
+fn toggle_state<P: Into<Option<Vec2>>>(ui: &mut Ui, position: P, state: &mut bool, label: &str) {
+    if ui.button(position, checkbox_label(*state, label).as_str()) {
+        *state = !*state;
+    }
+}
+
+fn toggle_state_inv<P: Into<Option<Vec2>>>(
+    ui: &mut Ui,
+    position: P,
+    state: &mut bool,
+    label: &str,
+) {
+    if ui.button(position, checkbox_label(!*state, label).as_str()) {
+        *state = !*state;
     }
 }
