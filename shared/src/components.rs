@@ -1,8 +1,6 @@
 use gfx2d::math::*;
 use nanoserde::{DeBin, SerBin};
 
-use crate::control::Control;
-
 #[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Nick(pub String);
 
@@ -14,8 +12,6 @@ pub struct Position {
     pub x: i32,
     pub y: i32,
 }
-
-pub type ControlComponent = (Control, i32, i32);
 
 #[derive(Debug, Copy, Clone)]
 pub struct Particle {

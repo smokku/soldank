@@ -2,7 +2,7 @@ use hecs::EntityRef;
 
 use crate::{components::*, control::Control};
 
-pub fn apply_input(entity: EntityRef, (control, _aim_x, _aim_y): &ControlComponent) {
+pub fn apply_input(entity: EntityRef, control: Control) {
     if let Some(mut position) = entity.get_mut::<Position>() {
         if control.contains(Control::LEFT) {
             position.x -= 1;

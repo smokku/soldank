@@ -13,6 +13,7 @@ use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 use soldank_shared::{
     constants::SERVER_PORT,
     control::Control,
+    math::vec2,
     messages::{self, NetworkMessage},
     trace_dump_packet,
 };
@@ -196,7 +197,10 @@ impl Networking {
                 let msg = NetworkMessage::ControlState {
                     ack_tick: self.server_tick_received,
                     begin_tick: inputs[0].0,
-                    control: inputs.iter().map(|&(_t, c, x, y)| (c, x, y)).collect(),
+                    control: inputs
+                        .iter()
+                        .map(|&(_t, c, x, y)| (c, vec2(x as f32, y as f32)))
+                        .collect(),
                 };
                 log::debug!("--> Sending {:?}", msg);
                 self.send(LaminarPacket::unreliable(

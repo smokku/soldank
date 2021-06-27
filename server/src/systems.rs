@@ -8,10 +8,13 @@ use crate::{
     networking::{Connection, Networking},
     GameState,
 };
-pub use soldank_shared::systems::{Time, *};
-use soldank_shared::{components, messages::NetworkMessage, systems};
+use soldank_shared::{components, control::Control, messages::NetworkMessage, systems};
+pub use soldank_shared::{
+    math::Vec2,
+    systems::{Time, *},
+};
 
-pub type ControlBuffer = HashMap<usize, components::ControlComponent>;
+pub type ControlBuffer = HashMap<usize, (Control, Vec2)>;
 
 pub fn process_network_messages(
     world: &mut World,
@@ -46,10 +49,10 @@ pub fn process_network_messages(
     for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlBuffer)>().iter() {
         if let Some((tick, mut ctrl)) = control_updates.remove(addr) {
             if let Some(connection) = connections.get(addr) {
-                for (i, (c, x, y)) in ctrl.drain(..).enumerate() {
+                for (i, (c, v)) in ctrl.drain(..).enumerate() {
                     let t = tick + i;
                     if t > connection.last_processed_tick {
-                        control.insert(tick + i, (c, x, y));
+                        control.insert(tick + i, (c, v));
                     }
                 }
             }
@@ -103,8 +106,8 @@ pub fn apply_input(world: &World, time: &Time) {
     for (entity, buffer) in world.query::<&mut ControlBuffer>().iter() {
         // FIXME: apply all queued inputs in rollback manner
         let max_tick = buffer.keys().max().unwrap();
-        if let Some(control) = buffer.get(&max_tick) {
-            systems::apply_input(world.entity(entity).unwrap(), control);
+        if let Some((control, _)) = buffer.get(&max_tick) {
+            systems::apply_input(world.entity(entity).unwrap(), *control);
         } else {
             log::warn!(
                 "Missed input for tick {}({}) on entity {:?}",

@@ -5,8 +5,7 @@ use nanoserde::{DeBin, SerBin};
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::{collections::HashMap, convert::TryFrom, mem::size_of};
 
-use crate::components;
-use crate::control::Control;
+use crate::{components, control::Control, math::Vec2};
 
 const NET_PROTOCOL_VERSION: u8 = 0x01;
 
@@ -34,7 +33,7 @@ pub enum NetworkMessage {
     ControlState {
         ack_tick: usize,
         begin_tick: usize,
-        control: Vec<(Control, i32, i32)>,
+        control: Vec<(Control, Vec2)>,
     },
     GameState {
         tick: usize,
@@ -73,7 +72,16 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
             let pkt = ControlPacket {
                 ack_tick,
                 begin_tick,
-                control,
+                control: control
+                    .iter()
+                    .map(|(c, v)| {
+                        let v = v.normalize_or_zero();
+                        (
+                            *c,
+                            ((((v.x + 0.5) * 255.) as u8), ((v.y + 0.5) * 255.) as u8),
+                        )
+                    })
+                    .collect(),
             };
             msg.extend(SerBin::serialize_bin(&pkt));
             msg.into()
@@ -136,7 +144,15 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                     return Some(NetworkMessage::ControlState {
                         ack_tick,
                         begin_tick,
-                        control,
+                        control: control
+                            .iter()
+                            .map(|&(c, (x, y))| {
+                                (
+                                    c,
+                                    Vec2::new((x as f32) / 255. - 0.5, (y as f32) / 255. - 0.5),
+                                )
+                            })
+                            .collect(),
                     });
                 }
             }
@@ -326,7 +342,7 @@ struct AuthPacket {
 struct ControlPacket {
     ack_tick: usize,
     begin_tick: usize,
-    control: Vec<(Control, i32, i32)>,
+    control: Vec<(Control, (u8, u8))>,
 }
 
 #[derive(DeBin, SerBin)]
