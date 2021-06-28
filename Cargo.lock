@@ -2528,6 +2528,7 @@ dependencies = [
  "bytes",
  "clap",
  "color-eyre",
+ "cvar",
  "env_logger",
  "hecs",
  "instant",

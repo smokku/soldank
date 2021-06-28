@@ -6,11 +6,16 @@ use hecs::World;
 use smol::future;
 use std::{collections::VecDeque, net::SocketAddr};
 
+use crate::{
+    constants::*,
+    cvars::{set_cli_cvars, Config},
+    networking::Networking,
+};
 use soldank_shared::messages::NetworkMessage;
-use {constants::*, networking::Networking};
 
 mod cheat;
 mod constants;
+mod cvars;
 mod networking;
 mod state;
 mod systems;
@@ -54,11 +59,23 @@ fn main() -> Result<()> {
                     .takes_value(true)
                     .env("SOLDANK_SERVER_KEY"),
             )
+            .arg(
+                clap::Arg::with_name("set")
+                    .help("set cvar value [multiple]")
+                    .long("set")
+                    .takes_value(true)
+                    .multiple(true)
+                    .number_of_values(2)
+                    .value_names(&["cvar", "value"]),
+            )
             .get_matches();
 
         let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
         map_name.push_str(".pms");
         log::info!("Using map: {}", map_name);
+
+        let mut config = Config::default();
+        set_cli_cvars(&mut config, &cmd);
 
         let mut networking = Networking::new(cmd.value_of("bind")).await;
         if let Some(key) = cmd.value_of("key") {

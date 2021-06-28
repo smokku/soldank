@@ -25,3 +25,4 @@ hecs = { version = "0.5", features = [] }
 bitflags = "1.2"
 bytes = "1.0"
 color-eyre = "0.5"
+cvar = "0.3"
