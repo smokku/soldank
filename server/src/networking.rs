@@ -16,10 +16,10 @@ use std::{
     net::SocketAddr,
 };
 
-use crate::{cheat::Cheats, constants::*, state::build_state_message, systems};
+use crate::{cheat::Cheats, constants::*, cvars::Config, state::build_state_message, systems};
 use soldank_shared::{
     constants::SERVER_PORT,
-    messages::{self, NetworkMessage},
+    messages::{self, encode_message, NetworkMessage},
     trace_dump_packet,
 };
 
@@ -42,6 +42,7 @@ pub struct Connection {
     pub last_processed_tick: usize,
     pub last_broadcast: f64,
     pub authorized: bool,
+    pub ready: bool,
     pub nick: String,
     pub cheats: Cheats,
     pub entity: Option<Entity>,
@@ -55,6 +56,7 @@ impl Connection {
             last_processed_tick: 0,
             last_broadcast: 0.0,
             authorized: false,
+            ready: false,
             nick: Default::default(),
             cheats: Default::default(),
             entity: None,
@@ -165,7 +167,7 @@ impl Networking {
     pub async fn process(
         &mut self,
         world: &mut World,
-        config: &mut dyn cvar::IVisit,
+        config: &mut Config,
         messages: &mut VecDeque<(SocketAddr, NetworkMessage)>,
     ) {
         match self.server_socket.receive().await {
@@ -242,7 +244,7 @@ impl Networking {
         &mut self,
         packet: LaminarPacket,
         world: &mut World,
-        config: &mut dyn cvar::IVisit,
+        config: &mut Config,
     ) -> Option<NetworkMessage> {
         let address = packet.addr();
         let data = packet.payload();
@@ -255,10 +257,10 @@ impl Networking {
             Ok(op_code) => match op_code {
                 messages::OperationCode::CCREQ_CONNECT => {
                     let msg = if messages::packet_verify(data) {
-                        log::info!("<-> Accepting connection from [{:?}]", address);
+                        log::info!("<-> ACCEPT connection from [{:?}]", address);
                         messages::connection_accept()
                     } else {
-                        log::info!("<-> Rejecting connection from [{:?}]", address);
+                        log::info!("<-> REJECT connection from [{:?}]", address);
                         messages::connection_reject()
                     };
                     self.send(LaminarPacket::unreliable(address, msg.to_vec()));
@@ -266,46 +268,71 @@ impl Networking {
                 _ => match self.connections.get_mut(&address) {
                     Some(connection) => {
                         connection.last_message_received = instant::now();
-                        match messages::decode_message(data) {
-                            Some(message) => match message {
-                                NetworkMessage::ConnectionAuthorize { nick, key } => {
-                                    let msg = if key == self.connection_key {
-                                        if !connection.authorized {
-                                            connection.authorized = true;
-                                            connection.nick = nick;
+
+                        if op_code == messages::OperationCode::CCREQ_READY {
+                            log::info!("<-> READY from [{:?}]", address);
+                            connection.ready = true;
+                        } else {
+                            match messages::decode_message(data) {
+                                Some(message) => match message {
+                                    NetworkMessage::ConnectionAuthorize { nick, key } => {
+                                        let msg = if key == self.connection_key {
+                                            if !connection.authorized {
+                                                connection.authorized = true;
+                                                connection.nick = nick;
+                                                log::info!(
+                                                    "<-> AUTH connection from [{:?}]",
+                                                    address
+                                                );
+
+                                                connection.entity.replace(world.reserve_entity());
+                                            }
+                                            messages::connection_authorized(
+                                                config.server.motd.clone(),
+                                            )
+                                        } else {
                                             log::info!(
-                                                "<-> Authorized connection from [{:?}]",
+                                                "<-> REJECT connection from [{:?}]",
                                                 address
                                             );
+                                            messages::connection_reject()
+                                        };
+                                        self.send(LaminarPacket::reliable_unordered(
+                                            address,
+                                            msg.to_vec(),
+                                        ));
 
-                                            connection.entity.replace(world.reserve_entity());
-                                        }
-                                        let motd =
-                                            cvar::console::get(config, "server.motd").unwrap();
-                                        messages::connection_authorized(motd)
-                                    } else {
-                                        log::info!("<-> Rejecting connection from [{:?}]", address);
-                                        messages::connection_reject()
-                                    };
-                                    self.send(LaminarPacket::reliable_unordered(
-                                        address,
-                                        msg.to_vec(),
-                                    ));
-                                }
-                                msg => {
-                                    if connection.authorized {
-                                        return Some(msg);
+                                        let mut cvars = Vec::new();
+                                        cvar::console::walk(config, |path, node| {
+                                            if !path.starts_with("server.") {
+                                                match node.as_node() {
+                                                    cvar::Node::Prop(prop) => {
+                                                        cvars.push((path.to_owned(), prop.get()));
+                                                    }
+                                                    _ => {}
+                                                }
+                                            }
+                                        });
+                                        self.send(LaminarPacket::reliable_unordered(
+                                            address,
+                                            encode_message(NetworkMessage::Cvars(cvars)).to_vec(),
+                                        ))
                                     }
+                                    msg => {
+                                        if connection.authorized {
+                                            return Some(msg);
+                                        }
+                                    }
+                                },
+                                None => {
+                                    log::error!(
+                                        "Unhandled packet: 0x{:x} ({:?}) {} bytes",
+                                        code,
+                                        op_code,
+                                        data.len()
+                                    );
+                                    trace_dump_packet(data);
                                 }
-                            },
-                            None => {
-                                log::error!(
-                                    "Unhandled packet: 0x{:x} ({:?}) {} bytes",
-                                    code,
-                                    op_code,
-                                    data.len()
-                                );
-                                trace_dump_packet(data);
                             }
                         }
                     }

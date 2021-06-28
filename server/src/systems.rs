@@ -78,7 +78,7 @@ pub fn lobby(world: &mut World, game_state: &mut GameState, networking: &Network
         && networking
             .connections
             .iter()
-            .all(|(_, conn)| conn.authorized && conn.entity.is_some());
+            .all(|(_, conn)| conn.authorized && conn.entity.is_some() && conn.ready);
 
     if ready {
         log::info!("All players ready - switching to InGame state");

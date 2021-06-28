@@ -16,8 +16,10 @@ pub enum OperationCode {
     // incoming
     CCREQ_CONNECT = 0x01,
     CCREQ_AUTHORIZE = 0x02,
+    CCREQ_READY = 0x08,
     STT_CONTROL = 0x10,
     STT_ENTITIES = 0x11,
+    STT_CVARS = 0x18,
     // outgoing
     CCREP_ACCEPT = 0x81,
     CCREP_REJECT = 0x82,
@@ -30,6 +32,7 @@ pub enum NetworkMessage {
         nick: String,
         key: String,
     },
+    Cvars(Vec<(String, String)>),
     ControlState {
         ack_tick: usize,
         begin_tick: usize,
@@ -39,8 +42,12 @@ pub enum NetworkMessage {
         tick: usize,
         entities: HashMap<Entity, Vec<ComponentValue>>,
     },
+    // Command {
+    //     command: String,
+    // },
 }
 
+#[repr(u8)]
 #[derive(Debug, Eq, PartialEq, Primitive)]
 pub enum ComponentType {
     Soldier = 1,
@@ -61,6 +68,11 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
             let mut msg = vec![OperationCode::CCREQ_AUTHORIZE as u8];
             let pkt = AuthPacket { nick, key };
             msg.extend(SerBin::serialize_bin(&pkt));
+            msg.into()
+        }
+        NetworkMessage::Cvars(cvars) => {
+            let mut msg = vec![OperationCode::STT_CVARS as u8];
+            msg.extend(SerBin::serialize_bin(&cvars));
             msg.into()
         }
         NetworkMessage::ControlState {
@@ -126,12 +138,18 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
             OperationCode::CCREQ_CONNECT
             | OperationCode::CCREP_ACCEPT
             | OperationCode::CCREP_REJECT
-            | OperationCode::CCREP_AUTHORIZED => {
+            | OperationCode::CCREP_AUTHORIZED
+            | OperationCode::CCREQ_READY => {
                 panic!("Should not handle packet: 0x{:x} ({:?})", code, op_code)
             }
             OperationCode::CCREQ_AUTHORIZE => {
                 if let Ok(AuthPacket { nick, key }) = DeBin::deserialize_bin(&data[1..]) {
                     return Some(NetworkMessage::ConnectionAuthorize { nick, key });
+                }
+            }
+            OperationCode::STT_CVARS => {
+                if let Ok(cvars) = DeBin::deserialize_bin(&data[1..]) {
+                    return Some(NetworkMessage::Cvars(cvars));
                 }
             }
             OperationCode::STT_CONTROL => {
@@ -337,6 +355,10 @@ pub fn connection_authorized<S: AsRef<str>>(motd: S) -> Bytes {
     msg.push(motd.len() as u8);
     msg.extend_from_slice(motd);
     msg.into()
+}
+
+pub fn connection_ready() -> Bytes {
+    vec![OperationCode::CCREQ_READY as u8].into()
 }
 
 #[derive(DeBin, SerBin)]

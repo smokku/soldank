@@ -10,6 +10,7 @@ use naia_client_socket::{
 use smol::channel::{unbounded, Receiver, Sender};
 use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
+use crate::cvars::Config;
 use soldank_shared::{
     constants::SERVER_PORT,
     control::Control,
@@ -41,6 +42,7 @@ pub struct Networking {
     backoff_round: i32,
     last_message_received: f64,
     authorized: bool,
+    cvars_received: bool,
 
     pub tick: usize,
     server_tick_received: usize,
@@ -120,6 +122,7 @@ impl Networking {
             backoff_round: 0,
             last_message_received: 0.,
             authorized: false,
+            cvars_received: false,
 
             tick: 0,
             server_tick_received: 0,
@@ -159,7 +162,7 @@ impl Networking {
         self.connection.update(messenger, time);
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self, config: &mut Config) {
         if self.state == ConnectionState::Disconnected {
             if backoff_enabled(self.backoff_round) {
                 let msg = messages::connection_request();
@@ -171,7 +174,7 @@ impl Networking {
 
         while let Ok(event) = self.event_receiver.try_recv() {
             match event {
-                laminar::SocketEvent::Packet(packet) => self.process_packet(packet),
+                laminar::SocketEvent::Packet(packet) => self.process_packet(packet, config),
                 laminar::SocketEvent::Connect(addr) => {
                     log::info!("!! Connect {}", addr)
                 }
@@ -216,7 +219,7 @@ impl Networking {
             .process_event(&mut self.messenger, event, Instant::now());
     }
 
-    fn process_packet(&mut self, packet: LaminarPacket) {
+    fn process_packet(&mut self, packet: LaminarPacket, config: &mut Config) {
         let data = packet.payload();
         if data.len() < 1 {
             return;
@@ -251,28 +254,12 @@ impl Networking {
                         let motd_len = data[1] as usize;
                         if data.len() >= motd_len + 2 {
                             let motd = String::from_utf8_lossy(&data[2..motd_len + 2]);
-                            log::info!("!!! Server MOTD: {}", motd);
+                            log::info!("Got server MOTD: {}", motd);
                         }
                     }
                 }
                 _ => {
-                    if let Some(msg) = messages::decode_message(data) {
-                        match msg {
-                            NetworkMessage::ConnectionAuthorize { .. }
-                            | NetworkMessage::ControlState { .. } => {
-                                log::error!("Should not receive message: {:?}", msg);
-                            }
-                            NetworkMessage::GameState { tick, entities } => {
-                                if tick > self.server_tick_received {
-                                    self.server_tick_received = tick;
-                                    self.tick = tick;
-
-                                    // TODO: integrate game state to ECS world
-                                    log::debug!("Entity sync: {:?}", entities);
-                                }
-                            }
-                        }
-                    } else {
+                    if !self.process_message(data, config) {
                         log::error!(
                             "Unhandled packet: 0x{:x} ({:?}) {} bytes",
                             code,
@@ -287,6 +274,55 @@ impl Networking {
                 log::error!("Unknown packet: 0x{:x}", code);
             }
         }
+    }
+
+    fn process_message(&mut self, data: &[u8], config: &mut Config) -> bool {
+        if let Some(msg) = messages::decode_message(data) {
+            match msg {
+                NetworkMessage::ConnectionAuthorize { .. }
+                | NetworkMessage::ControlState { .. } => {
+                    log::error!("Should not receive message: {:?}", msg);
+                }
+                NetworkMessage::Cvars(cvars) => {
+                    log::info!("--- cvars server sync:");
+                    for (path, val) in cvars {
+                        if let Some(old_val) = cvar::console::get(config, path.as_str()) {
+                            if old_val == val {
+                                continue;
+                            }
+                            match cvar::console::set(config, path.as_str(), val.as_str()) {
+                                Ok(set) => {
+                                    if set {
+                                        log::info!("{} = `{}`", path, val);
+                                    }
+                                }
+                                Err(err) => {
+                                    log::error!("Error for {} = `{}`: {}", path, val, err)
+                                }
+                            }
+                        }
+                    }
+
+                    self.cvars_received = true;
+                    self.send(LaminarPacket::reliable_unordered(
+                        self.server_address,
+                        messages::connection_ready().to_vec(),
+                    ));
+                }
+                NetworkMessage::GameState { tick, entities } => {
+                    if tick > self.server_tick_received {
+                        self.server_tick_received = tick;
+                        self.tick = tick;
+
+                        // TODO: integrate game state to ECS world
+                        log::debug!("Entity sync: {:?}", entities);
+                    }
+                }
+            }
+            return true;
+        }
+
+        return false;
     }
 
     pub fn set_input_state(&mut self, control: &crate::control::Control) {

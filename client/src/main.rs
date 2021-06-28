@@ -353,7 +353,7 @@ async fn main() {
         }
 
         networking.set_input_state(&soldier.control);
-        networking.tick();
+        networking.tick(&mut *resources.get_mut::<Config>().unwrap());
         networking.tick_cleanup();
 
         macroquad::window::next_frame().await;
