@@ -247,6 +247,13 @@ impl Networking {
                 }
                 messages::OperationCode::CCREP_AUTHORIZED => {
                     self.authorized = true;
+                    if data.len() > 1 {
+                        let motd_len = data[1] as usize;
+                        if data.len() >= motd_len + 2 {
+                            let motd = String::from_utf8_lossy(&data[2..motd_len + 2]);
+                            log::info!("!!! Server MOTD: {}", motd);
+                        }
+                    }
                 }
                 _ => {
                     if let Some(msg) = messages::decode_message(data) {

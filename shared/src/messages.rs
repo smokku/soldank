@@ -3,7 +3,7 @@ use enum_primitive_derive::Primitive;
 use hecs::Entity;
 use nanoserde::{DeBin, SerBin};
 use num_traits::{FromPrimitive, ToPrimitive};
-use std::{collections::HashMap, convert::TryFrom, mem::size_of};
+use std::{collections::HashMap, convert::TryFrom, mem::size_of, process::abort};
 
 use crate::{components, control::Control, math::Vec2};
 
@@ -327,9 +327,16 @@ pub fn packet_verify(packet: &[u8]) -> bool {
         && packet[5] == NET_PROTOCOL_VERSION
 }
 
-pub fn connection_authorized() -> Bytes {
-    vec![OperationCode::CCREP_AUTHORIZED as u8].into()
-    // TODO: send server info
+pub fn connection_authorized<S: AsRef<str>>(motd: S) -> Bytes {
+    let motd = motd.as_ref().as_bytes();
+    if motd.len() > u8::MAX as usize {
+        log::error!("Server MOTD is longer than {} bytes", u8::MAX);
+        abort();
+    }
+    let mut msg = vec![OperationCode::CCREP_AUTHORIZED as u8];
+    msg.push(motd.len() as u8);
+    msg.extend_from_slice(motd);
+    msg.into()
 }
 
 #[derive(DeBin, SerBin)]

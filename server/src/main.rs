@@ -99,7 +99,7 @@ fn main() -> Result<()> {
         let mut running = true;
         while running {
             future::race(
-                networking.process(&mut world, &mut messages), // loop is driven by incoming packets
+                networking.process(&mut world, &mut config, &mut messages), // loop is driven by incoming packets
                 async {
                     smol::Timer::after(MAX_NETWORK_IDLE).await; // or timeout
                 },

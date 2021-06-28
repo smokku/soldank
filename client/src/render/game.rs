@@ -254,12 +254,12 @@ impl GameGraphics {
             Ok(mut file) => {
                 if let Err(err) = file.read_to_string(&mut sprites_config) {
                     log::error!("Cannot read sprites.conf: {}", err);
-                    std::process::exit(-1);
+                    std::process::abort();
                 }
             }
             Err(err) => {
                 log::error!("Cannot open sprites.conf: {}", err);
-                std::process::exit(-1);
+                std::process::abort();
             }
         }
 
@@ -268,7 +268,7 @@ impl GameGraphics {
             Ok(loader) => loader,
             Err(err) => {
                 log::error!("Cannot load sprites.conf: {}", err);
-                std::process::exit(-1);
+                std::process::abort();
             }
         };
 
@@ -276,7 +276,7 @@ impl GameGraphics {
             Ok(hocon) => hocon,
             Err(err) => {
                 log::error!("Cannot parse sprites.conf: {}", err);
-                std::process::exit(-1);
+                std::process::abort();
             }
         };
         log::trace!("Parsed sprites.conf: {:#?}", sprites_config);
@@ -285,7 +285,7 @@ impl GameGraphics {
             Hocon::Hash(groups) => groups,
             _ => {
                 log::error!("Error parsing sprites.conf groups: not a Hash");
-                std::process::exit(-1);
+                std::process::abort();
             }
         };
 
@@ -295,7 +295,7 @@ impl GameGraphics {
                 Hocon::Hash(sprites) => sprites,
                 _ => {
                     log::error!("Error parsing sprites.conf group {}: not a Hash", group);
-                    std::process::exit(-1);
+                    std::process::abort();
                 }
             };
             for sprite in sprites.keys() {
@@ -309,12 +309,12 @@ impl GameGraphics {
                                 group,
                                 sprite
                             );
-                            std::process::exit(-1);
+                            std::process::abort();
                         }
                     },
                     _ => {
                         log::error!("Error parsing sprites.conf sprite {}/{}", group, sprite);
-                        std::process::exit(-1);
+                        std::process::abort();
                     }
                 };
                 dynamic_sprites

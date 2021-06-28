@@ -165,6 +165,7 @@ impl Networking {
     pub async fn process(
         &mut self,
         world: &mut World,
+        config: &mut dyn cvar::IVisit,
         messages: &mut VecDeque<(SocketAddr, NetworkMessage)>,
     ) {
         match self.server_socket.receive().await {
@@ -219,7 +220,7 @@ impl Networking {
             match event {
                 SocketEvent::Packet(packet) => {
                     let addr = packet.addr();
-                    if let Some(message) = self.process_packet(packet, world) {
+                    if let Some(message) = self.process_packet(packet, world, config) {
                         messages.push_back((addr, message));
                     }
                 }
@@ -241,6 +242,7 @@ impl Networking {
         &mut self,
         packet: LaminarPacket,
         world: &mut World,
+        config: &mut dyn cvar::IVisit,
     ) -> Option<NetworkMessage> {
         let address = packet.addr();
         let data = packet.payload();
@@ -278,8 +280,9 @@ impl Networking {
 
                                             connection.entity.replace(world.reserve_entity());
                                         }
-
-                                        messages::connection_authorized()
+                                        let motd =
+                                            cvar::console::get(config, "server.motd").unwrap();
+                                        messages::connection_authorized(motd)
                                     } else {
                                         log::info!("<-> Rejecting connection from [{:?}]", address);
                                         messages::connection_reject()
