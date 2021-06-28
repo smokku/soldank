@@ -33,7 +33,7 @@ use soldier::*;
 use state::*;
 use weapons::*;
 
-use cvars::Config;
+use cvars::{set_cli_cvars, Config};
 use gfx2d::macroquad::{self as macroquad, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
 use resources::Resources;
@@ -160,37 +160,8 @@ async fn main() {
     log::info!("Using map: {}", map.mapname);
 
     let mut config = Config::default();
-
     config.debug.visible = cmd.is_present("debug");
-
-    if let Some(values) = cmd.values_of("set") {
-        for chunk in values.collect::<Vec<_>>().chunks_exact(2) {
-            let cvar = chunk[0];
-            let value = chunk[1];
-            match cvar::console::set(&mut config, cvar, value) {
-                Ok(set) => {
-                    if !set {
-                        log::error!(
-                            "Cannot set cvar `{} = {}`: cvar not available.",
-                            cvar,
-                            value
-                        );
-                    }
-                }
-                Err(err) => {
-                    log::error!("Cannot parse `{} = {}`: {}.", cvar, value, err);
-                }
-            }
-        }
-    }
-
-    log::info!("--- cvars:");
-    cvar::console::walk(&mut config, |path, node| match node.as_node() {
-        cvar::Node::Prop(prop) => {
-            log::info!("{} `{}`", path, prop.get());
-        }
-        _ => {}
-    });
+    set_cli_cvars(&mut config, &cmd);
 
     let mut state = MainState {
         game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),

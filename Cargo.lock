@@ -2544,6 +2544,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "bytes",
+ "clap",
  "cvar",
  "enum-primitive-derive",
  "gfx2d",

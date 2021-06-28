@@ -17,3 +17,4 @@ bitflags = "1.2"
 nanoserde = "0.1"
 hecs = { version = "0.5", features = [] }
 cvar = "0.3"
+clap = "2.33"
