@@ -11,6 +11,9 @@ macro_rules! sprites {
 
         impl Group {
             pub fn id(&self) -> usize { *self as usize }
+            pub fn name(&self) -> &str {
+                match &self { $(Self::$enm => stringify!($enm),)+ }
+            }
             pub fn values() -> &'static [Group] {
                 static VALUES: &[Group] = &[$(Group::$enm,)+];
                 VALUES
@@ -25,6 +28,9 @@ macro_rules! sprites {
 
             impl SpriteData for $enm {
                 fn id(&self) -> usize { *self as usize }
+                fn name(&self) -> &str {
+                    match *self { $($enm::$id => stringify!($id),)+ }
+                }
                 fn group(&self) -> Group { Group::$enm }
                 fn filename(&self) -> &'static str {
                     match *self { $($enm::$id => $file,)+ }

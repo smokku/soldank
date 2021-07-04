@@ -93,7 +93,7 @@ pub fn lobby(world: &mut World, game_state: &mut GameState, networking: &Network
                     components::Nick(conn.nick.clone()),
                     addr,
                     ControlBuffer::default(),
-                    components::Position { x: 0, y: 0 }, // FIXME: remove this
+                    components::Position::new(0., 0.), // FIXME: remove this
                 ),
             );
         }

@@ -6,8 +6,9 @@ pub mod game;
 pub mod gfx;
 pub mod map;
 pub mod soldiers;
+pub mod systems;
 
-pub use self::game::GameGraphics;
+pub use self::game::{GameGraphics, Sprites};
 
 use self::bullets::*;
 use self::map::*;

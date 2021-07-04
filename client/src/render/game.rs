@@ -43,12 +43,57 @@ impl QuadGlProjectionExt for QuadGl {
     }
 }
 
+#[derive(Default)]
+pub struct Sprites {
+    stat: Vec<Vec<Sprite>>,
+    dynamic: HashMap<String, HashMap<String, Sprite>>,
+}
+
+impl Sprites {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn get<S: Into<String>>(&self, group: S, sprite: S) -> &gfx2d::Sprite {
+        let group = group.into();
+        let sprite = sprite.into();
+
+        if let Some(grp) = gfx::Group::values().iter().position(|g| g.name() == group) {
+            if let Some(spr) = match gfx::Group::values()[grp] {
+                gfx::Group::Soldier => gfx::Soldier::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+                gfx::Group::Weapon => gfx::Weapon::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+                gfx::Group::Spark => gfx::Spark::values().iter().position(|s| s.name() == sprite),
+                gfx::Group::Object => gfx::Object::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+                gfx::Group::Interface => gfx::Interface::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+            } {
+                return &self.stat[grp][spr];
+            } else {
+                panic!("Sprite '{} / {}' unavailable", group, sprite);
+            }
+        }
+
+        &self
+            .dynamic
+            .get(&group)
+            .expect(format!("Sprite group '{}' unavailable", group).as_str())
+            .get(&sprite)
+            .expect(format!("Sprite '{} / {}' unavailable", group, sprite).as_str())
+    }
+}
+
 pub struct GameGraphics {
     map: MapGraphics,
     soldier_graphics: SoldierGraphics,
-    sprites: Vec<Vec<Sprite>>,
+    pub sprites: Sprites,
     batch: DrawBatch,
-    dynamic_sprites: HashMap<String, HashMap<String, Sprite>>,
 }
 
 impl GameGraphics {
@@ -56,14 +101,14 @@ impl GameGraphics {
         GameGraphics {
             map: MapGraphics::empty(),
             soldier_graphics: SoldierGraphics::new(),
-            sprites: Vec::new(),
+            sprites: Sprites::new(),
             batch: DrawBatch::new(),
-            dynamic_sprites: HashMap::new(),
         }
     }
 
     pub fn render_frame(
         &mut self,
+        world: &World,
         resources: &Resources,
         soldier: &Soldier,
         elapsed: f64,
@@ -86,7 +131,7 @@ impl GameGraphics {
         render_soldier(
             soldier,
             &self.soldier_graphics,
-            &self.sprites,
+            &self.sprites.stat,
             &mut self.batch,
             frame_percent,
         );
@@ -99,7 +144,7 @@ impl GameGraphics {
         for bullet in bullets.iter() {
             render_bullet(
                 bullet,
-                &self.sprites,
+                &self.sprites.stat,
                 &mut self.batch,
                 elapsed,
                 frame_percent,
@@ -128,6 +173,7 @@ impl GameGraphics {
         if !debug_state.render.disable_scenery_back {
             gl.draw_batch(&mut self.map.scenery_back());
         }
+        render::systems::render_sprites(world, &self.sprites, &mut self.batch);
         gl.draw_batch(&mut self.batch.all());
         if !debug_state.render.disable_scenery_middle {
             gl.draw_batch(&mut self.map.scenery_mid());
@@ -190,7 +236,6 @@ impl GameGraphics {
     pub fn load_sprites(&mut self, fs: &mut Filesystem) {
         let mut main: Vec<SpriteInfo> = Vec::new();
         let mut intf: Vec<SpriteInfo> = Vec::new();
-        let mut dynm: Vec<SpriteInfo> = Vec::new();
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
             let fname = filename_override(fs, "", fname);
@@ -320,18 +365,19 @@ impl GameGraphics {
                 dynamic_sprites
                     .entry((*group).clone())
                     .or_default()
-                    .insert((*sprite).clone(), dynm.len());
+                    .insert((*sprite).clone(), main.len());
                 let fname = filename_override(fs, "", fname);
-                dynm.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
+                main.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
             }
         }
 
         let main = Spritesheet::new(fs, 8, FilterMode::Linear, &main);
         let intf = Spritesheet::new(fs, 8, FilterMode::Linear, &intf);
-        let dynm = Spritesheet::new(fs, 8, FilterMode::Linear, &dynm);
 
-        self.sprites.clear();
-        self.sprites.resize(gfx::Group::values().len(), Vec::new());
+        self.sprites.stat.clear();
+        self.sprites
+            .stat
+            .resize(gfx::Group::values().len(), Vec::new());
 
         let mut imain = 0;
         let mut iintf = 0;
@@ -342,31 +388,31 @@ impl GameGraphics {
             match *group {
                 gfx::Group::Soldier => {
                     for _ in gfx::Soldier::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Weapon => {
                     for _ in gfx::Weapon::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Spark => {
                     for _ in gfx::Spark::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Object => {
                     for _ in gfx::Object::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Interface => {
                     for _ in gfx::Interface::values() {
-                        self.sprites[index].push(intf.sprites[iintf].clone());
+                        self.sprites.stat[index].push(intf.sprites[iintf].clone());
                         iintf += 1;
                     }
                 }
@@ -375,22 +421,12 @@ impl GameGraphics {
 
         for group in dynamic_sprites.keys() {
             for (sprite, &index) in dynamic_sprites[group].iter() {
-                self.dynamic_sprites
+                self.sprites
+                    .dynamic
                     .entry((*group).clone())
                     .or_default()
-                    .insert((*sprite).clone(), dynm.sprites[index].clone());
+                    .insert((*sprite).clone(), main.sprites[index].clone());
             }
         }
-    }
-
-    pub fn get_dynamic_sprite<S: Into<String>>(&self, group: S, sprite: S) -> &gfx2d::Sprite {
-        let group = group.into();
-        let sprite = sprite.into();
-        &self
-            .dynamic_sprites
-            .get(&group)
-            .expect(format!("Sprite group '{}' unavailable", group).as_str())
-            .get(&sprite)
-            .expect(format!("Sprite '{} / {}' unavailable", group, sprite).as_str())
     }
 }

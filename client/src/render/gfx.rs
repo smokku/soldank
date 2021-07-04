@@ -2,6 +2,7 @@ use super::*;
 
 pub trait SpriteData: Send + Sync + std::fmt::Debug {
     fn id(&self) -> usize;
+    fn name(&self) -> &str;
     fn group(&self) -> Group;
     fn filename(&self) -> &'static str;
     fn values() -> &'static [Self]

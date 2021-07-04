@@ -36,10 +36,11 @@ use weapons::*;
 use cvars::{set_cli_cvars, Config};
 use gfx2d::macroquad::{self as macroquad, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
+use hecs::World;
 use resources::Resources;
 use std::{env, path};
 
-use soldank_shared::constants::DEFAULT_MAP;
+use soldank_shared::{components, constants::DEFAULT_MAP};
 
 fn config() -> mq::Conf {
     mq::Conf {
@@ -212,6 +213,18 @@ async fn main() {
 
     let bullets: Vec<Bullet> = Vec::new();
 
+    let mut world = World::new();
+    // FIXME: remove this vvv
+    world.spawn((
+        components::Position::new(map.spawnpoints[0].x as f32, map.spawnpoints[0].y as f32),
+        components::Sprite {
+            group: "Ball".into(),
+            name: "Ball1".into(),
+            transform: gfx2d::Transform::Pos(vec2(-30., -20.)),
+            ..Default::default()
+        },
+    ));
+
     let mut resources = Resources::new();
     resources.insert(map);
     resources.insert(config);
@@ -332,6 +345,7 @@ async fn main() {
         let p = f64::min(1.0, f64::max(0.0, timeacc / TIMESTEP_RATE));
 
         graphics.render_frame(
+            &world,
             &resources,
             &soldier,
             timecur - TIMESTEP_RATE * (1.0 - p),
