@@ -1622,11 +1622,12 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.27.1"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "462fffe4002f4f2e1f6a9dcf12cc1a6fc0e15989014efc02a941d3e0f5dc2120"
+checksum = "39fe9195887b501f296ac918ecbff4650b6935da164d4902ef73e140c46a0dce"
 dependencies = [
  "approx",
+ "glam",
  "matrixmultiply",
  "nalgebra-macros",
  "num-complex",
@@ -1981,9 +1982,9 @@ dependencies = [
 
 [[package]]
 name = "parry2d"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75a1e78b7bed6dc97adc6750a041af8715f944d5fb65b29752403a385c86034d"
+checksum = "5a13a6c0ed1c89ad0350c61f42f967befff3912d4e1a209b4a051831e7211ae4"
 dependencies = [
  "approx",
  "arrayvec 0.7.1",
@@ -2217,9 +2218,9 @@ dependencies = [
 
 [[package]]
 name = "rapier2d"
-version = "0.9.2"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a7b0e545b614361987f6d5cdd5026111e37266fe673b74075afda1fe2c16af3"
+checksum = "8414a31cd0d29ef1710efd52e1c4dd96a9439e276aa61c9b53c25c00e569db9f"
 dependencies = [
  "approx",
  "arrayvec 0.7.1",
@@ -2690,6 +2691,7 @@ dependencies = [
  "laminar",
  "log",
  "naia-client-socket",
+ "nalgebra",
  "rapier2d",
  "resources",
  "rust-ini",
