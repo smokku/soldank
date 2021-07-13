@@ -15,6 +15,7 @@ mod debug;
 mod mapfile;
 mod networking;
 mod particles;
+mod physics;
 mod render;
 mod soldier;
 mod state;
@@ -214,20 +215,6 @@ async fn main() {
     let bullets: Vec<Bullet> = Vec::new();
 
     let mut world = World::new();
-    // FIXME: remove this vvv
-    let ball_entity = world.spawn((
-        components::Position::new(map.spawnpoints[0].x as f32, map.spawnpoints[0].y as f32),
-        components::Sprite {
-            group: "Ball".into(),
-            name: "Ball1".into(),
-            transform: gfx2d::Transform::origin(
-                vec2(-30., -20.),
-                vec2(1.0, 1.0) / 2.,
-                (0.0, vec2(50., 50.) / 4.),
-            ),
-            ..Default::default()
-        },
-    ));
 
     let mut resources = Resources::new();
     resources.insert(map);
@@ -236,40 +223,10 @@ async fn main() {
     resources.insert(emitter);
     resources.insert(weapons);
     resources.insert(bullets);
+
+    physics::init(&mut world, &mut resources);
+
     let resources = resources; // This shadows the mutable binding with an immutable one.
-
-    // -------------- Rapier2D ----------------
-    use rapier2d::prelude::*;
-    let mut rigid_body_set = RigidBodySet::new();
-    let mut collider_set = ColliderSet::new();
-
-    /* Create the ground. */
-    let collider = ColliderBuilder::cuboid(100.0, 0.1).build();
-    collider_set.insert(collider);
-
-    /* Create the bouncing ball. */
-    let rigid_body = RigidBodyBuilder::new_dynamic()
-        .translation(vector![0.0, -10.0])
-        .build();
-    let collider = ColliderBuilder::ball(0.5).restitution(0.7).build();
-    let ball_body_handle = rigid_body_set.insert(rigid_body);
-    collider_set.insert_with_parent(collider, ball_body_handle, &mut rigid_body_set);
-
-    /* Create other structures necessary for the simulation. */
-    let gravity = vector![0.0, 9.81];
-    let integration_parameters = IntegrationParameters {
-        dt: TIMESTEP_RATE as f32,
-        ..Default::default()
-    };
-    let mut physics_pipeline = PhysicsPipeline::new();
-    let mut island_manager = IslandManager::new();
-    let mut broad_phase = BroadPhase::new();
-    let mut narrow_phase = NarrowPhase::new();
-    let mut joint_set = JointSet::new();
-    let mut ccd_solver = CCDSolver::new();
-    let physics_hooks = ();
-    let event_handler = ();
-    // -------------- Rapier2D ----------------
 
     let mut running = true;
     while running {
@@ -310,39 +267,9 @@ async fn main() {
         while timeacc >= TIMESTEP_RATE {
             timeacc -= TIMESTEP_RATE;
 
-            // -------------- Rapier2D ----------------
-            physics_pipeline.step(
-                &gravity,
-                &integration_parameters,
-                &mut island_manager,
-                &mut broad_phase,
-                &mut narrow_phase,
-                &mut rigid_body_set,
-                &mut collider_set,
-                &mut joint_set,
-                &mut ccd_solver,
-                &physics_hooks,
-                &event_handler,
-            );
+            physics::step(&resources);
 
-            let ball_body = &rigid_body_set[ball_body_handle];
-            let mut position_component = world
-                .entity(ball_entity)
-                .unwrap()
-                .get_mut::<components::Position>()
-                .unwrap();
-            position_component.x = ball_body.translation().x * 16.;
-            position_component.y = ball_body.translation().y * 16. - 300.;
-            if let gfx2d::Transform::FromOrigin { rot, .. } = &mut world
-                .entity(ball_entity)
-                .unwrap()
-                .get_mut::<components::Sprite>()
-                .unwrap()
-                .transform
-            {
-                rot.0 = timecur as f32 % (2. * PI);
-            }
-            // -------------- Rapier2D ----------------
+            physics::sync_to_world(&mut world, &resources, timecur);
 
             {
                 // remove inactive bullets
