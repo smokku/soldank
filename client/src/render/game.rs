@@ -117,7 +117,6 @@ impl GameGraphics {
         let state = resources.get::<MainState>().unwrap();
         let config = resources.get::<Config>().unwrap();
         let bullets = resources.get::<Vec<Bullet>>().unwrap();
-        let map = resources.get::<MapFile>().unwrap();
 
         let zoom = f32::exp(state.zoom);
         let cam = lerp(state.camera_prev, state.camera, frame_percent);
@@ -190,7 +189,7 @@ impl GameGraphics {
         }
 
         if debug_state.visible {
-            debug::debug_render(gl, debug_state, &*state, &*map, self);
+            debug::debug_render(gl, debug_state, self, world, resources);
         }
 
         set_default_camera();

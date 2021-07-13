@@ -1,7 +1,5 @@
-use crate::{
-    constants, debug::DebugState, mapfile::PolyType, mq, vec2, GameGraphics, MainState, MapFile,
-    Vec2,
-};
+use super::*;
+use crate::debug::DebugState;
 use gfx2d::{
     macroquad::prelude::{color_u8, Color, DrawMode, QuadGl, Vertex},
     math::PI,
@@ -11,11 +9,13 @@ use gfx2d::{
 pub fn debug_render(
     gl: &mut QuadGl,
     state: &DebugState,
-    game: &MainState,
-    map: &MapFile,
     graphics: &GameGraphics,
+    world: &World,
+    resources: &Resources,
 ) {
     let state = &state.render;
+    let game = resources.get::<MainState>().unwrap();
+    let map = resources.get::<MapFile>().unwrap();
 
     if state.render_wireframe || state.highlight_polygons {
         // TODO: merge to single gl.geometry() calls for all vertices
@@ -167,5 +167,9 @@ pub fn debug_render(
                 );
             }
         }
+    }
+
+    if state.render_physics {
+        physics::render(world, resources);
     }
 }

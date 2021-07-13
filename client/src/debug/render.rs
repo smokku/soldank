@@ -5,7 +5,7 @@ pub struct RenderState {
     pub(crate) visible: bool,
 
     pub render_skeleton: bool,
-    pub render_position: bool,
+    pub render_physics: bool,
 
     // Taken from http://urraka.github.io/soldat-map/#171/Airpirates
     pub disable_background: bool,
@@ -57,8 +57,8 @@ impl IVisit for RenderState {
             false,
         ));
         f(&mut cvar::Property(
-            "render_position",
-            &mut self.render_position,
+            "render_physics",
+            &mut self.render_physics,
             false,
         ));
         f(&mut cvar::Property(
@@ -117,7 +117,7 @@ impl RenderState {
             vec2(270., 680.)).label("Renderer").ui(&mut *root_ui(),
             |ui| {
                 toggle_state(ui, None, &mut self.render_skeleton, "Skeleton");
-                toggle_state(ui, None, &mut self.render_position, "Position");
+                toggle_state(ui, None, &mut self.render_physics, "Physics");
 
                 ui.separator();
                 toggle_state_inv(ui, None, &mut self.disable_background, "Background");

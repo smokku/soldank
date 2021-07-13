@@ -34,17 +34,22 @@ pub fn set_cli_cvars(config: &mut dyn IVisit, cmd: &clap::ArgMatches) {
 }
 
 pub struct Physics {
+    pub scale: f32,
     pub gravity: f32,
 }
 
 impl Default for Physics {
     fn default() -> Self {
-        Self { gravity: GRAV }
+        Self {
+            scale: PHYSICS_SCALE,
+            gravity: GRAV,
+        }
     }
 }
 
 impl IVisit for Physics {
     fn visit(&mut self, f: &mut dyn FnMut(&mut dyn INode)) {
+        f(&mut cvar::Property("scale", &mut self.scale, PHYSICS_SCALE));
         f(&mut cvar::Property("gravity", &mut self.gravity, GRAV));
     }
 }
