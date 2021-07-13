@@ -1221,7 +1221,7 @@ dependencies = [
 [[package]]
 name = "macroquad"
 version = "0.3.7"
-source = "git+https://github.com/not-fl3/macroquad.git#c593fa0927f2318ed4325c13d24ebb41bb0274fc"
+source = "git+https://github.com/not-fl3/macroquad.git#ff08f8271f291402b6c69df4d7fb8e6d1ecbd8a6"
 dependencies = [
  "audir-sles",
  "audrey",
@@ -1229,6 +1229,7 @@ dependencies = [
  "fontdue",
  "glam",
  "image",
+ "log",
  "macroquad_macro",
  "miniquad",
  "quad-rand",
@@ -1237,7 +1238,7 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/macroquad.git#c593fa0927f2318ed4325c13d24ebb41bb0274fc"
+source = "git+https://github.com/not-fl3/macroquad.git#ff08f8271f291402b6c69df4d7fb8e6d1ecbd8a6"
 
 [[package]]
 name = "matrixmultiply"
