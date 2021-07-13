@@ -220,7 +220,11 @@ async fn main() {
         components::Sprite {
             group: "Ball".into(),
             name: "Ball1".into(),
-            transform: gfx2d::Transform::Pos(vec2(-30., -20.)),
+            transform: gfx2d::Transform::origin(
+                vec2(-30., -20.),
+                vec2(1.0, 1.0) / 2.,
+                (0.0, vec2(50., 50.) / 4.),
+            ),
             ..Default::default()
         },
     ));
@@ -329,6 +333,15 @@ async fn main() {
                 .unwrap();
             position_component.x = ball_body.translation().x * 16.;
             position_component.y = ball_body.translation().y * 16. - 300.;
+            if let gfx2d::Transform::FromOrigin { rot, .. } = &mut world
+                .entity(ball_entity)
+                .unwrap()
+                .get_mut::<components::Sprite>()
+                .unwrap()
+                .transform
+            {
+                rot.0 = timecur as f32 % (2. * PI);
+            }
             // -------------- Rapier2D ----------------
 
             {
