@@ -1,7 +1,6 @@
 use gfx2d::{DrawBatch, Transform};
 
-use crate::render::Sprites;
-use soldank_shared::components::*;
+use crate::{components::*, render::Sprites};
 
 pub fn render_sprites(world: &hecs::World, sprites: &Sprites, batch: &mut DrawBatch) {
     for (

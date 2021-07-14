@@ -1,11 +1,10 @@
+use crate::{components, control::Control, math::Vec2};
 use bytes::Bytes;
 use enum_primitive_derive::Primitive;
 use hecs::Entity;
 use nanoserde::{DeBin, SerBin};
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::{collections::HashMap, convert::TryFrom, mem::size_of, process::abort};
-
-use crate::{components, control::Control, math::Vec2};
 
 const NET_PROTOCOL_VERSION: u8 = 0x01;
 

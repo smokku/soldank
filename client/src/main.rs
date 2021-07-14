@@ -8,6 +8,7 @@ macro_rules! iif(
 mod anims;
 mod bullet;
 mod calc;
+mod components;
 mod constants;
 mod control;
 mod cvars;
@@ -19,6 +20,7 @@ mod physics;
 mod render;
 mod soldier;
 mod state;
+mod systems;
 mod weapons;
 
 use anims::*;
@@ -40,8 +42,6 @@ use gvfs::filesystem::{File, Filesystem};
 use hecs::World;
 use resources::Resources;
 use std::{env, path};
-
-use soldank_shared::{components, constants::DEFAULT_MAP};
 
 fn config() -> mq::Conf {
     mq::Conf {
@@ -269,7 +269,8 @@ async fn main() {
 
             physics::step(&resources);
 
-            physics::sync_to_world(&mut world, &resources, timecur);
+            let scale = resources.get::<Config>().unwrap().phys.scale;
+            physics::sync_to_world(&mut world, &resources, scale);
 
             {
                 // remove inactive bullets
@@ -334,6 +335,8 @@ async fn main() {
                     cam_v
                 };
             }
+
+            systems::rotate_balls(&mut world, timecur);
 
             timecur = current_time();
             timeacc += timecur - timeprv;

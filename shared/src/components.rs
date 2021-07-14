@@ -1,4 +1,4 @@
-use gfx2d::{math::*, rgba, Color, Transform};
+use crate::math::{vec2, Vec2};
 use nanoserde::{DeBin, DeBinErr, SerBin};
 use std::ops::{Deref, DerefMut};
 
@@ -96,26 +96,5 @@ impl Particle {
         self.force.y += self.gravity;
         self.pos = a - b + self.force * self.one_over_mass * self.timestep.powi(2);
         self.force = Vec2::ZERO;
-    }
-}
-
-#[derive(Debug)]
-pub struct Sprite {
-    pub group: String,
-    pub name: String,
-    pub sprite: Option<gfx2d::Sprite>,
-    pub color: Color,
-    pub transform: Transform,
-}
-
-impl Default for Sprite {
-    fn default() -> Self {
-        Self {
-            group: Default::default(),
-            name: Default::default(),
-            sprite: None,
-            color: rgba(255, 255, 255, 255),
-            transform: Transform::Pos(Vec2::ZERO),
-        }
     }
 }

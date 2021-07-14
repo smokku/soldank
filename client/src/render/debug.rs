@@ -170,6 +170,21 @@ pub fn debug_render(
     }
 
     if state.render_physics {
-        physics::render(world, resources);
+        physics(world, resources);
+    }
+}
+
+pub fn physics(world: &World, resources: &Resources) {
+    use rapier2d::prelude::*;
+
+    let rigid_body_set = resources.get_mut::<RigidBodySet>().unwrap();
+    let scale = resources.get::<Config>().unwrap().phys.scale;
+
+    for (_entity, body_handle) in world.query::<&RigidBodyHandle>().iter() {
+        let body = &rigid_body_set[*body_handle];
+        let tr = body.translation();
+        let center = vec2(tr.x, tr.y) * scale;
+        mq::draw_circle(center.x, center.y, 1.5, mq::YELLOW);
+        mq::draw_circle(center.x, center.y, 0.75, mq::BLACK);
     }
 }
