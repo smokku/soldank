@@ -6,7 +6,7 @@ use nanoserde::{DeBin, DeBinErr, SerBin};
 pub struct Nick(pub String);
 
 #[derive(Debug, Clone, DeBin, SerBin)]
-pub struct Soldier {}
+pub struct Soldier;
 
 #[derive(Debug, Clone, Deref, DerefMut)]
 pub struct Position(Vec2);

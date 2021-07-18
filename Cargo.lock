@@ -769,6 +769,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "env_logger"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
+dependencies = [
+ "atty",
+ "humantime",
+ "log",
+ "regex",
+ "termcolor",
+]
+
+[[package]]
 name = "error-chain"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -812,6 +825,15 @@ dependencies = [
  "crc32fast",
  "libc",
  "miniz_oxide 0.4.4",
+]
+
+[[package]]
+name = "float-cmp"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
@@ -1073,7 +1095,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e40283dadb02f3af778878be1d717b17b4e4ab92e1d935ab03a730b0542905f2"
 dependencies = [
  "arrayvec 0.5.2",
- "itertools",
+ "itertools 0.4.19",
 ]
 
 [[package]]
@@ -1153,6 +1175,15 @@ name = "itertools"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4a9b56eb56058f43dc66e58f40a214b2ccbc9f3df51861b63d51dec7b65bc3f"
+
+[[package]]
+name = "itertools"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69ddb889f9d0d08a67338271fa9b62996bc788c7796a5c18cf057420aaed5eaf"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itoa"
@@ -2302,7 +2333,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "cvar",
- "env_logger",
+ "env_logger 0.8.4",
  "gfx2d",
  "gvfs",
  "hecs",
@@ -2330,7 +2361,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "cvar",
- "env_logger",
+ "env_logger 0.8.4",
  "hecs",
  "instant",
  "laminar",
@@ -2350,15 +2381,19 @@ dependencies = [
  "cvar",
  "derive_deref",
  "enum-primitive-derive",
+ "env_logger 0.9.0",
+ "float-cmp",
  "glam",
  "hecs",
  "hexdump",
+ "itertools 0.10.1",
  "log",
  "nalgebra",
  "nanoserde",
  "num-traits",
  "rapier2d",
  "resources",
+ "test-env-log",
 ]
 
 [[package]]
@@ -2463,6 +2498,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dfed899f0eb03f32ee8c6a0aabdb8a7949659e3466561fc0adf54e26d88c5f4"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-env-log"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b3e4b132a630cc8a0d06cfcb400da67adef3d0087a94b3332d4692908f0c2544"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
