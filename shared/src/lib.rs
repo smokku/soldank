@@ -3,6 +3,7 @@ pub mod constants;
 pub mod control;
 pub mod cvars;
 pub mod messages;
+pub mod networking;
 pub mod orb;
 pub mod physics;
 pub mod systems;

@@ -11,7 +11,7 @@ use crate::{
     cvars::{set_cli_cvars, Config},
     networking::Networking,
 };
-use soldank_shared::messages::NetworkMessage;
+use soldank_shared::{messages::NetworkMessage, networking::MyWorld, orb};
 
 mod cheat;
 mod constants;
@@ -96,6 +96,16 @@ fn main() -> Result<()> {
 
         let mut game_state = GameState::Lobby;
 
+        // -------------------------------- ORB --------------------------------
+        let mut server = orb::server::Server::<MyWorld>::new(
+            orb::Config {
+                timestep_seconds: TIMESTEP_RATE,
+                ..Default::default()
+            },
+            0.0,
+        );
+        // -------------------------------- ORB --------------------------------
+
         let mut running = true;
         while running {
             future::race(
@@ -109,6 +119,12 @@ fn main() -> Result<()> {
             timecur = current_time();
             timeacc += timecur - timeprv;
             timeprv = timecur;
+
+            // -------------------------------- ORB --------------------------------
+            let server_display_state = server.display_state();
+            log::info!("server_display_state: {:?}", server_display_state);
+            server.update(timeacc, timecur);
+            // -------------------------------- ORB --------------------------------
 
             match game_state {
                 GameState::Lobby => {
@@ -135,6 +151,7 @@ fn main() -> Result<()> {
 
                         // current simulation frame
                         systems::tick_debug(&world, &time);
+                        // FIXME: this is wrong to process messages once a tick
                         systems::process_network_messages(
                             &mut world,
                             &mut messages,
