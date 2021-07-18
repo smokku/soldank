@@ -124,6 +124,13 @@ fn main() -> Result<()> {
             let server_display_state = server.display_state();
             log::info!("server_display_state: {:?}", server_display_state);
             server.update(timeacc, timecur);
+
+            for snapshot in server.take_outgoing_snapshots().drain(..) {
+                log::info!("outgoing snapshot: {:?}", snapshot);
+            }
+            for (from, to, command) in server.take_outgoing_commands().drain(..) {
+                log::info!("outgoing command: {:?} -> {:?}: {:?}", from, to, command);
+            }
             // -------------------------------- ORB --------------------------------
 
             match game_state {

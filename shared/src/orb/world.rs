@@ -5,7 +5,7 @@ mod display_state;
 pub use display_state::{DisplayState, Tweened};
 
 mod world_trait;
-pub use world_trait::World;
+pub use world_trait::{ClientId, World};
 
 mod simulation;
 pub(crate) use simulation::{InitializationType, Simulation};
