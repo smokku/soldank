@@ -4,6 +4,7 @@ extern crate clap;
 use color_eyre::eyre::Result;
 use hecs::World;
 use smol::future;
+use std::time::Duration;
 use std::{collections::VecDeque, net::SocketAddr};
 
 use crate::{
@@ -107,9 +108,14 @@ fn main() -> Result<()> {
         let mut running = true;
         while running {
             future::race(
-                networking.process(&mut world, &mut config, &mut messages), // loop is driven by incoming packets
+                // loop is driven by incoming packets
+                networking.process(&mut world, &mut config, &mut messages),
+                // or timeout
                 async {
-                    smol::Timer::after(MAX_NETWORK_IDLE).await; // or timeout
+                    smol::Timer::after(Duration::from_millis(
+                        (orb_config.snapshot_send_period * 1000.) as _,
+                    ))
+                    .await; // drop Timer result
                 },
             )
             .await;
