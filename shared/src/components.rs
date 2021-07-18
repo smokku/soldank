@@ -1,6 +1,6 @@
 use crate::math::{vec2, Vec2};
+use derive_deref::{Deref, DerefMut};
 use nanoserde::{DeBin, DeBinErr, SerBin};
-use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Nick(pub String);
@@ -8,25 +8,12 @@ pub struct Nick(pub String);
 #[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Soldier {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deref, DerefMut)]
 pub struct Position(Vec2);
 
 impl Position {
     pub fn new<P: Into<f32>>(x: P, y: P) -> Self {
         Position(vec2(x.into(), y.into()))
-    }
-}
-
-impl Deref for Position {
-    type Target = Vec2;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for Position {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 
