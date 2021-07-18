@@ -77,7 +77,8 @@ impl TweeningMethod {
 ///
 /// let client = Client::<DemoWorld>::new(Config::new());
 /// ```
-#[derive(Clone, Debug)]
+// This should not derive Clone nor Copy, to support live changing of settings.
+#[derive(Debug)]
 pub struct Config {
     /// Maximum amount of client lag in seconds that the server will compensate for.
     /// A higher number allows a client with a high ping to be able to perform actions

@@ -20,13 +20,14 @@ use super::{
 /// [`Client`](crate::client::Client) for game clients. You create, store, and update this server
 /// instance to run your game on the server side.
 #[derive(Debug)]
-pub struct Server<WorldType: World> {
+pub struct Server<'a, WorldType: World> {
     timekeeping_simulation: TimeKeeper<
+        'a,
         Simulation<WorldType /*, { InitializationType::PreInitialized }*/>,
         // { TerminationCondition::LastUndershoot },
     >,
     seconds_since_last_snapshot: f64, // FIXME: "seconds since" is not constant
-    config: Config,
+    config: &'a Config,
 
     incoming_commands: Vec<(Timestamped<WorldType::CommandType>, ClientId)>,
     outgoing_commands: Vec<(
@@ -37,14 +38,14 @@ pub struct Server<WorldType: World> {
     outgoing_messages: Vec<Timestamped<WorldType::SnapshotType>>,
 }
 
-impl<WorldType: World> Server<WorldType> {
+impl<'a, WorldType: World> Server<'a, WorldType> {
     /// Constructs a new [`Server`]. This function requires a `seconds_since_startup` parameter to
     /// initialize the server's simulation timestamp.
-    pub fn new(config: Config, seconds_since_startup: f64) -> Self {
+    pub fn new(config: &'a Config, seconds_since_startup: f64) -> Self {
         let mut server = Self {
             timekeeping_simulation: TimeKeeper::new(
                 Simulation::new(InitializationType::PreInitialized),
-                config.clone(), // FIXME: no cloning of config!!! (remove derive)
+                config,
                 TerminationCondition::LastUndershoot,
             ),
             seconds_since_last_snapshot: 0.0,

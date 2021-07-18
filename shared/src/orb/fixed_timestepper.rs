@@ -78,6 +78,7 @@ impl TerminationCondition {
 /// number of steps on the stepper to meet the external framerate as close as possible.
 #[derive(Debug)]
 pub(crate) struct TimeKeeper<
+    'a,
     T: FixedTimestepper, /*, const TERMINATION_CONDITION: TerminationCondition*/
 > {
     /// The stepper whose time is managed by this [`TimeKeeper`].
@@ -88,15 +89,19 @@ pub(crate) struct TimeKeeper<
 
     termination_condition: TerminationCondition,
 
-    config: Config,
+    config: &'a Config,
 }
 
-impl<T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationCondition*/>
-    TimeKeeper<T /*, TERMINATION_CONDITION*/>
+impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationCondition*/>
+    TimeKeeper<'a, T /*, TERMINATION_CONDITION*/>
 {
     /// Wrap the given [`FixedTimestepper`] with a [`TimeKeeper`] that will manage the stepper's
     /// time.
-    pub fn new(stepper: T, config: Config, termination_condition: TerminationCondition) -> Self {
+    pub fn new(
+        stepper: T,
+        config: &'a Config,
+        termination_condition: TerminationCondition,
+    ) -> Self {
         Self {
             stepper,
             timestep_overshoot_seconds: 0.0,
@@ -252,15 +257,17 @@ impl<T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationCondition*/
     }
 }
 
-impl<T: FixedTimestepper /*, const C: TerminationCondition*/> Deref for TimeKeeper<T /*, C*/> {
+impl<'a, T: FixedTimestepper /*, const C: TerminationCondition*/> Deref
+    for TimeKeeper<'a, T /*, C*/>
+{
     type Target = T;
     fn deref(&self) -> &Self::Target {
         &self.stepper
     }
 }
 
-impl<T: FixedTimestepper /*, const C: TerminationCondition*/> DerefMut
-    for TimeKeeper<T /*, C*/>
+impl<'a, T: FixedTimestepper /*, const C: TerminationCondition*/> DerefMut
+    for TimeKeeper<'a, T /*, C*/>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.stepper
@@ -322,7 +329,7 @@ mod tests {
         let config: Config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            config.clone(),
+            &config,
             TerminationCondition::LastUndershoot,
         );
         timekeeper.update(config.timestep_seconds, config.timestep_seconds);
@@ -334,7 +341,7 @@ mod tests {
         let config: Config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            config.clone(),
+            &config,
             TerminationCondition::LastUndershoot,
         );
         timekeeper.update(config.timestep_seconds * 0.5, config.timestep_seconds * 0.5);
@@ -346,7 +353,7 @@ mod tests {
         let config: Config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            config.clone(),
+            &config,
             TerminationCondition::LastUndershoot,
         );
         timekeeper.update(config.timestep_seconds * 1.5, config.timestep_seconds * 1.5);
@@ -358,7 +365,7 @@ mod tests {
         let config: Config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            config.clone(),
+            &config,
             TerminationCondition::FirstOvershoot,
         );
         timekeeper.update(config.timestep_seconds, config.timestep_seconds);
@@ -370,7 +377,7 @@ mod tests {
         let config: Config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            config.clone(),
+            &config,
             TerminationCondition::FirstOvershoot,
         );
         timekeeper.update(config.timestep_seconds * 0.5, config.timestep_seconds * 0.5);
@@ -382,7 +389,7 @@ mod tests {
         let config: Config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            config.clone(),
+            &config,
             TerminationCondition::FirstOvershoot,
         );
         timekeeper.update(config.timestep_seconds * 1.5, config.timestep_seconds * 1.5);
@@ -413,7 +420,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                config.clone(),
+                &config,
                 TerminationCondition::FirstOvershoot,
             );
             let initial_seconds_since_startup = initial_timestamp
@@ -478,7 +485,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                config.clone(),
+                &config,
                 TerminationCondition::FirstOvershoot,
             );
             let initial_seconds_since_startup = initial_timestamp
@@ -548,7 +555,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                config.clone(),
+                &config,
                 TerminationCondition::FirstOvershoot,
             );
             let initial_seconds_since_startup = initial_timestamp
@@ -613,7 +620,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                config.clone(),
+                &config,
                 TerminationCondition::FirstOvershoot,
             );
             let mut seconds_since_startup = initial_timestamp.as_seconds(config.timestep_seconds)

@@ -97,13 +97,11 @@ fn main() -> Result<()> {
         let mut game_state = GameState::Lobby;
 
         // -------------------------------- ORB --------------------------------
-        let mut server = orb::server::Server::<MyWorld>::new(
-            orb::Config {
-                timestep_seconds: TIMESTEP_RATE,
-                ..Default::default()
-            },
-            0.0,
-        );
+        let orb_config = orb::Config {
+            timestep_seconds: TIMESTEP_RATE,
+            ..Default::default()
+        };
+        let mut server = orb::server::Server::<MyWorld>::new(&orb_config, 0.0);
         // -------------------------------- ORB --------------------------------
 
         let mut running = true;
