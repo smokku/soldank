@@ -30,7 +30,7 @@ pub mod world;
 /// Represent how to calculate the current client display state based on the simulated undershot
 /// and overshot frames (since the two frames closest to the current time may not exactly line up
 /// with the current time).
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TweeningMethod {
     /// Use the undershot frame if the simulated frames don't exactly line up to the current time.
     /// This is equivalent to linearly interpolating between the undershot and overshot frame, but

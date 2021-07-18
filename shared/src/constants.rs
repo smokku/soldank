@@ -6,7 +6,4 @@ pub const DEFAULT_MAP: &str = "ctf_Ash";
 
 pub(crate) const GRAV: f32 = 0.06;
 
-pub(crate) const TICKS_PER_SECOND: u8 = 100;
-pub(crate) const SNAPSHOT_PER_SECOND: u8 = 10;
-
 pub(crate) const PHYSICS_SCALE: f32 = 16.;
