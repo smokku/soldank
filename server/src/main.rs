@@ -89,13 +89,12 @@ fn main() -> Result<()> {
 
         let mut game_state = GameState::Lobby;
 
-        // -------------------------------- ORB --------------------------------
+        // FIXME: take this from Config.net
         let orb_config = orb::Config {
             timestep_seconds: TIMESTEP_RATE,
             ..Default::default()
         };
         let mut server = orb::server::Server::<MyWorld>::new(&orb_config, 0.0);
-        // -------------------------------- ORB --------------------------------
 
         let startup_time = Instant::now();
         let mut previous_time = Instant::now();

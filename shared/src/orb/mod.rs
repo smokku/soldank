@@ -17,12 +17,12 @@
 // )]
 // #![doc = include_str!("../README.markdown")]
 
-// pub mod client;
+pub mod client;
 // pub mod clocksync;
 pub mod command;
 pub mod fixed_timestepper;
 // pub mod network_resource;
-// pub(crate) mod old_new;
+pub(crate) mod old_new;
 pub mod server;
 pub mod timestamp;
 pub mod world;

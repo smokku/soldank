@@ -35,7 +35,7 @@ pub struct Server<'a, WorldType: World> {
         Option<WorldType::ClientId>, // To   (None = broadcast)
         Timestamped<WorldType::CommandType>,
     )>,
-    outgoing_messages: Vec<Timestamped<WorldType::SnapshotType>>,
+    outgoing_snapshots: Vec<Timestamped<WorldType::SnapshotType>>,
 }
 
 impl<'a, WorldType: World> Server<'a, WorldType> {
@@ -52,7 +52,7 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
             config,
             incoming_commands: Vec::new(),
             outgoing_commands: Vec::new(),
-            outgoing_messages: Vec::new(),
+            outgoing_snapshots: Vec::new(),
         };
 
         let initial_timestamp =
@@ -216,7 +216,7 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
             );
             self.seconds_since_last_snapshot = 0.0;
             // net.broadcast_message(self.timekeeping_simulation.last_completed_snapshot());
-            self.outgoing_messages
+            self.outgoing_snapshots
                 .push(self.timekeeping_simulation.last_completed_snapshot());
         }
     }
@@ -227,7 +227,7 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
     /// `ClockSyncMessage` and `SnapshotType` are unreliable and unordered, while `CommandType` is
     /// reliable but unordered.
     pub fn take_outgoing_snapshots(&mut self) -> Vec<Timestamped<WorldType::SnapshotType>> {
-        self.outgoing_messages.split_off(0)
+        self.outgoing_snapshots.split_off(0)
     }
 
     /// CrystalOrb is written assuming that

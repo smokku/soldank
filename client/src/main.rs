@@ -43,6 +43,8 @@ use hecs::World;
 use resources::Resources;
 use std::{env, path};
 
+use soldank_shared::{networking::MyWorld, orb};
+
 fn config() -> mq::Conf {
     mq::Conf {
         sample_count: 4,
@@ -228,6 +230,13 @@ async fn main() {
 
     let resources = resources; // This shadows the mutable binding with an immutable one.
 
+    // FIXME: take this from Config.net
+    let orb_config = orb::Config {
+        timestep_seconds: TIMESTEP_RATE,
+        ..Default::default()
+    };
+    let mut client = orb::client::Client::<MyWorld>::new(&orb_config);
+
     let mut running = true;
     while running {
         networking.tick += 1;
@@ -368,8 +377,15 @@ async fn main() {
         }
 
         networking.set_input_state(&soldier.control);
-        networking.tick(&mut *resources.get_mut::<Config>().unwrap());
-        networking.tick_cleanup();
+        networking.process(&mut *resources.get_mut::<Config>().unwrap());
+        // if let orb::client::stage::StageMut::Ready(ready_client) = &mut client.stage_mut() {
+        //     log::info!(
+        //         "ready_client_display_state: {:?}",
+        //         ready_client.display_state()
+        //     );
+        // }
+        client.update(timeacc, timecur);
+        networking.post_process();
 
         macroquad::window::next_frame().await;
     }

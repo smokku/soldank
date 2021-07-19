@@ -162,7 +162,7 @@ impl Networking {
         self.connection.update(messenger, time);
     }
 
-    pub fn tick(&mut self, config: &mut Config) {
+    pub fn process(&mut self, config: &mut Config) {
         if self.state == ConnectionState::Disconnected {
             if backoff_enabled(self.backoff_round) {
                 let msg = messages::connection_request();
@@ -385,7 +385,7 @@ impl Networking {
             .insert(self.tick, (flags, control.mouse_aim_x, control.mouse_aim_y));
     }
 
-    pub fn tick_cleanup(&mut self) {
+    pub fn post_process(&mut self) {
         let low_tick = usize::max(
             self.server_tick_received,
             self.tick - usize::min(self.tick, MAX_INPUTS_RETAIN),
