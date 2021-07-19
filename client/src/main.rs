@@ -235,7 +235,7 @@ async fn main() {
         timestep_seconds: TIMESTEP_RATE,
         ..Default::default()
     };
-    let mut client = orb::client::Client::<MyWorld>::new(&orb_config);
+    let mut client = orb::client::Client::<MyWorld>::new(timecur, &orb_config);
 
     let mut running = true;
     while running {
@@ -378,12 +378,7 @@ async fn main() {
 
         networking.set_input_state(&soldier.control);
         networking.process(&mut *resources.get_mut::<Config>().unwrap());
-        // if let orb::client::stage::StageMut::Ready(ready_client) = &mut client.stage_mut() {
-        //     log::info!(
-        //         "ready_client_display_state: {:?}",
-        //         ready_client.display_state()
-        //     );
-        // }
+        log::info!("ready_client_display_state: {:?}", client.display_state());
         client.update(timeacc, timecur);
         networking.post_process();
 

@@ -76,7 +76,7 @@ use std::fmt::{Display, Formatter};
 pub struct Client<'a, WorldType: World> {
     config: &'a Config,
     // stage: StageOwned<WorldType>,
-    _phantom: std::marker::PhantomData<WorldType>, // FIXME: this should not be needed
+    client: ActiveClient<'a, WorldType>,
 }
 
 impl<'a, WorldType: World> Client<'a, WorldType> {
@@ -104,11 +104,11 @@ impl<'a, WorldType: World> Client<'a, WorldType> {
     ///     ..Config::new()
     /// });
     /// ```
-    pub fn new(config: &'a Config) -> Self {
+    pub fn new(seconds_since_startup: f64, config: &'a Config) -> Self {
         Self {
             config,
             // stage: StageOwned::SyncingClock(ClockSyncer::new(config)),
-            _phantom: std::marker::PhantomData,
+            client: ActiveClient::new(seconds_since_startup, config /*, clocksyncer*/),
         }
     }
 
@@ -147,7 +147,7 @@ impl<'a, WorldType: World> Client<'a, WorldType> {
     pub fn update(
         &mut self,
         delta_seconds: f64,
-        _seconds_since_startup: f64,
+        seconds_since_startup: f64,
         // net: &mut NetworkResourceType,
     ) {
         let positive_delta_seconds = delta_seconds.max(0.0);
@@ -159,12 +159,11 @@ impl<'a, WorldType: World> Client<'a, WorldType> {
             );
         }
 
-        // FIXME: this actually needs to DO something
-        // self.stage.update(
-        //     delta_seconds,
-        //     seconds_since_startup,
-        //     &self.config, /*, net*/
-        // );
+        self.client.update(
+            delta_seconds,
+            seconds_since_startup,
+            /*&self.config, net*/
+        );
     }
 
     // /// Get the current stage of the [`Client`], which provides access to extra functionality
@@ -227,6 +226,13 @@ impl<'a, WorldType: World> Client<'a, WorldType> {
     // pub fn stage_mut(&mut self) -> StageMut<WorldType> {
     //     StageMut::from(&mut self.stage)
     // }
+
+    // ---------------- former Stage methods --------------------------------
+
+    /// Get the current display state that can be used to render the client's screen.
+    pub fn display_state(&self) -> Option<&Tweened<WorldType::DisplayStateType>> {
+        self.client.timekeeping_simulations.display_state.as_ref()
+    }
 }
 
 /// The internal CrystalOrb structure used to actively run the simulations, which is not
