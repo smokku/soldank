@@ -136,15 +136,10 @@ fn main() -> Result<()> {
 
                     server.update(delta_seconds, seconds_since_startup);
 
-                    for snapshot in server.take_outgoing_snapshots().drain(..) {
-                        log::info!("outgoing snapshot: {:?}", snapshot);
-                    }
-                    for (from, to, command) in server.take_outgoing_commands().drain(..) {
-                        log::info!("outgoing command: {:?} -> {:?}: {:?}", from, to, command);
-                    }
+                    networking.process_simulation(&mut server);
 
                     let time = systems::Time {
-                        time: seconds_since_startup,
+                        time: current_time,
                         tick: (server
                             .last_completed_timestamp()
                             .as_seconds(orb_config.timestep_seconds)

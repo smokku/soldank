@@ -13,13 +13,15 @@ use std::{
     convert::TryFrom,
     io,
     net::SocketAddr,
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use crate::{cheat::Cheats, constants::*, cvars::Config, state::build_state_message, systems};
 use soldank_shared::{
     constants::SERVER_PORT,
     messages::{self, encode_message, NetworkMessage},
+    networking::MyWorld,
+    orb::server::Server,
     trace_dump_packet,
 };
 
@@ -40,7 +42,7 @@ pub struct Connection {
     pub last_message_received: Instant,
     pub ack_tick: usize,
     pub last_processed_tick: usize,
-    pub last_broadcast: f64,
+    pub last_broadcast: Instant,
     pub authorized: bool,
     pub ready: bool,
     pub nick: String,
@@ -54,7 +56,7 @@ impl Connection {
             last_message_received: Instant::now(),
             ack_tick: 0,
             last_processed_tick: 0,
-            last_broadcast: 0.0,
+            last_broadcast: Instant::now(),
             authorized: false,
             ready: false,
             nick: Default::default(),
@@ -349,12 +351,51 @@ impl Networking {
         None
     }
 
+    pub fn process_simulation(&mut self, server: &mut Server<MyWorld>) {
+        for snapshot in server.take_outgoing_snapshots().drain(..) {
+            log::trace!("outgoing snapshot: {:?}", snapshot);
+            let mut packets = Vec::new();
+            for (&address, connection) in self.connections.iter_mut() {
+                // FIXME: state snapshot should be localized to entity
+                if let Some(_entity) = connection.entity {
+                    // TODO: snapshotting can be distributed, does not need to be all at the same time
+                    // let next_broadcast = connection.last_broadcast + BROADCAST_RATE;
+                    // if next_broadcast < time.time {
+                    // connection.last_broadcast = next_broadcast;
+                    connection.last_broadcast = Instant::now();
+                    packets.push(LaminarPacket::unreliable(
+                        address,
+                        encode_message(NetworkMessage::Snapshot(snapshot.clone())).to_vec(),
+                    ));
+                }
+            }
+            for packet in packets.drain(..) {
+                self.send(packet);
+            }
+        }
+
+        for (from, to, command) in server.take_outgoing_commands().drain(..) {
+            log::trace!("outgoing command: {:?} -> {:?}: {:?}", from, to, command);
+            let destinations = self.connections.iter().map(|(addr, _conn)| *addr);
+            let destinations: Vec<SocketAddr> = if let Some(to) = to {
+                destinations.filter(|addr| *addr == to).collect()
+            } else {
+                destinations.collect()
+            };
+            let msg = encode_message(NetworkMessage::Command(command));
+            for address in destinations {
+                self.send(LaminarPacket::reliable_unordered(address, msg.to_vec()));
+            }
+        }
+    }
+
     pub fn broadcast_state(&mut self, world: &World, time: &systems::Time) {
         let mut packets = Vec::new();
 
         for (&address, connection) in self.connections.iter_mut() {
             if let Some(entity) = connection.entity {
-                let next_broadcast = connection.last_broadcast + BROADCAST_RATE;
+                let next_broadcast = connection.last_broadcast
+                    + Duration::from_millis((BROADCAST_RATE * 1000.) as u64);
                 if next_broadcast < time.time {
                     connection.last_broadcast = next_broadcast;
 
@@ -362,10 +403,6 @@ impl Networking {
                     packets.push(LaminarPacket::unreliable(address, msg.to_vec()));
                 }
             }
-        }
-
-        for packet in packets.drain(..) {
-            self.send(packet);
         }
     }
 }

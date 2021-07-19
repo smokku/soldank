@@ -3,7 +3,8 @@ use crate::orb::{
     fixed_timestepper::Stepper,
     world::{DisplayState, World},
 };
-use std::fmt::Debug;
+use nanoserde::{DeBin, SerBin};
+use std::{fmt::Debug, net::SocketAddr};
 
 #[derive(Default)]
 pub struct MyWorld {
@@ -14,7 +15,7 @@ pub struct MyWorld {
     cached_momentum: Option<f64>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, SerBin, DeBin)]
 pub enum MyCommand {
     // Here, you would put down the things that you want to externally affect the physics
     // simulation. The most common would be player commands. Other things might include spawning
@@ -24,7 +25,7 @@ pub enum MyCommand {
     Cheat,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SerBin, DeBin)]
 pub struct MySnapshot {
     // Here, you would probably want to put down the minimal subset of states that can be used to
     // describe the whole physics simulation at any point of time.
@@ -42,6 +43,7 @@ pub struct MyDisplayState {
 }
 
 impl World for MyWorld {
+    type ClientId = SocketAddr;
     type CommandType = MyCommand;
     type SnapshotType = MySnapshot;
     type DisplayStateType = MyDisplayState;
@@ -74,7 +76,7 @@ impl World for MyWorld {
         }
     }
 
-    fn command_is_valid(_command: &Self::CommandType, _client_id: usize) -> bool {
+    fn command_is_valid(_command: &Self::CommandType, _client_id: Self::ClientId) -> bool {
         true
     }
 }

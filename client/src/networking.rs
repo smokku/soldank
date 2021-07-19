@@ -318,6 +318,20 @@ impl Networking {
                         log::debug!("Entity sync: {:?}", entities);
                     }
                 }
+                NetworkMessage::Snapshot(snapshot) => {
+                    log::debug!(
+                        "Got snapshot @{}: {:?}",
+                        snapshot.timestamp(),
+                        snapshot.inner()
+                    );
+                }
+                NetworkMessage::Command(command) => {
+                    log::debug!(
+                        "Got command @{}: {:?}",
+                        command.timestamp(),
+                        command.inner()
+                    );
+                }
             }
             return true;
         }

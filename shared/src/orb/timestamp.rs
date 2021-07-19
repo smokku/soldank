@@ -61,6 +61,14 @@ impl Timestamp {
         let max_distance_from_midpoint = Self::MAX_COMPARABLE_RANGE / 2;
         (midpoint - max_distance_from_midpoint)..(midpoint + max_distance_from_midpoint)
     }
+
+    pub fn to_i16(self) -> i16 {
+        self.0 .0
+    }
+
+    pub fn from_i16(source: i16) -> Self {
+        Self(Wrapping(source))
+    }
 }
 
 impl From<FloatTimestamp> for Timestamp {

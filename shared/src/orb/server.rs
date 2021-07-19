@@ -12,7 +12,7 @@ use super::{
     fixed_timestepper::{FixedTimestepper, TerminationCondition, TimeKeeper},
     // network_resource::{Connection, ConnectionHandleType, NetworkResource},
     timestamp::{Timestamp, Timestamped},
-    world::{ClientId, InitializationType, Simulation, World},
+    world::{InitializationType, Simulation, World},
     Config,
 };
 
@@ -29,10 +29,10 @@ pub struct Server<'a, WorldType: World> {
     seconds_since_last_snapshot: f64, // FIXME: "seconds since" is not constant
     config: &'a Config,
 
-    incoming_commands: Vec<(Timestamped<WorldType::CommandType>, ClientId)>,
+    incoming_commands: Vec<(Timestamped<WorldType::CommandType>, WorldType::ClientId)>,
     outgoing_commands: Vec<(
-        Option<ClientId>, // From (None = internal)
-        Option<ClientId>, // To   (None = broadcast)
+        Option<WorldType::ClientId>, // From (None = internal)
+        Option<WorldType::ClientId>, // To   (None = broadcast)
         Timestamped<WorldType::CommandType>,
     )>,
     outgoing_messages: Vec<Timestamped<WorldType::SnapshotType>>,
@@ -95,7 +95,7 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
     fn apply_validated_command(
         &mut self,
         command: &Timestamped<WorldType::CommandType>,
-        command_source: Option<ClientId>,
+        command_source: Option<WorldType::ClientId>,
         // net: &mut NetworkResourceType,
     ) {
         log::debug!("Received command from {:?} - {:?}", command_source, command);
@@ -124,7 +124,7 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
     fn receive_command(
         &mut self,
         command: &Timestamped<WorldType::CommandType>,
-        command_source: ClientId,
+        command_source: WorldType::ClientId,
         // net: &mut NetworkResourceType,
     ) {
         if WorldType::command_is_valid(command.inner(), command_source)
@@ -221,15 +221,23 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
         }
     }
 
+    /// How these message channels get multiplexed is up to you / the external networking library.
+    /// Whether or not these message channels are reliable or unreliable, ordered or unordered, is also
+    /// up to you / the external networking library. CrystalOrb is written assuming that
+    /// `ClockSyncMessage` and `SnapshotType` are unreliable and unordered, while `CommandType` is
+    /// reliable but unordered.
     pub fn take_outgoing_snapshots(&mut self) -> Vec<Timestamped<WorldType::SnapshotType>> {
         self.outgoing_messages.split_off(0)
     }
 
+    /// CrystalOrb is written assuming that
+    /// `ClockSyncMessage` and `SnapshotType` are unreliable and unordered, while `CommandType` is
+    /// reliable but unordered.
     pub fn take_outgoing_commands(
         &mut self,
     ) -> Vec<(
-        Option<ClientId>, // From (None = internal)
-        Option<ClientId>, // To   (None = broadcast)
+        Option<WorldType::ClientId>, // From (None = internal)
+        Option<WorldType::ClientId>, // To   (None = broadcast)
         Timestamped<WorldType::CommandType>,
     )> {
         self.outgoing_commands.split_off(0)
@@ -238,7 +246,7 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
     pub fn enqueue_incoming_command(
         &mut self,
         command: Timestamped<WorldType::CommandType>,
-        from: ClientId,
+        from: WorldType::ClientId,
     ) {
         self.incoming_commands.push((command, from));
     }

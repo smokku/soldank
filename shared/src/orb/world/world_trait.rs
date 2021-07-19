@@ -2,8 +2,6 @@ use super::super::{command::Command, fixed_timestepper::Stepper, world::DisplayS
 // use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
 
-pub type ClientId = usize;
-
 /// Structures that implement the [`World`] trait are structures that are responsible for storing
 /// *and* simulating the game physics. The [`World`] is a simulation that is updated using its
 /// [`Stepper::step`] implementation. Players and any game logic outside of the physics simulation
@@ -34,6 +32,8 @@ pub type ClientId = usize;
 /// game-specific state you need. The `Stepper::step` implementation for such a world would
 /// typically invoke `DefaultMechanicalWorld::step`, and any other game-specific update logic.
 pub trait World: Stepper + Default + Send + Sync + 'static {
+    type ClientId: Send + Sync + Copy + PartialEq + Debug;
+
     /// The command that can be used by the game and the player to interact with the physics
     /// simulation. Typically, this is an enum of some kind, but it is up to you.
     type CommandType: Command;
@@ -60,7 +60,7 @@ pub trait World: Stepper + Default + Send + Sync + 'static {
     /// `client_id` using the
     /// [`Ready::client_id`](crate::client::stage::Ready::client_id) method from the
     /// [`Ready`](crate::client::stage::Stage::Ready) stage.
-    fn command_is_valid(command: &Self::CommandType, client_id: ClientId) -> bool;
+    fn command_is_valid(command: &Self::CommandType, client_id: Self::ClientId) -> bool;
 
     /// This describes how a [`Command`] affects the [`World`]. Use this method to update your
     /// state. For example, you may want to apply forces/impulses to your rigid bodies, or simply

@@ -7,7 +7,7 @@ pub use input::*;
 
 #[derive(Debug)]
 pub struct Time {
-    pub time: f64,
+    pub time: std::time::Instant,
     pub tick: usize,
     pub frame_percent: f64,
 }

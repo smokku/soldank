@@ -1,4 +1,10 @@
-use crate::{components, control::Control, math::Vec2};
+use crate::{
+    components,
+    control::Control,
+    math::Vec2,
+    networking::{MyCommand, MySnapshot},
+    orb::timestamp::{Timestamp, Timestamped},
+};
 use bytes::Bytes;
 use enum_primitive_derive::Primitive;
 use hecs::Entity;
@@ -18,6 +24,8 @@ pub enum OperationCode {
     CCREQ_READY = 0x08,
     STT_CONTROL = 0x10,
     STT_ENTITIES = 0x11,
+    STT_SNAPSHOT = 0x12,
+    STT_COMMAND = 0x13,
     STT_CVARS = 0x18,
     // outgoing
     CCREP_ACCEPT = 0x81,
@@ -41,9 +49,8 @@ pub enum NetworkMessage {
         tick: usize,
         entities: HashMap<Entity, Vec<ComponentValue>>,
     },
-    // Command {
-    //     command: String,
-    // },
+    Snapshot(Timestamped<MySnapshot>),
+    Command(Timestamped<MyCommand>),
 }
 
 #[repr(u8)]
@@ -125,6 +132,24 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
                 }
             }
 
+            msg.into()
+        }
+        NetworkMessage::Snapshot(snapshot) => {
+            let mut msg = vec![OperationCode::STT_SNAPSHOT as u8];
+            let pkt = SnapshotPacket {
+                timestamp: snapshot.timestamp().to_i16(),
+                snapshot: snapshot.inner().clone(),
+            };
+            msg.extend(SerBin::serialize_bin(&pkt));
+            msg.into()
+        }
+        NetworkMessage::Command(command) => {
+            let mut msg = vec![OperationCode::STT_COMMAND as u8];
+            let pkt = CommandPacket {
+                timestamp: command.timestamp().to_i16(),
+                command: command.inner().clone(),
+            };
+            msg.extend(SerBin::serialize_bin(&pkt));
             msg.into()
         }
     }
@@ -295,6 +320,27 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                     }
                 }
             }
+            OperationCode::STT_SNAPSHOT => {
+                if let Ok(SnapshotPacket {
+                    timestamp,
+                    snapshot,
+                }) = DeBin::deserialize_bin(&data[1..])
+                {
+                    return Some(NetworkMessage::Snapshot(Timestamped::<MySnapshot>::new(
+                        snapshot,
+                        Timestamp::from_i16(timestamp),
+                    )));
+                }
+            }
+            OperationCode::STT_COMMAND => {
+                if let Ok(CommandPacket { timestamp, command }) = DeBin::deserialize_bin(&data[1..])
+                {
+                    return Some(NetworkMessage::Command(Timestamped::<MyCommand>::new(
+                        command,
+                        Timestamp::from_i16(timestamp),
+                    )));
+                }
+            }
         }
     }
     None
@@ -376,4 +422,16 @@ struct ControlPacket {
 #[derive(DeBin, SerBin)]
 struct StatePacket {
     tick: usize,
+}
+
+#[derive(DeBin, SerBin)]
+struct SnapshotPacket {
+    timestamp: i16,
+    snapshot: MySnapshot,
+}
+
+#[derive(DeBin, SerBin)]
+struct CommandPacket {
+    timestamp: i16,
+    command: MyCommand,
 }
