@@ -1,5 +1,4 @@
 use hecs::{Entity, World};
-use instant::Instant;
 use laminar::{
     Config as LaminarConfig, ConnectionManager, DatagramSocket, Packet as LaminarPacket,
     SocketEvent, VirtualConnection,
@@ -14,6 +13,7 @@ use std::{
     convert::TryFrom,
     io,
     net::SocketAddr,
+    time::Instant,
 };
 
 use crate::{cheat::Cheats, constants::*, cvars::Config, state::build_state_message, systems};
@@ -30,14 +30,14 @@ pub struct Networking {
     payload_receiver: Receiver<NaiaPacket>,
     handler: ConnectionManager<PacketSocket, VirtualConnection>,
     pub connection_key: String,
-    last_message_received: f64,
+    last_message_received: Instant,
 
     pub connections: HashMap<SocketAddr, Connection>,
 }
 
 #[derive(Debug)]
 pub struct Connection {
-    pub last_message_received: f64,
+    pub last_message_received: Instant,
     pub ack_tick: usize,
     pub last_processed_tick: usize,
     pub last_broadcast: f64,
@@ -51,7 +51,7 @@ pub struct Connection {
 impl Connection {
     pub fn new() -> Connection {
         Connection {
-            last_message_received: instant::now(),
+            last_message_received: Instant::now(),
             ack_tick: 0,
             last_processed_tick: 0,
             last_broadcast: 0.0,
@@ -152,7 +152,7 @@ impl Networking {
             payload_receiver,
             handler,
             connection_key: "1337".to_string(),
-            last_message_received: 0.,
+            last_message_received: Instant::now(),
 
             connections: HashMap::new(),
         }
@@ -172,7 +172,7 @@ impl Networking {
     ) {
         match self.server_socket.receive().await {
             Ok(packet) => {
-                self.last_message_received = instant::now();
+                self.last_message_received = Instant::now();
 
                 let address = packet.address();
                 let data = packet.payload();
@@ -267,7 +267,7 @@ impl Networking {
                 }
                 _ => match self.connections.get_mut(&address) {
                     Some(connection) => {
-                        connection.last_message_received = instant::now();
+                        connection.last_message_received = Instant::now();
 
                         if op_code == messages::OperationCode::CCREQ_READY {
                             log::info!("<-> READY from [{:?}]", address);

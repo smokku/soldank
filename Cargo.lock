@@ -2369,7 +2369,6 @@ dependencies = [
  "cvar",
  "env_logger 0.8.4",
  "hecs",
- "instant",
  "laminar",
  "log",
  "naia-server-socket",

@@ -4,7 +4,7 @@ extern crate clap;
 use color_eyre::eyre::Result;
 use hecs::World;
 use smol::future;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use std::{collections::VecDeque, net::SocketAddr};
 
 use crate::{
@@ -85,14 +85,6 @@ fn main() -> Result<()> {
 
         let mut messages: VecDeque<(SocketAddr, NetworkMessage)> = VecDeque::new();
 
-        let time_start = instant::now();
-        let current_time = || (instant::now() - time_start) / 1000.;
-
-        let mut timecur: f64 = current_time();
-        let mut timeprv: f64 = timecur;
-        let mut timeacc: f64 = 0.0;
-        let mut tick: usize = 0;
-
         let mut world = World::new();
 
         let mut game_state = GameState::Lobby;
@@ -104,6 +96,9 @@ fn main() -> Result<()> {
         };
         let mut server = orb::server::Server::<MyWorld>::new(&orb_config, 0.0);
         // -------------------------------- ORB --------------------------------
+
+        let startup_time = Instant::now();
+        let mut previous_time = Instant::now();
 
         let mut running = true;
         while running {
@@ -120,65 +115,43 @@ fn main() -> Result<()> {
             )
             .await;
 
-            timecur = current_time();
-            timeacc += timecur - timeprv;
-            timeprv = timecur;
+            let current_time = Instant::now();
+            let delta_seconds = current_time.duration_since(previous_time).as_secs_f64();
+            let seconds_since_startup = current_time.duration_since(startup_time).as_secs_f64();
 
-            // -------------------------------- ORB --------------------------------
-            let server_display_state = server.display_state();
-            log::info!("server_display_state: {:?}", server_display_state);
-            server.update(timeacc, timecur);
-
-            for snapshot in server.take_outgoing_snapshots().drain(..) {
-                log::info!("outgoing snapshot: {:?}", snapshot);
-            }
-            for (from, to, command) in server.take_outgoing_commands().drain(..) {
-                log::info!("outgoing command: {:?} -> {:?}: {:?}", from, to, command);
-            }
-            // -------------------------------- ORB --------------------------------
+            systems::process_network_messages(
+                &mut world,
+                &mut messages,
+                &mut networking.connections,
+            );
+            systems::message_dump(&mut messages);
 
             match game_state {
                 GameState::Lobby => {
-                    timeacc = 0.; // avoid spinning unnecessary ticks after starting game simulation
-
-                    systems::process_network_messages(
-                        &mut world,
-                        &mut messages,
-                        &mut networking.connections,
-                    );
-                    systems::message_dump(&mut messages);
                     systems::lobby(&mut world, &mut game_state, &networking);
                 }
                 GameState::InGame => {
-                    while timeacc >= TIMESTEP_RATE {
-                        timeacc -= TIMESTEP_RATE;
-                        tick += 1;
+                    let server_display_state = server.display_state();
+                    log::info!("server_display_state: {:?}", server_display_state);
 
-                        let time = systems::Time {
-                            time: timecur,
-                            tick,
-                            frame_percent: f64::min(1.0, f64::max(0.0, timeacc / TIMESTEP_RATE)),
-                        };
+                    server.update(delta_seconds, seconds_since_startup);
 
-                        // current simulation frame
-                        systems::tick_debug(&world, &time);
-                        // FIXME: this is wrong to process messages once a tick
-                        systems::process_network_messages(
-                            &mut world,
-                            &mut messages,
-                            &mut networking.connections,
-                        );
-                        systems::message_dump(&mut messages);
-                        systems::apply_input(&mut world, &time);
-
-                        // update clients
-                        networking.broadcast_state(&world, &time);
-
-                        // update time for possibly next run
-                        timecur = current_time();
-                        timeacc += timecur - timeprv;
-                        timeprv = timecur;
+                    for snapshot in server.take_outgoing_snapshots().drain(..) {
+                        log::info!("outgoing snapshot: {:?}", snapshot);
                     }
+                    for (from, to, command) in server.take_outgoing_commands().drain(..) {
+                        log::info!("outgoing command: {:?} -> {:?}: {:?}", from, to, command);
+                    }
+
+                    let time = systems::Time {
+                        time: seconds_since_startup,
+                        tick: (server
+                            .last_completed_timestamp()
+                            .as_seconds(orb_config.timestep_seconds)
+                            * 1000.) as usize,
+                        frame_percent: 1.,
+                    };
+                    systems::tick_debug(&world, &time);
 
                     if networking.connections.iter().count() == 0 {
                         log::info!("No connections left - exiting");
@@ -186,6 +159,8 @@ fn main() -> Result<()> {
                     }
                 }
             }
+
+            previous_time = current_time;
         }
 
         log::info!("Exiting server");
