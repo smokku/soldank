@@ -377,7 +377,7 @@ async fn main() {
         }
 
         networking.set_input_state(&soldier.control);
-        networking.process(&mut *resources.get_mut::<Config>().unwrap());
+        networking.process(&mut *resources.get_mut::<Config>().unwrap(), &mut client);
         log::info!("ready_client_display_state: {:?}", client.display_state());
         client.update(timeacc, timecur);
         networking.post_process();

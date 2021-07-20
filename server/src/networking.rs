@@ -378,8 +378,13 @@ impl Networking {
             log::trace!("outgoing command: {:?} -> {:?}: {:?}", from, to, command);
             let destinations = self.connections.iter().map(|(addr, _conn)| *addr);
             let destinations: Vec<SocketAddr> = if let Some(to) = to {
+                // find if 'to' is connected
                 destinations.filter(|addr| *addr == to).collect()
+            } else if let Some(from) = from {
+                // do not broadcast to oneself
+                destinations.filter(|addr| *addr != from).collect()
             } else {
+                // broadcast to all
                 destinations.collect()
             };
             let msg = encode_message(NetworkMessage::Command(command));

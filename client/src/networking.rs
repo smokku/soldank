@@ -16,6 +16,8 @@ use soldank_shared::{
     control::Control,
     math::vec2,
     messages::{self, NetworkMessage},
+    networking::MyWorld,
+    orb::client::Client,
     trace_dump_packet,
 };
 
@@ -162,7 +164,7 @@ impl Networking {
         self.connection.update(messenger, time);
     }
 
-    pub fn process(&mut self, config: &mut Config) {
+    pub fn process(&mut self, config: &mut Config, client: &mut Client<MyWorld>) {
         if self.state == ConnectionState::Disconnected {
             if backoff_enabled(self.backoff_round) {
                 let msg = messages::connection_request();
@@ -174,7 +176,7 @@ impl Networking {
 
         while let Ok(event) = self.event_receiver.try_recv() {
             match event {
-                laminar::SocketEvent::Packet(packet) => self.process_packet(packet, config),
+                laminar::SocketEvent::Packet(packet) => self.process_packet(packet, config, client),
                 laminar::SocketEvent::Connect(addr) => {
                     log::info!("!! Connect {}", addr)
                 }
@@ -219,7 +221,12 @@ impl Networking {
             .process_event(&mut self.messenger, event, Instant::now());
     }
 
-    fn process_packet(&mut self, packet: LaminarPacket, config: &mut Config) {
+    fn process_packet(
+        &mut self,
+        packet: LaminarPacket,
+        config: &mut Config,
+        client: &mut Client<MyWorld>,
+    ) {
         let data = packet.payload();
         if data.len() < 1 {
             return;
@@ -259,7 +266,7 @@ impl Networking {
                     }
                 }
                 _ => {
-                    if !self.process_message(data, config) {
+                    if !self.process_message(data, config, client) {
                         log::error!(
                             "Unhandled packet: 0x{:x} ({:?}) {} bytes",
                             code,
@@ -276,7 +283,12 @@ impl Networking {
         }
     }
 
-    fn process_message(&mut self, data: &[u8], config: &mut Config) -> bool {
+    fn process_message(
+        &mut self,
+        data: &[u8],
+        config: &mut Config,
+        client: &mut Client<MyWorld>,
+    ) -> bool {
         if let Some(msg) = messages::decode_message(data) {
             match msg {
                 NetworkMessage::ConnectionAuthorize { .. }
@@ -319,18 +331,12 @@ impl Networking {
                     }
                 }
                 NetworkMessage::Snapshot(snapshot) => {
-                    log::debug!(
-                        "Got snapshot @{}: {:?}",
-                        snapshot.timestamp(),
-                        snapshot.inner()
-                    );
+                    log::debug!("Got snapshot {}", snapshot.timestamp());
+                    client.client.enqueue_incoming_snapshot(snapshot);
                 }
                 NetworkMessage::Command(command) => {
-                    log::debug!(
-                        "Got command @{}: {:?}",
-                        command.timestamp(),
-                        command.inner()
-                    );
+                    log::debug!("Got command {}: {:?}", command.timestamp(), command.inner());
+                    client.client.enqueue_incoming_command(command);
                 }
             }
             return true;

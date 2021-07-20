@@ -61,7 +61,7 @@ use super::{
     // network_resource::{Connection, NetworkResource},
     old_new::{OldNew, OldNewResult},
     timestamp::{Timestamp, Timestamped},
-    world::{DisplayState, InitializationType, Simulation, Tweened, World},
+    world::{DisplayState, /*InitializationType,*/ Simulation, Tweened, World},
     Config,
 };
 use std::fmt::{Display, Formatter};
@@ -76,7 +76,7 @@ use std::fmt::{Display, Formatter};
 pub struct Client<'a, WorldType: World> {
     config: &'a Config,
     // stage: StageOwned<WorldType>,
-    client: ActiveClient<'a, WorldType>,
+    pub client: ActiveClient<'a, WorldType>, // TODO: integrate this in Client?
 }
 
 impl<'a, WorldType: World> Client<'a, WorldType> {
@@ -317,11 +317,12 @@ impl<'a, WorldType: World> ActiveClient<'a, WorldType> {
         //         .expect("Clock should be synced")
         // );
         self.timekeeping_simulations.update(
-            delta_seconds,seconds_since_startup
+            delta_seconds,
+            seconds_since_startup
             // self.clocksyncer
             //     .server_seconds_since_startup(seconds_since_startup)
             //     .expect("Clock should be synced")
-            //     + self.timekeeping_simulations.config.lag_compensation_latency,
+                + self.timekeeping_simulations.config.lag_compensation_latency,
         );
     }
 
@@ -329,6 +330,29 @@ impl<'a, WorldType: World> ActiveClient<'a, WorldType> {
     /// is available to be shown to the client's screen.
     pub fn is_ready(&self) -> bool {
         self.timekeeping_simulations.display_state.is_some()
+    }
+
+    /// CrystalOrb is written assuming that
+    /// `ClockSyncMessage` and `SnapshotType` are unreliable and unordered, while `CommandType` is
+    /// reliable but unordered.
+    pub fn take_outgoing_commands(&mut self) -> Vec<Timestamped<WorldType::CommandType>> {
+        self.outgoing_commands.split_off(0)
+    }
+
+    pub fn enqueue_incoming_command(&mut self, command: Timestamped<WorldType::CommandType>) {
+        self.incoming_commands.push(command);
+        log::trace!(
+            "Waiting incoming_commands: {}",
+            self.incoming_commands.len()
+        );
+    }
+
+    pub fn enqueue_incoming_snapshot(&mut self, snapshot: Timestamped<WorldType::SnapshotType>) {
+        self.incoming_snapshots.push(snapshot);
+        log::trace!(
+            "Waiting incoming_snapshots: {}",
+            self.incoming_snapshots.len()
+        );
     }
 }
 
