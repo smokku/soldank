@@ -81,7 +81,7 @@ impl DatagramSocket for PacketSocket {
         ) {
             Ok(()) => Ok(payload.len()),
             Err(error) => {
-                panic!("{}", error);
+                panic!("Error sending via payload channel: {}", error);
             }
         }
     }
@@ -96,7 +96,7 @@ impl DatagramSocket for PacketSocket {
             Err(error) => match error {
                 TryRecvError::Empty => Err(io::Error::new(io::ErrorKind::WouldBlock, error)),
                 TryRecvError::Closed => {
-                    panic!("{}", error);
+                    panic!("Error receiving from packet channel: {}", error);
                 }
             },
         }
@@ -165,7 +165,7 @@ impl Networking {
             connection.stats.add_tx(packet.payload().len());
         }
         if let Err(error) = self.handler.event_sender().send(packet) {
-            panic!("{}", error);
+            panic!("Error sending via event channel: {}", error);
         }
     }
 
@@ -218,7 +218,7 @@ impl Networking {
             Err(error) => match error {
                 TryRecvError::Empty => {}
                 TryRecvError::Closed => {
-                    panic!("{}", error);
+                    panic!("Error receiving from payload channel: {}", error);
                 }
             },
         }

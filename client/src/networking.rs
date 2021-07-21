@@ -70,7 +70,7 @@ impl ConnectionMessenger<ReceiveEvent> for PacketMessenger {
 
     fn send_event(&mut self, _address: &SocketAddr, event: ReceiveEvent) {
         if let Err(error) = smol::block_on(self.event_sender.send(event)) {
-            panic!("{}", error);
+            panic!("Error sending via event channel: {}", error);
         }
     }
 
