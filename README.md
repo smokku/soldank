@@ -1,8 +1,8 @@
 # Soldank
 
-[WIP] open source clone of [Soldat](http://soldat.pl/) engine written in Rust
+🚧 open source clone of [Soldat](http://soldat.pl/) engine written in Rust
 
-## WIP Screenshot
+## 🚧 Screenshot
 
 ![WIP screenshot](sshot.png)
 
