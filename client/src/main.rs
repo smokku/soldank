@@ -36,12 +36,15 @@ use soldier::*;
 use state::*;
 use weapons::*;
 
-use cvars::{set_cli_cvars, Config};
+use cvars::{set_cli_cvars, Config, NetConfig};
 use gfx2d::macroquad::{self as macroquad, prelude as mq};
 use gvfs::filesystem::{File, Filesystem};
 use hecs::World;
 use resources::Resources;
-use std::{env, path};
+use std::{
+    env, path,
+    sync::{Arc, RwLock},
+};
 
 use soldank_shared::{networking::MyWorld, orb};
 
@@ -163,7 +166,16 @@ async fn main() {
     let map = MapFile::load_map_file(&mut filesystem, map_name.as_str());
     log::info!("Using map: {}", map.mapname);
 
-    let mut config = Config::default();
+    let mut config = Config {
+        net: NetConfig {
+            orb: Arc::new(RwLock::new(orb::Config {
+                timestep_seconds: TIMESTEP_RATE,
+                ..Default::default()
+            })),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
     config.debug.visible = cmd.is_present("debug");
     set_cli_cvars(&mut config, &cmd);
 
@@ -216,6 +228,8 @@ async fn main() {
 
     let bullets: Vec<Bullet> = Vec::new();
 
+    let mut client = orb::client::Client::<MyWorld>::new(timecur, config.net.orb.clone());
+
     let mut world = World::new();
 
     let mut resources = Resources::new();
@@ -229,13 +243,6 @@ async fn main() {
     physics::init(&mut world, &mut resources);
 
     let resources = resources; // This shadows the mutable binding with an immutable one.
-
-    // FIXME: take this from Config.net
-    let orb_config = orb::Config {
-        timestep_seconds: TIMESTEP_RATE,
-        ..Default::default()
-    };
-    let mut client = orb::client::Client::<MyWorld>::new(timecur, &orb_config);
 
     let mut running = true;
     while running {

@@ -4,12 +4,16 @@ extern crate clap;
 use color_eyre::eyre::Result;
 use hecs::World;
 use smol::future;
-use std::time::{Duration, Instant};
-use std::{collections::VecDeque, net::SocketAddr};
+use std::{
+    collections::VecDeque,
+    net::SocketAddr,
+    sync::{Arc, RwLock},
+    time::{Duration, Instant},
+};
 
 use crate::{
     constants::*,
-    cvars::{set_cli_cvars, Config},
+    cvars::{set_cli_cvars, Config, NetConfig},
     networking::Networking,
 };
 use soldank_shared::{messages::NetworkMessage, networking::MyWorld, orb};
@@ -75,7 +79,16 @@ fn main() -> Result<()> {
         map_name.push_str(".pms");
         log::info!("Using map: {}", map_name);
 
-        let mut config = Config::default();
+        let mut config = Config {
+            net: NetConfig {
+                orb: Arc::new(RwLock::new(orb::Config {
+                    timestep_seconds: TIMESTEP_RATE,
+                    ..Default::default()
+                })),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
         set_cli_cvars(&mut config, &cmd);
 
         let mut networking = Networking::new(cmd.value_of("bind")).await;
@@ -89,27 +102,22 @@ fn main() -> Result<()> {
 
         let mut game_state = GameState::Lobby;
 
-        // FIXME: take this from Config.net
-        let orb_config = orb::Config {
-            timestep_seconds: TIMESTEP_RATE,
-            ..Default::default()
-        };
-        let mut server = orb::server::Server::<MyWorld>::new(&orb_config, 0.0);
+        let mut server = orb::server::Server::<MyWorld>::new(config.net.orb.clone(), 0.0);
 
         let startup_time = Instant::now();
         let mut previous_time = Instant::now();
 
         let mut running = true;
         while running {
+            let timeout = Duration::from_millis(
+                (config.net.orb.read().unwrap().snapshot_send_period * 1000.) as _,
+            );
             future::race(
                 // loop is driven by incoming packets
                 networking.process(&mut world, &mut config, &mut messages),
                 // or timeout
                 async {
-                    smol::Timer::after(Duration::from_millis(
-                        (orb_config.snapshot_send_period * 1000.) as _,
-                    ))
-                    .await; // drop Timer result
+                    smol::Timer::after(timeout).await; // drop Timer result
                 },
             )
             .await;
@@ -141,7 +149,7 @@ fn main() -> Result<()> {
                         time: current_time,
                         tick: (server
                             .last_completed_timestamp()
-                            .as_seconds(orb_config.timestep_seconds)
+                            .as_seconds(config.net.orb.read().unwrap().timestep_seconds)
                             * 1000.) as usize,
                         frame_percent: 1.,
                     };

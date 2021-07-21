@@ -5,7 +5,10 @@ use super::{
     timestamp::{FloatTimestamp, Timestamp},
     Config,
 };
-use std::ops::{Deref, DerefMut};
+use std::{
+    ops::{Deref, DerefMut},
+    sync::{Arc, RwLock},
+};
 
 /// Arbitrary structure that can be updated in discrete steps.
 pub trait Stepper {
@@ -78,7 +81,6 @@ impl TerminationCondition {
 /// number of steps on the stepper to meet the external framerate as close as possible.
 #[derive(Debug)]
 pub(crate) struct TimeKeeper<
-    'a,
     T: FixedTimestepper, /*, const TERMINATION_CONDITION: TerminationCondition*/
 > {
     /// The stepper whose time is managed by this [`TimeKeeper`].
@@ -89,17 +91,17 @@ pub(crate) struct TimeKeeper<
 
     termination_condition: TerminationCondition,
 
-    config: &'a Config,
+    config: Arc<RwLock<Config>>,
 }
 
-impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationCondition*/>
-    TimeKeeper<'a, T /*, TERMINATION_CONDITION*/>
+impl<T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationCondition*/>
+    TimeKeeper<T /*, TERMINATION_CONDITION*/>
 {
     /// Wrap the given [`FixedTimestepper`] with a [`TimeKeeper`] that will manage the stepper's
     /// time.
     pub fn new(
         stepper: T,
-        config: &'a Config,
+        config: Arc<RwLock<Config>>,
         termination_condition: TerminationCondition,
     ) -> Self {
         Self {
@@ -137,14 +139,17 @@ impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationConditi
         FloatTimestamp::from(self.stepper.last_completed_timestamp())
             - FloatTimestamp::from_seconds(
                 self.timestep_overshoot_seconds,
-                self.config.timestep_seconds,
+                self.config.read().unwrap().timestep_seconds,
             )
     }
 
     /// Calculates what logical timestamp the timekeeper should try to reach, purely based on the
     /// absolute time value.
     pub fn target_logical_timestamp(&self, server_seconds_since_startup: f64) -> FloatTimestamp {
-        FloatTimestamp::from_seconds(server_seconds_since_startup, self.config.timestep_seconds)
+        FloatTimestamp::from_seconds(
+            server_seconds_since_startup,
+            self.config.read().unwrap().timestep_seconds,
+        )
     }
 
     /// Calculates the difference between the current logical timestamp and the target logical
@@ -163,7 +168,7 @@ impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationConditi
     pub fn timestamp_drift_seconds(&self, server_seconds_since_startup: f64) -> f64 {
         let frame_drift = self.current_logical_timestamp()
             - self.target_logical_timestamp(server_seconds_since_startup);
-        let seconds_drift = frame_drift.as_seconds(self.config.timestep_seconds);
+        let seconds_drift = frame_drift.as_seconds(self.config.read().unwrap().timestep_seconds);
 
         log::trace!(
             "target logical timestamp: {:?}, current logical timestamp: {:?}, drift: {:?} ({} secs)",
@@ -183,7 +188,7 @@ impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationConditi
     ) -> f64 {
         let timestamp_drift_seconds = {
             let drift = self.timestamp_drift_seconds(server_seconds_since_startup - delta_seconds);
-            if drift.abs() < self.config.timestep_seconds * 0.5 {
+            if drift.abs() < self.config.read().unwrap().timestep_seconds * 0.5 {
                 // Deadband to avoid oscillating about zero due to floating point precision. The
                 // absolute time (rather than the delta time) is best used for coarse-grained drift
                 // compensation.
@@ -198,10 +203,10 @@ impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationConditi
         };
         let uncapped_compensated_delta_seconds = (delta_seconds - timestamp_drift_seconds).max(0.0);
         let compensated_delta_seconds = if uncapped_compensated_delta_seconds
-            > self.config.update_delta_seconds_max
+            > self.config.read().unwrap().update_delta_seconds_max
         {
             log::warn!("Attempted to advance more than the allowed delta seconds ({}). This should not happen too often.", uncapped_compensated_delta_seconds);
-            self.config.update_delta_seconds_max
+            self.config.read().unwrap().update_delta_seconds_max
         } else {
             uncapped_compensated_delta_seconds
         };
@@ -220,7 +225,7 @@ impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationConditi
         self.timestep_overshoot_seconds -= delta_seconds;
         loop {
             let next_overshoot_seconds =
-                self.timestep_overshoot_seconds + self.config.timestep_seconds;
+                self.timestep_overshoot_seconds + self.config.read().unwrap().timestep_seconds;
             if self
                 .termination_condition
                 .should_terminate(self.timestep_overshoot_seconds, next_overshoot_seconds)
@@ -237,11 +242,11 @@ impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationConditi
         log::trace!("Timestamp drift after advance: {} sec", drift_seconds,);
 
         // If drift is too large and we still couldn't keep up, do a time skip.
-        if drift_seconds.abs() >= self.config.timestamp_skip_threshold_seconds {
+        if drift_seconds.abs() >= self.config.read().unwrap().timestamp_skip_threshold_seconds {
             let (corrected_timestamp, corrected_overshoot_seconds) =
                 self.termination_condition.decompose_float_timestamp(
                     self.target_logical_timestamp(server_seconds_since_startup),
-                    self.config.timestep_seconds,
+                    self.config.read().unwrap().timestep_seconds,
                 );
             log::warn!(
                 "TimeKeeper is too far behind. Skipping timestamp from {:?} to {:?} with overshoot from {} to {}",
@@ -257,17 +262,15 @@ impl<'a, T: FixedTimestepper /*, const TERMINATION_CONDITION: TerminationConditi
     }
 }
 
-impl<'a, T: FixedTimestepper /*, const C: TerminationCondition*/> Deref
-    for TimeKeeper<'a, T /*, C*/>
-{
+impl<T: FixedTimestepper /*, const C: TerminationCondition*/> Deref for TimeKeeper<T /*, C*/> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         &self.stepper
     }
 }
 
-impl<'a, T: FixedTimestepper /*, const C: TerminationCondition*/> DerefMut
-    for TimeKeeper<'a, T /*, C*/>
+impl<T: FixedTimestepper /*, const C: TerminationCondition*/> DerefMut
+    for TimeKeeper<T /*, C*/>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.stepper
@@ -326,10 +329,10 @@ mod tests {
 
     #[test]
     fn test_termination_condition_last_undershoot_exact() {
-        let config: Config = Config::default();
+        let config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            &config,
+            Arc::new(RwLock::new(Config::default())),
             TerminationCondition::LastUndershoot,
         );
         timekeeper.update(config.timestep_seconds, config.timestep_seconds);
@@ -338,10 +341,10 @@ mod tests {
 
     #[test]
     fn test_termination_condition_last_undershoot_below() {
-        let config: Config = Config::default();
+        let config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            &config,
+            Arc::new(RwLock::new(Config::default())),
             TerminationCondition::LastUndershoot,
         );
         timekeeper.update(config.timestep_seconds * 0.5, config.timestep_seconds * 0.5);
@@ -350,10 +353,10 @@ mod tests {
 
     #[test]
     fn test_termination_condition_last_undershoot_above() {
-        let config: Config = Config::default();
+        let config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            &config,
+            Arc::new(RwLock::new(Config::default())),
             TerminationCondition::LastUndershoot,
         );
         timekeeper.update(config.timestep_seconds * 1.5, config.timestep_seconds * 1.5);
@@ -362,10 +365,10 @@ mod tests {
 
     #[test]
     fn test_termination_condition_first_overshoot_exact() {
-        let config: Config = Config::default();
+        let config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            &config,
+            Arc::new(RwLock::new(Config::default())),
             TerminationCondition::FirstOvershoot,
         );
         timekeeper.update(config.timestep_seconds, config.timestep_seconds);
@@ -374,10 +377,10 @@ mod tests {
 
     #[test]
     fn test_termination_condition_first_overshoot_below() {
-        let config: Config = Config::default();
+        let config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            &config,
+            Arc::new(RwLock::new(Config::default())),
             TerminationCondition::FirstOvershoot,
         );
         timekeeper.update(config.timestep_seconds * 0.5, config.timestep_seconds * 0.5);
@@ -386,10 +389,10 @@ mod tests {
 
     #[test]
     fn test_termination_condition_first_overshoot_above() {
-        let config: Config = Config::default();
+        let config = Config::default();
         let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
             MockStepper::new(Timestamp::default()),
-            &config,
+            Arc::new(RwLock::new(Config::default())),
             TerminationCondition::FirstOvershoot,
         );
         timekeeper.update(config.timestep_seconds * 1.5, config.timestep_seconds * 1.5);
@@ -398,7 +401,7 @@ mod tests {
 
     #[test]
     fn when_update_with_timestamp_drifted_within_the_frame_then_timestamp_drift_is_ignored() {
-        let config: Config = Config::default();
+        let config = Config::default();
         for (small_drift_seconds, initial_wrapped_count, initial_timestamp, frames_per_update) in iproduct!(
             &[
                 0.0f64,
@@ -420,7 +423,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                &config,
+                Arc::new(RwLock::new(Config::default())),
                 TerminationCondition::FirstOvershoot,
             );
             let initial_seconds_since_startup = initial_timestamp
@@ -466,7 +469,7 @@ mod tests {
 
     #[test]
     fn when_update_with_timestamp_drifted_beyond_a_frame_then_timestamp_gets_corrected() {
-        let config: Config = Config::default();
+        let config = Config::default();
         for (moderate_drift_seconds, initial_wrapped_count, initial_timestamp, frames_per_update) in iproduct!(
             &[
                 config.timestep_seconds * 0.5f64,
@@ -485,7 +488,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                &config,
+                Arc::new(RwLock::new(Config::default())),
                 TerminationCondition::FirstOvershoot,
             );
             let initial_seconds_since_startup = initial_timestamp
@@ -532,7 +535,7 @@ mod tests {
 
     #[test]
     fn when_update_with_timestamp_drifting_beyond_threshold_then_timestamps_are_skipped() {
-        let config: Config = Config::default();
+        let config = Config::default();
         let minimum_skippable_delta_seconds: f64 =
             config.timestamp_skip_threshold_seconds + config.update_delta_seconds_max;
         for (big_drift_seconds, initial_wrapped_count, initial_timestamp, frames_per_update) in iproduct!(
@@ -555,7 +558,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                &config,
+                Arc::new(RwLock::new(Config::default())),
                 TerminationCondition::FirstOvershoot,
             );
             let initial_seconds_since_startup = initial_timestamp
@@ -607,7 +610,7 @@ mod tests {
 
     #[test]
     fn while_updating_with_changing_delta_seconds_then_timestamp_should_not_be_drifting() {
-        let config: Config = Config::default();
+        let config = Config::default();
         for (initial_wrapped_count, initial_timestamp) in
             iproduct!(&[0.0, 1.0], &timestamp::tests::interesting_timestamps())
         {
@@ -620,7 +623,7 @@ mod tests {
             // GIVEN a TimeKeeper starting at an interesting initial timestamp.
             let mut timekeeper: TimeKeeper<MockStepper> = TimeKeeper::new(
                 MockStepper::new(*initial_timestamp),
-                &config,
+                Arc::new(RwLock::new(Config::default())),
                 TerminationCondition::FirstOvershoot,
             );
             let mut seconds_since_startup = initial_timestamp.as_seconds(config.timestep_seconds)

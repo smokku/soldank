@@ -15,19 +15,19 @@ use super::{
     world::{InitializationType, Simulation, World},
     Config,
 };
+use std::sync::{Arc, RwLock};
 
 /// This is the top-level structure of CrystalOrb for your game server, analogous to the
 /// [`Client`](crate::client::Client) for game clients. You create, store, and update this server
 /// instance to run your game on the server side.
 #[derive(Debug)]
-pub struct Server<'a, WorldType: World> {
+pub struct Server<WorldType: World> {
     timekeeping_simulation: TimeKeeper<
-        'a,
         Simulation<WorldType /*, { InitializationType::PreInitialized }*/>,
         // { TerminationCondition::LastUndershoot },
     >,
     seconds_since_last_snapshot: f64, // FIXME: "seconds since" is not constant
-    config: &'a Config,
+    config: Arc<RwLock<Config>>,
 
     incoming_commands: Vec<(Timestamped<WorldType::CommandType>, WorldType::ClientId)>,
     outgoing_commands: Vec<(
@@ -38,26 +38,27 @@ pub struct Server<'a, WorldType: World> {
     outgoing_snapshots: Vec<Timestamped<WorldType::SnapshotType>>,
 }
 
-impl<'a, WorldType: World> Server<'a, WorldType> {
+impl<WorldType: World> Server<WorldType> {
     /// Constructs a new [`Server`]. This function requires a `seconds_since_startup` parameter to
     /// initialize the server's simulation timestamp.
-    pub fn new(config: &'a Config, seconds_since_startup: f64) -> Self {
+    pub fn new(config: Arc<RwLock<Config>>, seconds_since_startup: f64) -> Self {
         let mut server = Self {
             timekeeping_simulation: TimeKeeper::new(
                 Simulation::new(InitializationType::PreInitialized),
-                config,
+                config.clone(),
                 TerminationCondition::LastUndershoot,
             ),
             seconds_since_last_snapshot: 0.0,
-            config,
+            config: config.clone(),
             incoming_commands: Vec::new(),
             outgoing_commands: Vec::new(),
             outgoing_snapshots: Vec::new(),
         };
 
+        let config = config.read().unwrap();
         let initial_timestamp =
-            Timestamp::from_seconds(seconds_since_startup, server.config.timestep_seconds)
-                - server.config.lag_compensation_frame_count();
+            Timestamp::from_seconds(seconds_since_startup, config.timestep_seconds)
+                - config.lag_compensation_frame_count();
         server
             .timekeeping_simulation
             .reset_last_completed_timestamp(initial_timestamp);
@@ -83,13 +84,13 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
     /// This is also the timestamp that gets attached to the command when you call
     /// [`Server::issue_command`].
     pub fn estimated_client_simulating_timestamp(&self) -> Timestamp {
-        self.simulating_timestamp() + self.config.lag_compensation_frame_count()
+        self.simulating_timestamp() + self.config.read().unwrap().lag_compensation_frame_count()
     }
 
     /// The timestamp that clients have supposed to have completed simulating (which should always
     /// be ahead of the server to compensate for the latency between the server and the clients).
     pub fn estimated_client_last_completed_timestamp(&self) -> Timestamp {
-        self.last_completed_timestamp() + self.config.lag_compensation_frame_count()
+        self.last_completed_timestamp() + self.config.read().unwrap().lag_compensation_frame_count()
     }
 
     fn apply_validated_command(
@@ -207,7 +208,7 @@ impl<'a, WorldType: World> Server<'a, WorldType> {
             .update(positive_delta_seconds, seconds_since_startup);
 
         self.seconds_since_last_snapshot += positive_delta_seconds;
-        if self.seconds_since_last_snapshot > self.config.snapshot_send_period {
+        if self.seconds_since_last_snapshot > self.config.read().unwrap().snapshot_send_period {
             log::trace!(
                 "Broadcasting snapshot at timestamp: {:?} (note: drift error: {})",
                 self.timekeeping_simulation.last_completed_timestamp(),

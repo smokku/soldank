@@ -64,7 +64,10 @@ use super::{
     world::{DisplayState, /*InitializationType,*/ Simulation, Tweened, World},
     Config,
 };
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt::{Display, Formatter},
+    sync::{Arc, RwLock},
+};
 
 // pub mod stage;
 // use stage::{Stage, StageMut, StageOwned};
@@ -73,13 +76,13 @@ use std::fmt::{Display, Formatter};
 /// [`Server`](crate::server::Server) for game servers. You create, store, and update this client
 /// instance to run your game on the client side.
 #[derive(Debug)]
-pub struct Client<'a, WorldType: World> {
-    config: &'a Config,
+pub struct Client<WorldType: World> {
+    config: Arc<RwLock<Config>>,
     // stage: StageOwned<WorldType>,
-    pub client: ActiveClient<'a, WorldType>, // TODO: integrate this in Client?
+    pub client: ActiveClient<WorldType>, // TODO: integrate this in Client?
 }
 
-impl<'a, WorldType: World> Client<'a, WorldType> {
+impl<WorldType: World> Client<WorldType> {
     /// Constructs a new [`Client`].
     ///
     /// # Examples
@@ -104,9 +107,9 @@ impl<'a, WorldType: World> Client<'a, WorldType> {
     ///     ..Config::new()
     /// });
     /// ```
-    pub fn new(seconds_since_startup: f64, config: &'a Config) -> Self {
+    pub fn new(seconds_since_startup: f64, config: Arc<RwLock<Config>>) -> Self {
         Self {
-            config,
+            config: config.clone(),
             // stage: StageOwned::SyncingClock(ClockSyncer::new(config)),
             client: ActiveClient::new(seconds_since_startup, config /*, clocksyncer*/),
         }
@@ -238,11 +241,10 @@ impl<'a, WorldType: World> Client<'a, WorldType> {
 /// The internal CrystalOrb structure used to actively run the simulations, which is not
 /// constructed until the [`ClockSyncer`] is ready.
 #[derive(Debug)]
-pub struct ActiveClient<'a, WorldType: World> {
+pub struct ActiveClient<WorldType: World> {
     // clocksyncer: ClockSyncer,
     timekeeping_simulations: TimeKeeper<
-        'a,
-        ClientWorldSimulations<'a, WorldType>, /*, { TerminationCondition::FirstOvershoot }*/
+        ClientWorldSimulations<WorldType>, /*, { TerminationCondition::FirstOvershoot }*/
     >,
 
     incoming_commands: Vec<Timestamped<WorldType::CommandType>>,
@@ -250,10 +252,10 @@ pub struct ActiveClient<'a, WorldType: World> {
     outgoing_commands: Vec<Timestamped<WorldType::CommandType>>,
 }
 
-impl<'a, WorldType: World> ActiveClient<'a, WorldType> {
+impl<WorldType: World> ActiveClient<WorldType> {
     fn new(
         seconds_since_startup: f64,
-        config: &'a Config, /*, clocksyncer: ClockSyncer*/
+        config: Arc<RwLock<Config>>, /*, clocksyncer: ClockSyncer*/
     ) -> Self {
         // let server_time = clocksyncer
         //     .server_seconds_since_startup(seconds_since_startup)
@@ -261,7 +263,7 @@ impl<'a, WorldType: World> ActiveClient<'a, WorldType> {
 
         let initial_timestamp = Timestamp::from_seconds(
             /*server_time*/ seconds_since_startup,
-            config.timestep_seconds,
+            config.read().unwrap().timestep_seconds,
         );
 
         log::info!(
@@ -275,7 +277,7 @@ impl<'a, WorldType: World> ActiveClient<'a, WorldType> {
         Self {
             // clocksyncer,
             timekeeping_simulations: TimeKeeper::new(
-                ClientWorldSimulations::new(config, initial_timestamp),
+                ClientWorldSimulations::new(config.clone(), initial_timestamp),
                 config,
                 TerminationCondition::FirstOvershoot,
             ),
@@ -316,13 +318,19 @@ impl<'a, WorldType: World> ActiveClient<'a, WorldType> {
         //         .server_seconds_offset()
         //         .expect("Clock should be synced")
         // );
+        let lag_compensation_latency = self
+            .timekeeping_simulations
+            .config
+            .read()
+            .unwrap()
+            .lag_compensation_latency;
         self.timekeeping_simulations.update(
             delta_seconds,
             seconds_since_startup
             // self.clocksyncer
             //     .server_seconds_since_startup(seconds_since_startup)
             //     .expect("Clock should be synced")
-                + self.timekeeping_simulations.config.lag_compensation_latency,
+                + lag_compensation_latency,
         );
     }
 
@@ -426,7 +434,7 @@ impl Display for FastforwardingHealth {
 }
 
 #[derive(Debug)]
-struct ClientWorldSimulations<'a, WorldType: World> {
+struct ClientWorldSimulations<WorldType: World> {
     /// The next server snapshot that needs applying after the current latest snapshot has been
     /// fully interpolated into.
     queued_snapshot: Option<Timestamped<WorldType::SnapshotType>>,
@@ -473,11 +481,11 @@ struct ClientWorldSimulations<'a, WorldType: World> {
     /// timestamp. This remains None until the client is initialised with the server's snapshots.
     display_state: Option<Tweened<WorldType::DisplayStateType>>,
 
-    config: &'a Config,
+    config: Arc<RwLock<Config>>,
 }
 
-impl<'a, WorldType: World> ClientWorldSimulations<'a, WorldType> {
-    pub fn new(config: &'a Config, initial_timestamp: Timestamp) -> Self {
+impl<WorldType: World> ClientWorldSimulations<WorldType> {
+    pub fn new(config: Arc<RwLock<Config>>, initial_timestamp: Timestamp) -> Self {
         let mut client_world_simulations = Self {
             queued_snapshot: None,
             last_queued_snapshot_timestamp: None,
@@ -579,7 +587,7 @@ impl<'a, WorldType: World> ClientWorldSimulations<'a, WorldType> {
     }
 }
 
-impl<'a, WorldType: World> Stepper for ClientWorldSimulations<'a, WorldType> {
+impl<WorldType: World> Stepper for ClientWorldSimulations<WorldType> {
     fn step(&mut self) {
         fn load_snapshot<WorldType: World>(
             this: &mut ClientWorldSimulations<WorldType>,
@@ -639,7 +647,7 @@ impl<'a, WorldType: World> Stepper for ClientWorldSimulations<'a, WorldType> {
             );
             new_world_simulation.try_completing_simulations_up_to(
                 old_world_simulation.last_completed_timestamp(),
-                this.config.fastforward_max_per_step,
+                this.config.read().unwrap().fastforward_max_per_step,
             );
         }
 
@@ -687,7 +695,8 @@ impl<'a, WorldType: World> Stepper for ClientWorldSimulations<'a, WorldType> {
 
         match self.infer_current_reconciliation_status() {
             ReconciliationStatus::Blending(_) => {
-                self.blend_old_new_interpolation_t += self.config.blend_progress_per_frame();
+                self.blend_old_new_interpolation_t +=
+                    self.config.read().unwrap().blend_progress_per_frame();
                 self.blend_old_new_interpolation_t =
                     self.blend_old_new_interpolation_t.clamp(0.0, 1.0);
                 simulate_next_frame(self);
@@ -804,7 +813,7 @@ impl<'a, WorldType: World> Stepper for ClientWorldSimulations<'a, WorldType> {
     }
 }
 
-impl<'a, WorldType: World> FixedTimestepper for ClientWorldSimulations<'a, WorldType> {
+impl<WorldType: World> FixedTimestepper for ClientWorldSimulations<WorldType> {
     fn last_completed_timestamp(&self) -> Timestamp {
         self.world_simulations.get().old.last_completed_timestamp()
     }
@@ -840,10 +849,10 @@ impl<'a, WorldType: World> FixedTimestepper for ClientWorldSimulations<'a, World
             old: optional_undershot_state,
             new: optional_overshot_state,
         } = self.states.get();
-        let tween_t = self
-            .config
+        let config = self.config.read().unwrap();
+        let tween_t = config
             .tweening_method
-            .shape_interpolation_t(1.0 - timestep_overshoot_seconds / self.config.timestep_seconds);
+            .shape_interpolation_t(1.0 - timestep_overshoot_seconds / config.timestep_seconds);
         log::trace!("tween_t {}", tween_t);
         if let Some(undershot_state) = optional_undershot_state {
             if let Some(overshot_state) = optional_overshot_state {
@@ -874,7 +883,7 @@ impl<'a, WorldType: World> FixedTimestepper for ClientWorldSimulations<'a, World
                 // in the next iteration.
                 self.last_queued_snapshot_timestamp = Some(
                     self.last_completed_timestamp()
-                        - (self.config.lag_compensation_frame_count() * 2),
+                        - (self.config.read().unwrap().lag_compensation_frame_count() * 2),
                 );
             }
         }

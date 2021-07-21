@@ -1,7 +1,8 @@
 use crate::constants::*;
 use cvar::{INode, IVisit};
+use std::sync::{Arc, RwLock};
 
-pub use crate::orb::Config as NetConfig;
+pub use crate::orb::Config as OrbConfig;
 
 pub fn set_cli_cvars(config: &mut dyn IVisit, cmd: &clap::ArgMatches) {
     if let Some(values) = cmd.values_of("set") {
@@ -55,7 +56,30 @@ impl IVisit for Physics {
     }
 }
 
-impl IVisit for crate::orb::Config {
+#[derive(Default)]
+pub struct NetConfig {
+    pub orb: Arc<RwLock<OrbConfig>>,
+    pub send_keepalive: u32,    // millis
+    pub keepalive_timeout: u32, // millis
+}
+
+impl IVisit for NetConfig {
+    fn visit(&mut self, f: &mut dyn FnMut(&mut dyn INode)) {
+        f(&mut cvar::Property(
+            "send_keepalive",
+            &mut self.send_keepalive,
+            0,
+        ));
+        f(&mut cvar::Property(
+            "keepalive_timeout",
+            &mut self.keepalive_timeout,
+            0,
+        ));
+        f(&mut cvar::List("orb", &mut *self.orb.write().unwrap()));
+    }
+}
+
+impl IVisit for OrbConfig {
     fn visit(&mut self, f: &mut dyn FnMut(&mut dyn INode)) {
         let default = Self::default();
         f(&mut cvar::Property(
