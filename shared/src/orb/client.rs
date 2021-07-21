@@ -65,6 +65,7 @@ use super::{
     Config,
 };
 use std::{
+    collections::VecDeque,
     fmt::{Display, Formatter},
     sync::{Arc, RwLock},
 };
@@ -247,9 +248,9 @@ pub struct ActiveClient<WorldType: World> {
         ClientWorldSimulations<WorldType>, /*, { TerminationCondition::FirstOvershoot }*/
     >,
 
-    incoming_commands: Vec<Timestamped<WorldType::CommandType>>,
-    incoming_snapshots: Vec<Timestamped<WorldType::SnapshotType>>,
-    outgoing_commands: Vec<Timestamped<WorldType::CommandType>>,
+    incoming_commands: VecDeque<Timestamped<WorldType::CommandType>>,
+    incoming_snapshots: VecDeque<Timestamped<WorldType::SnapshotType>>,
+    outgoing_commands: VecDeque<Timestamped<WorldType::CommandType>>,
 }
 
 impl<WorldType: World> ActiveClient<WorldType> {
@@ -281,9 +282,9 @@ impl<WorldType: World> ActiveClient<WorldType> {
                 config,
                 TerminationCondition::FirstOvershoot,
             ),
-            incoming_commands: Vec::new(),
-            incoming_snapshots: Vec::new(),
-            outgoing_commands: Vec::new(),
+            incoming_commands: VecDeque::new(),
+            incoming_snapshots: VecDeque::new(),
+            outgoing_commands: VecDeque::new(),
         }
     }
 
@@ -343,12 +344,12 @@ impl<WorldType: World> ActiveClient<WorldType> {
     /// CrystalOrb is written assuming that
     /// `ClockSyncMessage` and `SnapshotType` are unreliable and unordered, while `CommandType` is
     /// reliable but unordered.
-    pub fn take_outgoing_commands(&mut self) -> Vec<Timestamped<WorldType::CommandType>> {
+    pub fn take_outgoing_commands(&mut self) -> VecDeque<Timestamped<WorldType::CommandType>> {
         self.outgoing_commands.split_off(0)
     }
 
     pub fn enqueue_incoming_command(&mut self, command: Timestamped<WorldType::CommandType>) {
-        self.incoming_commands.push(command);
+        self.incoming_commands.push_back(command);
         log::trace!(
             "Waiting incoming_commands: {}",
             self.incoming_commands.len()
@@ -356,7 +357,7 @@ impl<WorldType: World> ActiveClient<WorldType> {
     }
 
     pub fn enqueue_incoming_snapshot(&mut self, snapshot: Timestamped<WorldType::SnapshotType>) {
-        self.incoming_snapshots.push(snapshot);
+        self.incoming_snapshots.push_back(snapshot);
         log::trace!(
             "Waiting incoming_snapshots: {}",
             self.incoming_snapshots.len()

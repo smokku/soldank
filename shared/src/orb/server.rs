@@ -15,7 +15,10 @@ use super::{
     world::{InitializationType, Simulation, World},
     Config,
 };
-use std::sync::{Arc, RwLock};
+use std::{
+    collections::VecDeque,
+    sync::{Arc, RwLock},
+};
 
 /// This is the top-level structure of CrystalOrb for your game server, analogous to the
 /// [`Client`](crate::client::Client) for game clients. You create, store, and update this server
@@ -29,13 +32,13 @@ pub struct Server<WorldType: World> {
     seconds_since_last_snapshot: f64, // FIXME: "seconds since" is not constant
     config: Arc<RwLock<Config>>,
 
-    incoming_commands: Vec<(Timestamped<WorldType::CommandType>, WorldType::ClientId)>,
-    outgoing_commands: Vec<(
+    incoming_commands: VecDeque<(Timestamped<WorldType::CommandType>, WorldType::ClientId)>,
+    outgoing_commands: VecDeque<(
         Option<WorldType::ClientId>, // From (None = internal)
         Option<WorldType::ClientId>, // To   (None = broadcast)
         Timestamped<WorldType::CommandType>,
     )>,
-    outgoing_snapshots: Vec<Timestamped<WorldType::SnapshotType>>,
+    outgoing_snapshots: VecDeque<Timestamped<WorldType::SnapshotType>>,
 }
 
 impl<WorldType: World> Server<WorldType> {
@@ -50,9 +53,9 @@ impl<WorldType: World> Server<WorldType> {
             ),
             seconds_since_last_snapshot: 0.0,
             config: config.clone(),
-            incoming_commands: Vec::new(),
-            outgoing_commands: Vec::new(),
-            outgoing_snapshots: Vec::new(),
+            incoming_commands: VecDeque::new(),
+            outgoing_commands: VecDeque::new(),
+            outgoing_snapshots: VecDeque::new(),
         };
 
         let config = config.read().unwrap();
@@ -119,7 +122,7 @@ impl<WorldType: World> Server<WorldType> {
         //     }
         // }
         self.outgoing_commands
-            .push((command_source, None, command.clone()));
+            .push_back((command_source, None, command.clone()));
     }
 
     fn receive_command(
@@ -218,7 +221,7 @@ impl<WorldType: World> Server<WorldType> {
             self.seconds_since_last_snapshot = 0.0;
             // net.broadcast_message(self.timekeeping_simulation.last_completed_snapshot());
             self.outgoing_snapshots
-                .push(self.timekeeping_simulation.last_completed_snapshot());
+                .push_back(self.timekeeping_simulation.last_completed_snapshot());
         }
     }
 
@@ -227,7 +230,7 @@ impl<WorldType: World> Server<WorldType> {
     /// up to you / the external networking library. CrystalOrb is written assuming that
     /// `ClockSyncMessage` and `SnapshotType` are unreliable and unordered, while `CommandType` is
     /// reliable but unordered.
-    pub fn take_outgoing_snapshots(&mut self) -> Vec<Timestamped<WorldType::SnapshotType>> {
+    pub fn take_outgoing_snapshots(&mut self) -> VecDeque<Timestamped<WorldType::SnapshotType>> {
         self.outgoing_snapshots.split_off(0)
     }
 
@@ -236,7 +239,7 @@ impl<WorldType: World> Server<WorldType> {
     /// reliable but unordered.
     pub fn take_outgoing_commands(
         &mut self,
-    ) -> Vec<(
+    ) -> VecDeque<(
         Option<WorldType::ClientId>, // From (None = internal)
         Option<WorldType::ClientId>, // To   (None = broadcast)
         Timestamped<WorldType::CommandType>,
@@ -249,6 +252,6 @@ impl<WorldType: World> Server<WorldType> {
         command: Timestamped<WorldType::CommandType>,
         from: WorldType::ClientId,
     ) {
-        self.incoming_commands.push((command, from));
+        self.incoming_commands.push_back((command, from));
     }
 }
