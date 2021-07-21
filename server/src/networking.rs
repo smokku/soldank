@@ -20,7 +20,7 @@ use crate::{cheat::Cheats, constants::*, cvars::Config, state::build_state_messa
 use soldank_shared::{
     constants::SERVER_PORT,
     messages::{self, encode_message, NetworkMessage},
-    networking::MyWorld,
+    networking::{MyWorld, PacketStats},
     orb::server::Server,
     trace_dump_packet,
 };
@@ -32,14 +32,14 @@ pub struct Networking {
     payload_receiver: Receiver<NaiaPacket>,
     handler: ConnectionManager<PacketSocket, VirtualConnection>,
     pub connection_key: String,
-    last_message_received: Instant,
+    pub stats: PacketStats,
 
     pub connections: HashMap<SocketAddr, Connection>,
 }
 
 #[derive(Debug)]
 pub struct Connection {
-    pub last_message_received: Instant,
+    pub stats: PacketStats,
     pub ack_tick: usize,
     pub last_processed_tick: usize,
     pub last_broadcast: Instant,
@@ -53,7 +53,7 @@ pub struct Connection {
 impl Connection {
     pub fn new() -> Connection {
         Connection {
-            last_message_received: Instant::now(),
+            stats: Default::default(),
             ack_tick: 0,
             last_processed_tick: 0,
             last_broadcast: Instant::now(),
@@ -154,13 +154,16 @@ impl Networking {
             payload_receiver,
             handler,
             connection_key: "1337".to_string(),
-            last_message_received: Instant::now(),
+            stats: Default::default(),
 
             connections: HashMap::new(),
         }
     }
 
     pub fn send(&mut self, packet: LaminarPacket) {
+        if let Some(connection) = self.connections.get_mut(&packet.addr()) {
+            connection.stats.add_tx(packet.payload().len());
+        }
         if let Err(error) = self.handler.event_sender().send(packet) {
             panic!("{}", error);
         }
@@ -174,11 +177,10 @@ impl Networking {
     ) {
         match self.server_socket.receive().await {
             Ok(packet) => {
-                self.last_message_received = Instant::now();
-
                 let address = packet.address();
                 let data = packet.payload();
                 log::debug!("<-- Received {} bytes from [{}]", data.len(), address);
+                self.stats.add_rx(data.len());
                 trace_dump_packet(data);
 
                 if let Err(error) = self.packet_sender.send(packet).await {
@@ -206,6 +208,7 @@ impl Networking {
                 let address = packet.address();
                 let data = packet.payload();
                 log::debug!("--> Sending {} bytes to [{}]", data.len(), address);
+                self.stats.add_tx(data.len());
                 trace_dump_packet(data);
 
                 if let Err(error) = self.sender.send(packet).await {
@@ -269,7 +272,7 @@ impl Networking {
                 }
                 _ => match self.connections.get_mut(&address) {
                     Some(connection) => {
-                        connection.last_message_received = Instant::now();
+                        connection.stats.add_rx(data.len());
 
                         if op_code == messages::OperationCode::CCREQ_READY {
                             log::info!("<-> READY from [{:?}]", address);

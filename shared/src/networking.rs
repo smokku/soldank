@@ -4,7 +4,43 @@ use crate::orb::{
     world::{DisplayState, World},
 };
 use nanoserde::{DeBin, SerBin};
-use std::{fmt::Debug, net::SocketAddr};
+use std::{fmt::Debug, net::SocketAddr, time::Instant};
+
+#[derive(Debug, Clone)]
+pub struct PacketStats {
+    pub packets_tx: usize,
+    pub packets_rx: usize,
+    pub bytes_tx: usize,
+    pub bytes_rx: usize,
+    pub last_tx: Instant,
+    pub last_rx: Instant,
+}
+
+impl Default for PacketStats {
+    fn default() -> Self {
+        Self {
+            packets_tx: Default::default(),
+            packets_rx: Default::default(),
+            bytes_tx: Default::default(),
+            bytes_rx: Default::default(),
+            last_tx: Instant::now(),
+            last_rx: Instant::now(),
+        }
+    }
+}
+
+impl PacketStats {
+    pub fn add_tx(&mut self, num_bytes: usize) {
+        self.last_tx = Instant::now();
+        self.packets_tx += 1;
+        self.bytes_tx += num_bytes;
+    }
+    pub fn add_rx(&mut self, num_bytes: usize) {
+        self.last_rx = Instant::now();
+        self.packets_rx += 1;
+        self.bytes_rx += num_bytes;
+    }
+}
 
 #[derive(Default)]
 pub struct MyWorld {

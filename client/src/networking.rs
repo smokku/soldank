@@ -16,7 +16,7 @@ use soldank_shared::{
     control::Control,
     math::vec2,
     messages::{self, NetworkMessage},
-    networking::MyWorld,
+    networking::{MyWorld, PacketStats},
     orb::client::Client,
     trace_dump_packet,
 };
@@ -41,8 +41,8 @@ pub struct Networking {
     pub connection_key: String,
     pub nick_name: String,
     state: ConnectionState,
+    stats: PacketStats,
     backoff_round: i32,
-    last_message_received: f64,
     authorized: bool,
     cvars_received: bool,
 
@@ -121,8 +121,8 @@ impl Networking {
             connection_key: "1337".to_string(),
             nick_name: "Player".to_string(),
             state: ConnectionState::Disconnected,
+            stats: Default::default(),
             backoff_round: 0,
-            last_message_received: 0.,
             authorized: false,
             cvars_received: false,
 
@@ -142,10 +142,9 @@ impl Networking {
             match self.client_socket.receive() {
                 Ok(event) => match event {
                     Some(packet) => {
-                        self.last_message_received = instant::now();
-
                         let data = packet.payload();
                         log::debug!("<-- Received {} bytes", data.len());
+                        self.stats.add_rx(packet.payload().len());
                         trace_dump_packet(data);
 
                         self.connection.process_packet(messenger, data, time);
@@ -217,6 +216,7 @@ impl Networking {
     }
 
     pub fn send(&mut self, event: LaminarPacket) {
+        self.stats.add_tx(event.payload().len());
         self.connection
             .process_event(&mut self.messenger, event, Instant::now());
     }
