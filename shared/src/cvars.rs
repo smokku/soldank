@@ -75,7 +75,7 @@ impl IVisit for NetConfig {
             &mut self.keepalive_timeout,
             0,
         ));
-        f(&mut cvar::List("orb", &mut *self.orb.write().unwrap()));
+        self.orb.write().unwrap().visit(f);
     }
 }
 
