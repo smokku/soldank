@@ -29,7 +29,7 @@ pub struct Server<WorldType: World> {
         Simulation<WorldType /*, { InitializationType::PreInitialized }*/>,
         // { TerminationCondition::LastUndershoot },
     >,
-    seconds_since_last_snapshot: f64, // FIXME: "seconds since" is not constant
+    last_snapshot_time: f64,
     config: Arc<RwLock<Config>>,
 
     incoming_commands: VecDeque<(Timestamped<WorldType::CommandType>, WorldType::ClientId)>,
@@ -51,7 +51,7 @@ impl<WorldType: World> Server<WorldType> {
                 config.clone(),
                 TerminationCondition::LastUndershoot,
             ),
-            seconds_since_last_snapshot: 0.0,
+            last_snapshot_time: seconds_since_startup,
             config: config.clone(),
             incoming_commands: VecDeque::new(),
             outgoing_commands: VecDeque::new(),
@@ -210,15 +210,16 @@ impl<WorldType: World> Server<WorldType> {
         self.timekeeping_simulation
             .update(positive_delta_seconds, seconds_since_startup);
 
-        self.seconds_since_last_snapshot += positive_delta_seconds;
-        if self.seconds_since_last_snapshot > self.config.read().unwrap().snapshot_send_period {
+        if seconds_since_startup
+            > self.last_snapshot_time + self.config.read().unwrap().snapshot_send_period
+        {
             log::trace!(
                 "Broadcasting snapshot at timestamp: {:?} (note: drift error: {})",
                 self.timekeeping_simulation.last_completed_timestamp(),
                 self.timekeeping_simulation
                     .timestamp_drift_seconds(seconds_since_startup),
             );
-            self.seconds_since_last_snapshot = 0.0;
+            self.last_snapshot_time = seconds_since_startup;
             // net.broadcast_message(self.timekeeping_simulation.last_completed_snapshot());
             self.outgoing_snapshots
                 .push_back(self.timekeeping_simulation.last_completed_snapshot());
