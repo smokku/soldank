@@ -143,11 +143,14 @@ impl Networking {
                 Ok(event) => match event {
                     Some(packet) => {
                         let data = packet.payload();
-                        log::debug!("<-- Received {} bytes", data.len());
-                        self.stats.add_rx(packet.payload().len());
+                        let len = data.len();
+                        log::debug!("<-- Received {} bytes", len);
+                        self.stats.add_rx(len);
                         trace_dump_packet(data);
 
-                        self.connection.process_packet(messenger, data, time);
+                        if len > 0 {
+                            self.connection.process_packet(messenger, data, time);
+                        }
                     }
                     None => {
                         break;
@@ -408,10 +411,9 @@ impl Networking {
                 && self.stats.last_tx.elapsed().as_secs_f32() > config.net.send_keepalive as f32
             {
                 log::warn!("Sending keepalive packet");
-                self.messenger
-                    .sender
-                    .send(NaiaPacket::new(Vec::new()))
-                    .expect("error sending keepalive");
+                if let Err(error) = self.messenger.sender.send(NaiaPacket::new(Vec::new())) {
+                    log::error!("Error sending keepalive: {}", error);
+                }
             }
             if config.net.keepalive_timeout > 0
                 && self.stats.last_rx.elapsed().as_secs_f32() > config.net.keepalive_timeout as f32

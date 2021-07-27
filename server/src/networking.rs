@@ -179,16 +179,21 @@ impl Networking {
             Ok(packet) => {
                 let address = packet.address();
                 let data = packet.payload();
-                log::debug!("<-- Received {} bytes from [{}]", data.len(), address);
-                self.stats.add_rx(data.len());
+                let len = data.len();
+                log::debug!("<-- Received {} bytes from [{}]", len, address);
+                self.stats.add_rx(len);
+                if let Some(connection) = self.connections.get_mut(&address) {
+                    connection.stats.add_rx(len);
+                }
                 trace_dump_packet(data);
 
-                if let Err(error) = self.packet_sender.send(packet).await {
-                    log::error!("Error processing packet from [{}]: {}", address, error);
+                if len > 0 {
+                    if let Err(error) = self.packet_sender.send(packet).await {
+                        log::error!("Error processing packet from [{}]: {}", address, error);
+                    }
                 }
             }
             Err(error) => {
-                log::error!("Server error: {}", error);
                 match error {
                     NaiaServerSocketError::Wrapped(error) => {
                         log::error!("Naia socket error: {}", error);
@@ -272,8 +277,6 @@ impl Networking {
                 }
                 _ => match self.connections.get_mut(&address) {
                     Some(connection) => {
-                        connection.stats.add_rx(data.len());
-
                         if op_code == messages::OperationCode::CCREQ_READY {
                             log::info!("<-> READY from [{:?}]", address);
                             connection.ready = true;
@@ -411,6 +414,39 @@ impl Networking {
                     packets.push(LaminarPacket::unreliable(address, msg.to_vec()));
                 }
             }
+        }
+    }
+
+    pub fn post_process(&mut self, config: &Config) {
+        let mut to_disconnect = Vec::new();
+
+        for (address, connection) in &self.connections {
+            if connection.ready {
+                if config.net.send_keepalive > 0
+                    && connection.stats.last_tx.elapsed().as_secs_f32()
+                        > config.net.send_keepalive as f32
+                {
+                    log::warn!("Sending keepalive to [{}]", address);
+                    let packet = NaiaPacket::new(*address, Vec::new());
+                    let sender = &mut self.sender;
+                    smol::block_on(async {
+                        if let Err(error) = sender.send(packet).await {
+                            log::error!("Error sending keepalive to [{}]: {}", address, error);
+                        }
+                    });
+                }
+                if config.net.keepalive_timeout > 0
+                    && connection.stats.last_rx.elapsed().as_secs_f32()
+                        > config.net.keepalive_timeout as f32
+                {
+                    log::error!("Client [{}] connection timeout - dropping", address);
+                    to_disconnect.push(*address);
+                }
+            }
+        }
+
+        for address in to_disconnect.drain(..) {
+            self.connections.remove(&address);
         }
     }
 }

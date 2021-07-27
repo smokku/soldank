@@ -163,6 +163,8 @@ fn main() -> Result<()> {
             }
 
             previous_time = current_time;
+
+            networking.post_process(&config);
         }
 
         log::info!("Exiting server");
