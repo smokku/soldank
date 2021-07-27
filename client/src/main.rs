@@ -387,7 +387,7 @@ async fn main() {
         networking.process(&mut *resources.get_mut::<Config>().unwrap(), &mut client);
         log::info!("ready_client_display_state: {:?}", client.display_state());
         client.update(timeacc, timecur);
-        networking.post_process();
+        networking.post_process(&*resources.get::<Config>().unwrap());
 
         macroquad::window::next_frame().await;
     }

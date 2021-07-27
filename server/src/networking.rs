@@ -203,26 +203,6 @@ impl Networking {
 
         self.handler.manual_poll(Instant::now());
 
-        match self.payload_receiver.try_recv() {
-            Ok(packet) => {
-                let address = packet.address();
-                let data = packet.payload();
-                log::debug!("--> Sending {} bytes to [{}]", data.len(), address);
-                self.stats.add_tx(data.len());
-                trace_dump_packet(data);
-
-                if let Err(error) = self.sender.send(packet).await {
-                    log::error!("Error sending payload to [{}]: {}", address, error);
-                }
-            }
-            Err(error) => match error {
-                TryRecvError::Empty => {}
-                TryRecvError::Closed => {
-                    panic!("Error receiving from payload channel: {}", error);
-                }
-            },
-        }
-
         while let Ok(event) = self.handler.event_receiver().try_recv() {
             match event {
                 SocketEvent::Packet(packet) => {
@@ -242,6 +222,26 @@ impl Networking {
                     self.connections.remove(&addr);
                 }
             }
+        }
+
+        match self.payload_receiver.try_recv() {
+            Ok(packet) => {
+                let address = packet.address();
+                let data = packet.payload();
+                log::debug!("--> Sending {} bytes to [{}]", data.len(), address);
+                self.stats.add_tx(data.len());
+                trace_dump_packet(data);
+
+                if let Err(error) = self.sender.send(packet).await {
+                    log::error!("Error sending payload to [{}]: {}", address, error);
+                }
+            }
+            Err(error) => match error {
+                TryRecvError::Empty => {}
+                TryRecvError::Closed => {
+                    panic!("Error receiving from payload channel: {}", error);
+                }
+            },
         }
     }
 

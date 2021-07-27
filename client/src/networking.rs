@@ -155,6 +155,7 @@ impl Networking {
                 },
                 Err(err) => {
                     log::error!("Client Error: {}", err);
+                    self.state = ConnectionState::Error;
                 }
             }
         }
@@ -391,7 +392,7 @@ impl Networking {
             .insert(self.tick, (flags, control.mouse_aim_x, control.mouse_aim_y));
     }
 
-    pub fn post_process(&mut self) {
+    pub fn post_process(&mut self, config: &Config) {
         let low_tick = usize::max(
             self.server_tick_received,
             self.tick - usize::min(self.tick, MAX_INPUTS_RETAIN),
@@ -400,5 +401,24 @@ impl Networking {
 
         self.control
             .retain(move |&t, _| t > low_tick && t <= high_tick);
+
+        if self.state != ConnectionState::Disconnected {
+            if self.state != ConnectionState::Error
+                && config.net.send_keepalive > 0
+                && self.stats.last_tx.elapsed().as_secs_f32() > config.net.send_keepalive as f32
+            {
+                log::warn!("Sending keepalive packet");
+                self.messenger
+                    .sender
+                    .send(NaiaPacket::new(Vec::new()))
+                    .expect("error sending keepalive");
+            }
+            if config.net.keepalive_timeout > 0
+                && self.stats.last_rx.elapsed().as_secs_f32() > config.net.keepalive_timeout as f32
+            {
+                log::error!("Server connection timeout - exiting");
+                std::process::abort();
+            }
+        }
     }
 }
