@@ -142,18 +142,17 @@ fn main() -> Result<()> {
                     log::info!("server_display_state: {:?}", server_display_state);
 
                     server.update(delta_seconds, seconds_since_startup);
+                    networking.process_simulation(&mut server); // push above server's results in the wild
 
-                    networking.process_simulation(&mut server);
-
-                    let time = systems::Time {
-                        time: current_time,
-                        tick: (server
-                            .last_completed_timestamp()
-                            .as_seconds(config.net.orb.read().unwrap().timestep_seconds)
-                            * 1000.) as usize,
-                        frame_percent: 1.,
-                    };
-                    systems::tick_debug(&world, &time);
+                    // let time = systems::Time {
+                    //     time: current_time,
+                    //     tick: (server
+                    //         .last_completed_timestamp()
+                    //         .as_seconds(config.net.orb.read().unwrap().timestep_seconds)
+                    //         * 1000.) as usize,
+                    //     frame_percent: 1.,
+                    // };
+                    // systems::tick_debug(&world, &time);
 
                     if networking.connections.iter().count() == 0 {
                         log::info!("No connections left - exiting");
