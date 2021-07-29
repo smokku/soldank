@@ -14,13 +14,12 @@ use std::{cmp::Reverse, collections::BTreeMap, fmt::Debug, ops::Range};
 /// # Example
 ///
 /// ```
-/// use crystalorb::command::Command;
-/// use serde::{Deserialize, Serialize};
+/// use soldank_shared::orb::command::Command;
 ///
-/// #[derive(Serialize, Deserialize, Debug, Clone)]
+/// #[derive(Debug, Clone)]
 /// struct Player(usize);
 ///
-/// #[derive(Serialize, Deserialize, Debug, Clone)]
+/// #[derive(Debug, Clone)]
 /// enum GameCommand {
 ///     Spawn(Player),
 ///     Despawn(Player),

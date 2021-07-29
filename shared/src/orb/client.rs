@@ -13,46 +13,46 @@
 //! to perform the following useful operations:
 //!
 //! - [Issuing commands](stage::Ready::issue_command) that come from the player.
-//!     ```
-//!     use crystalorb::{Config, client::{Client, stage::StageMut}};
-//!     use crystalorb_demo::{DemoWorld, DemoCommand, PlayerSide, PlayerCommand};
-//!     use crystalorb_mock_network::MockNetwork;
-//!
-//!     // Using a mock network as an example...
-//!     let (_, (mut network, _)) =
-//!         MockNetwork::new_mock_network::<DemoWorld>();
-//!
-//!     let mut client = Client::<DemoWorld>::new(Config::new());
-//!
-//!     // ...later on in your update loop, in response to a player input...
-//!
-//!     if let StageMut::Ready(mut ready_client) = client.stage_mut() {
-//!         let command = DemoCommand::new(PlayerSide::Left, PlayerCommand::Jump, true);
-//!         ready_client.issue_command(command, &mut network);
-//!     }
-//!     ```
+// !     ```
+// !     use crystalorb::{Config, client::{Client, stage::StageMut}};
+// !     use crystalorb_demo::{DemoWorld, DemoCommand, PlayerSide, PlayerCommand};
+// !     use crystalorb_mock_network::MockNetwork;
+// !
+// !     // Using a mock network as an example...
+// !     let (_, (mut network, _)) =
+// !         MockNetwork::new_mock_network::<DemoWorld>();
+// !
+// !     let mut client = Client::<DemoWorld>::new(Config::default());
+// !
+// !     // ...later on in your update loop, in response to a player input...
+// !
+// !     if let StageMut::Ready(mut ready_client) = client.stage_mut() {
+// !         let command = DemoCommand::new(PlayerSide::Left, PlayerCommand::Jump, true);
+// !         ready_client.issue_command(command, &mut network);
+// !     }
+// !     ```
 //! - [Getting the current display state](stage::Ready::display_state) to render on the screen.
-//!     ```
-//!     use crystalorb::{
-//!         Config,
-//!         client::{Client, stage::Stage},
-//!         world::DisplayState,
-//!     };
-//!     use crystalorb_demo::{DemoWorld, DemoDisplayState};
-//!
-//!     fn render(display_state: &DemoDisplayState) {
-//!         // [Your game rendering code]
-//!         println!("{:?}", display_state);
-//!     }
-//!
-//!     let client = Client::<DemoWorld>::new(Config::new());
-//!
-//!     // ...later on in your update loop...
-//!
-//!     if let Stage::Ready(ready_client) = client.stage() {
-//!         render(ready_client.display_state().display_state());
-//!     }
-//!     ```
+// !     ```
+// !     use crystalorb::{
+// !         Config,
+// !         client::{Client, stage::Stage},
+// !         world::DisplayState,
+// !     };
+// !     use crystalorb_demo::{DemoWorld, DemoDisplayState};
+// !
+// !     fn render(display_state: &DemoDisplayState) {
+// !         // [Your game rendering code]
+// !         println!("{:?}", display_state);
+// !     }
+// !
+// !     let client = Client::<DemoWorld>::new(Config::default());
+// !
+// !     // ...later on in your update loop...
+// !
+// !     if let Stage::Ready(ready_client) = client.stage() {
+// !         render(ready_client.display_state().display_state());
+// !     }
+// !     ```
 
 use super::{
     // clocksync::ClockSyncer,
@@ -90,24 +90,24 @@ impl<WorldType: World> Client<WorldType> {
     ///
     /// Using the default configuration parameters:
     ///
-    /// ```
-    /// use crystalorb::{Config, client::Client};
-    /// use crystalorb_demo::DemoWorld;
-    ///
-    /// let client = Client::<DemoWorld>::new(Config::new());
-    /// ```
+    // ```
+    // use crystalorb::{Config, client::Client};
+    // use crystalorb_demo::DemoWorld;
+    //
+    // let client = Client::<DemoWorld>::new(Config::default());
+    // ```
     ///
     /// Overriding some configuration parameter:
     ///
-    /// ```
-    /// use crystalorb::{Config, client::Client};
-    /// use crystalorb_demo::DemoWorld;
-    ///
-    /// let client = Client::<DemoWorld>::new(Config {
-    ///     lag_compensation_latency: 0.5,
-    ///     ..Config::new()
-    /// });
-    /// ```
+    // ```
+    // use crystalorb::{Config, client::Client};
+    // use crystalorb_demo::DemoWorld;
+    //
+    // let client = Client::<DemoWorld>::new(Config {
+    //     lag_compensation_latency: 0.5,
+    //     ..Config::default()
+    // });
+    // ```
     pub fn new(seconds_since_startup: f64, config: Arc<RwLock<Config>>) -> Self {
         Self {
             config: config.clone(),
@@ -119,35 +119,35 @@ impl<WorldType: World> Client<WorldType> {
     /// Perform the next update for the current rendering frame. You would typically call this in
     /// your game engine's update loop of some kind.
     ///
-    /// # Examples
-    ///
-    /// Here is how one might call [`Client::update`] outside of any game engine:
-    ///
-    /// ```
-    /// use crystalorb::{Config, client::Client};
-    /// use crystalorb_demo::DemoWorld;
-    /// use crystalorb_mock_network::MockNetwork;
-    /// use std::time::Instant;
-    ///
-    /// // Using a mock network as an example...
-    /// let (_, (mut network, _)) =
-    ///    MockNetwork::new_mock_network::<DemoWorld>();
-    ///
-    /// let mut client = Client::<DemoWorld>::new(Config::new());
-    /// let startup_time = Instant::now();
-    /// let mut previous_time = Instant::now();
-    ///
-    /// loop {
-    ///     let current_time = Instant::now();
-    ///     let delta_seconds = current_time.duration_since(previous_time).as_secs_f64();
-    ///     let seconds_since_startup = current_time.duration_since(startup_time).as_secs_f64();
-    ///
-    ///     client.update(delta_seconds, seconds_since_startup, &mut network);
-    ///
-    ///     // ...Other update code omitted...
-    ///     # break;
-    /// }
-    /// ```
+    // # Examples
+    //
+    // Here is how one might call [`Client::update`] outside of any game engine:
+    //
+    // ```
+    // use soldank_shared::orb::{Config, client::Client};
+    // use crystalorb_demo::DemoWorld;
+    // use crystalorb_mock_network::MockNetwork;
+    // use std::time::Instant;
+    //
+    // // Using a mock network as an example...
+    // let (_, (mut network, _)) =
+    //    MockNetwork::new_mock_network::<DemoWorld>();
+    //
+    // let mut client = Client::<DemoWorld>::new(Config::default());
+    // let startup_time = Instant::now();
+    // let mut previous_time = Instant::now();
+    //
+    // loop {
+    //     let current_time = Instant::now();
+    //     let delta_seconds = current_time.duration_since(previous_time).as_secs_f64();
+    //     let seconds_since_startup = current_time.duration_since(startup_time).as_secs_f64();
+    //
+    //     client.update(delta_seconds, seconds_since_startup, &mut network);
+    //
+    //     // ...Other update code omitted...
+    //     # break;
+    // }
+    // ```
     pub fn update(
         &mut self,
         delta_seconds: f64,
@@ -184,7 +184,7 @@ impl<WorldType: World> Client<WorldType> {
     // /// use crystalorb::{Config, client::{Client, stage::Stage}};
     // /// use crystalorb_demo::DemoWorld;
     // ///
-    // /// let client = Client::<DemoWorld>::new(Config::new());
+    // /// let client = Client::<DemoWorld>::new(Config::default());
     // ///
     // /// // ...Later on...
     // ///
@@ -218,7 +218,7 @@ impl<WorldType: World> Client<WorldType> {
     // /// let (_, (mut network, _)) =
     // ///    MockNetwork::new_mock_network::<DemoWorld>();
     // ///
-    // /// let mut client = Client::<DemoWorld>::new(Config::new());
+    // /// let mut client = Client::<DemoWorld>::new(Config::default());
     // ///
     // /// // ...Later on...
     // ///

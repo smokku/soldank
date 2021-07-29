@@ -69,15 +69,16 @@ impl TweeningMethod {
 /// For starters, you can just pass in the default values when you are creating the
 /// [`client::Client`] and [`server::Server`] instances.
 ///
-/// # Example
-///
-/// ```
-/// use crystalorb::{Config, client::Client};
-/// use crystalorb_demo::DemoWorld;
-///
-/// let client = Client::<DemoWorld>::new(Config::new());
-/// ```
-// This should not derive Clone nor Copy, to support live changing of settings.
+// # Example
+//
+// ```
+// use soldank_shared::orb::{Config, client::Client};
+// use crystalorb_demo::DemoWorld;
+//
+// let client = Client::<DemoWorld>::new(Config::default());
+// ```
+//
+// NOTE!: This should not derive Clone nor Copy, to support live changing of settings.
 #[derive(Debug)]
 pub struct Config {
     /// Maximum amount of client lag in seconds that the server will compensate for.
@@ -220,45 +221,34 @@ impl Default for Config {
     ///
     /// If you want to use the defaults:
     ///
-    /// ```
-    /// use crystalorb::{Config, client::Client};
-    /// use crystalorb_demo::DemoWorld;
-    ///
-    /// let client = Client::<DemoWorld>::new(Config::new());
-    /// ```
+    // ```
+    // use soldank_shared::orb::{Config, client::Client};
+    // use crystalorb_demo::DemoWorld;
+    //
+    // let client = Client::<DemoWorld>::new(Config::default());
+    // ```
     ///
     /// If you want to override the defaults:
     ///
-    /// ```
-    /// use crystalorb::{Config, client::Client};
-    /// use crystalorb_demo::DemoWorld;
-    /// let client = Client::<DemoWorld>::new(Config {
-    ///     lag_compensation_latency: 0.5,
-    ///     ..Config::new()
-    /// });
-    /// ```
+    // ```
+    // use soldank_shared::orb::{Config, client::Client};
+    // use crystalorb_demo::DemoWorld;
+    // let client = Client::<DemoWorld>::new(Config {
+    //     lag_compensation_latency: 0.5,
+    //     ..Config::default()
+    // });
+    // ```
     ///
     /// You can use `Default::default()` too:
     ///
-    /// ```
-    /// use crystalorb::{Config, client::Client};
-    /// use crystalorb_demo::DemoWorld;
-    /// let client = Client::<DemoWorld>::new(Config {
-    ///     lag_compensation_latency: 0.5,
-    ///     ..Default::default()
-    /// });
-    /// ```
-    ///
-    /// Note that this is a constant function, so you can initialize your configuration as a
-    /// constant.
-    ///
-    /// ```
-    /// use crystalorb::Config;
-    /// const CONFIG: Config = Config {
-    ///     timestep_seconds: 1.0 / 24.0,
-    ///     ..Config::new()
-    /// };
-    /// ```
+    // ```
+    // use soldank_shared::orb::{Config, client::Client};
+    // use crystalorb_demo::DemoWorld;
+    // let client = Client::<DemoWorld>::new(Config {
+    //     lag_compensation_latency: 0.5,
+    //     ..Default::default()
+    // });
+    // ```
     fn default() -> Self {
         Self {
             lag_compensation_latency: 0.3,
