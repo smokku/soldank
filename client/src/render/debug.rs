@@ -177,14 +177,53 @@ pub fn debug_render(
 pub fn physics(world: &World, resources: &Resources) {
     use rapier2d::prelude::*;
 
-    let rigid_body_set = resources.get_mut::<RigidBodySet>().unwrap();
     let scale = resources.get::<Config>().unwrap().phys.scale;
 
-    for (_entity, body_handle) in world.query::<&RigidBodyHandle>().iter() {
-        let body = &rigid_body_set[*body_handle];
-        let tr = body.translation();
+    for (_entity, rb) in world
+        .query::<crate::physics::RigidBodyComponentsQuery>()
+        .iter()
+    {
+        let tr = rb.position.position.translation;
         let center = vec2(tr.x, tr.y) * scale;
         mq::draw_circle(center.x, center.y, 1.5, mq::YELLOW);
         mq::draw_circle(center.x, center.y, 0.75, mq::BLACK);
+    }
+
+    for (_entity, coll) in world
+        .query::<crate::physics::ColliderComponentsQuery>()
+        .iter()
+    {
+        const CL: Color = mq::GREEN;
+        const TH: f32 = 1.0;
+
+        let tr = coll.position.0.translation;
+        let center = vec2(tr.x, tr.y) * scale;
+        mq::draw_circle(center.x, center.y, 1.5, CL);
+        mq::draw_circle(center.x, center.y, 0.75, mq::BLACK);
+
+        match coll.shape.as_typed_shape() {
+            TypedShape::Ball(ball) => {
+                let r = ball.radius * scale;
+                mq::draw_circle_lines(center.x, center.y, r, TH, CL)
+            }
+            TypedShape::Cuboid(cuboid) => {
+                let hw = cuboid.half_extents.x * scale;
+                let hh = cuboid.half_extents.y * scale;
+                mq::draw_rectangle_lines(center.x - hw, center.y - hh, hw * 2., hh * 2., TH, CL);
+            }
+            TypedShape::Capsule(_) => todo!(),
+            TypedShape::Segment(_) => todo!(),
+            TypedShape::Triangle(_) => todo!(),
+            TypedShape::TriMesh(_) => todo!(),
+            TypedShape::Polyline(_) => todo!(),
+            TypedShape::HalfSpace(_) => todo!(),
+            TypedShape::HeightField(_) => todo!(),
+            TypedShape::Compound(_) => todo!(),
+            TypedShape::ConvexPolygon(_) => todo!(),
+            TypedShape::RoundCuboid(_) => todo!(),
+            TypedShape::RoundTriangle(_) => todo!(),
+            TypedShape::RoundConvexPolygon(_) => todo!(),
+            TypedShape::Custom(_) => todo!(),
+        }
     }
 }

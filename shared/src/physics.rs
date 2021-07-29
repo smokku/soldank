@@ -297,32 +297,32 @@ impl_component_set!(ColliderComponentsSet, ColliderFlags);
 impl_component_set_option!(ColliderComponentsSet, ColliderParent);
 
 #[derive(Query, Debug, PartialEq)]
-struct RigidBodyComponentsQuery<'a>(
-    &'a RigidBodyPosition,
-    &'a RigidBodyVelocity,
-    &'a RigidBodyMassProps,
-    &'a RigidBodyIds,
-    &'a RigidBodyForces,
-    &'a RigidBodyActivation,
-    &'a RigidBodyChanges,
-    &'a RigidBodyCcd,
-    &'a RigidBodyColliders,
-    &'a RigidBodyDamping,
-    &'a RigidBodyDominance,
-    &'a RigidBodyType,
-);
+pub struct RigidBodyComponentsQuery<'a> {
+    pub position: &'a RigidBodyPosition,
+    pub velocity: &'a RigidBodyVelocity,
+    pub mass_props: &'a RigidBodyMassProps,
+    pub ids: &'a RigidBodyIds,
+    pub forces: &'a RigidBodyForces,
+    pub activation: &'a RigidBodyActivation,
+    pub changes: &'a RigidBodyChanges,
+    pub ccd: &'a RigidBodyCcd,
+    pub coliders: &'a RigidBodyColliders,
+    pub damping: &'a RigidBodyDamping,
+    pub dominance: &'a RigidBodyDominance,
+    pub typ: &'a RigidBodyType,
+}
 
 #[derive(Query)]
-struct ColliderComponentsQuery<'a>(
-    &'a ColliderChanges,
-    &'a ColliderPosition,
-    &'a ColliderBroadPhaseData,
-    &'a ColliderShape,
-    &'a ColliderType,
-    &'a ColliderMaterial,
-    &'a ColliderFlags,
-    Option<&'a ColliderParent>,
-);
+pub struct ColliderComponentsQuery<'a> {
+    pub changes: &'a ColliderChanges,
+    pub position: &'a ColliderPosition,
+    pub broad_phase_data: &'a ColliderBroadPhaseData,
+    pub shape: &'a ColliderShape,
+    pub typ: &'a ColliderType,
+    pub material: &'a ColliderMaterial,
+    pub flags: &'a ColliderFlags,
+    pub parent: Option<&'a ColliderParent>,
+}
 
 #[derive(Bundle)]
 pub struct ColliderBundle {
