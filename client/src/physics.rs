@@ -1,45 +1,53 @@
-pub use soldank_shared::physics::step;
+pub use rapier2d::prelude::*;
+pub use soldank_shared::physics::*;
 
-use crate::components;
+use crate::components::Sprite;
 use gfx2d::math::*;
 use hecs::World;
-use rapier2d::prelude::*;
 use resources::Resources;
 
 pub fn init(world: &mut World, resources: &mut Resources) {
     soldank_shared::physics::init(resources);
 
-    let mut rigid_body_set = resources.get_mut::<RigidBodySet>().unwrap();
-    let mut collider_set = resources.get_mut::<ColliderSet>().unwrap();
-
     /* Create the ground. */
-    let collider = ColliderBuilder::cuboid(100.0, 0.1)
-        .translation(vector![0.0, -20.0])
-        .build();
-    collider_set.insert(collider);
+    let collider = ColliderBundle {
+        shape: ColliderShape::cuboid(100.0, 0.1),
+        position: Vec2::new(0.0, -20.0).into(),
+        ..Default::default()
+    };
+    world.spawn(collider);
 
     /* Create the bouncing ball. */
-    let rigid_body = RigidBodyBuilder::new_dynamic()
-        .translation(vector![0.0, -30.0])
-        .build();
-    let collider = ColliderBuilder::ball(0.5).restitution(0.7).build();
-    let ball_body_handle = rigid_body_set.insert(rigid_body);
-    collider_set.insert_with_parent(collider, ball_body_handle, &mut rigid_body_set);
-
-    /* Ball entity that will be drawn */
-    let sprite_scale = 0.5;
-    world.spawn((
-        components::Position::new(0.0, 0.0),
-        components::Sprite {
-            group: "Ball".into(),
-            name: "Ball1".into(),
-            transform: gfx2d::Transform::origin(
-                vec2(50., 50.) * (sprite_scale / -2.),
-                vec2(1.0, 1.0) * sprite_scale,
-                (0.0, vec2(50., 50.) * (sprite_scale / 2.)),
-            ),
+    let rigid_body = RigidBodyBundle {
+        position: Vec2::new(0.0, -30.0).into(),
+        ..Default::default()
+    };
+    let collider = ColliderBundle {
+        shape: ColliderShape::ball(0.5),
+        material: ColliderMaterial {
+            restitution: 0.7,
             ..Default::default()
         },
-        ball_body_handle,
-    ));
+        ..Default::default()
+    };
+    let ball = world.spawn(rigid_body);
+    world.insert(ball, collider).unwrap();
+
+    /* Ball that will be drawn */
+    let sprite_scale = 0.5; // make the sprite half size than the actual PNG image
+    world
+        .insert_one(
+            ball,
+            Sprite {
+                group: "Ball".into(),
+                name: "Ball1".into(),
+                transform: gfx2d::Transform::origin(
+                    vec2(50., 50.) * (sprite_scale / -2.),
+                    vec2(1.0, 1.0) * sprite_scale,
+                    (0.0, vec2(50., 50.) * (sprite_scale / 2.)),
+                ),
+                ..Default::default()
+            },
+        )
+        .unwrap();
 }

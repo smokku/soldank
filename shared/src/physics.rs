@@ -1,5 +1,5 @@
-use crate::{components, constants::*};
-use hecs::{Bundle, Entity, Query, QueryBorrow, World};
+use crate::constants::*;
+use hecs::{Bundle, Entity, Query, World};
 use rapier2d::{
     data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index},
     prelude::*,
@@ -37,8 +37,6 @@ pub fn init(resources: &mut Resources) {
     resources.insert(IslandManager::new());
     resources.insert(BroadPhase::new());
     resources.insert(NarrowPhase::new());
-    resources.insert(RigidBodySet::new());
-    resources.insert(ColliderSet::new());
     resources.insert(JointSet::new());
     resources.insert(CCDSolver::new());
 }
@@ -65,9 +63,9 @@ pub fn step(world: &World, resources: &Resources) {
     let mut rigid_body_components_set = RigidBodyComponentsSet(world);
     let mut collider_components_set = ColliderComponentsSet(world);
 
-    let mut modified_bodies = Vec::new();
-    let mut modified_colliders = Vec::new();
-    let mut removed_colliders = Vec::new();
+    let mut modified_bodies = Vec::new(); // FIXME: implement
+    let mut modified_colliders = Vec::new(); // FIXME: implement
+    let mut removed_colliders = Vec::new(); // FIXME: implement
 
     physics_pipeline.step_generic(
         &gravity,

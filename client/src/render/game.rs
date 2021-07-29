@@ -172,7 +172,7 @@ impl GameGraphics {
         if !debug_state.render.disable_scenery_back {
             gl.draw_batch(&mut self.map.scenery_back());
         }
-        render::systems::render_sprites(world, &self.sprites, &mut self.batch);
+        render::systems::render_sprites(world, &self.sprites, &mut self.batch, config.phys.scale);
         gl.draw_batch(&mut self.batch.all());
         if !debug_state.render.disable_scenery_middle {
             gl.draw_batch(&mut self.map.scenery_mid());
