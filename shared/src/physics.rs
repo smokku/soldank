@@ -5,6 +5,7 @@ use rapier2d::{
     prelude::*,
 };
 use resources::Resources;
+use std::ops::Deref;
 
 pub trait IntoHandle<H> {
     fn handle(self) -> H;
@@ -86,18 +87,23 @@ pub fn step(world: &World, resources: &Resources) {
     );
 }
 
-macro_rules! impl_component_set_mut(
+macro_rules! impl_component_set_option(
     ($ComponentsSet: ident, $T: ty) => {
         impl<'a> ComponentSetOption<$T> for $ComponentsSet<'a> {
-            #[inline(always)]
             fn get(&self, handle: Index) -> Option<&$T> {
-                match (self.0.entity(handle.entity())) {
-                    Ok(entity) => entity.get::<$T>().map(|data| &*data),
-                    Err(_) => None,
-                }
+                self.0
+                    .get::<$T>(handle.entity())
+                    .ok()
+                    .map(|data| unsafe {
+                        let data = data.deref() as *const $T;
+                        &*data
+                    })
             }
         }
-
+    }
+);
+macro_rules! impl_component_set(
+    ($ComponentsSet: ident, $T: ty) => {
         impl<'a> ComponentSet<$T> for $ComponentsSet<'a> {
             #[inline(always)]
             fn size_hint(&self) -> usize {
@@ -106,14 +112,22 @@ macro_rules! impl_component_set_mut(
 
             #[inline(always)]
             fn for_each(&self, mut f: impl FnMut(Index, &$T)) {
-                self.0.query::<&$T>().iter().for_each(|(entity, data)| f(entity.handle(), data));
+                self.0
+                    .query::<&$T>()
+                    .iter()
+                    .for_each(|(entity, data)| f(entity.handle(), data));
             }
         }
-
+    }
+);
+macro_rules! impl_component_set_mut(
+    ($ComponentsSet: ident, $T: ty) => {
         impl<'a> ComponentSetMut<$T> for $ComponentsSet<'a> {
             #[inline(always)]
             fn set_internal(&mut self, handle: Index, val: $T) {
-                let _ = self.0.entity(handle.entity()).map(|entity| entity.get_mut::<&$T>().map(|data| **data = val));
+                let _ = self.0
+                    .get_mut::<$T>(handle.entity())
+                    .map(|mut data| *data = val);
             }
 
             #[inline(always)]
@@ -122,50 +136,10 @@ macro_rules! impl_component_set_mut(
                 handle: Index,
                 f: impl FnOnce(&mut $T) -> Result,
             ) -> Option<Result> {
-                match (self.0.entity(handle.entity())) {
-                    Ok(entity) => entity.get_mut::<$T>().map(|mut data| f(&mut data)),
-                    Err(_) => None,
-                }
-            }
-        }
-    }
-);
-
-macro_rules! impl_component_set(
-    ($ComponentsSet: ident, $T: ty) => {
-        impl<'a> ComponentSetOption<$T> for $ComponentsSet<'a> {
-            #[inline(always)]
-            fn get(&self, handle: Index) -> Option<&$T> {
-                match (self.0.entity(handle.entity())) {
-                    Ok(entity) => entity.get::<$T>().map(|data| &*data),
-                    Err(_) => None,
-                }
-            }
-        }
-
-        impl<'a> ComponentSet<$T> for $ComponentsSet<'a> {
-            #[inline(always)]
-            fn size_hint(&self) -> usize {
-                0
-            }
-
-            #[inline(always)]
-            fn for_each(&self, mut f: impl FnMut(Index, &$T)) {
-                self.0.query::<&$T>().iter().for_each(|(entity, data)| f(entity.handle(), data));
-            }
-        }
-    }
-);
-
-macro_rules! impl_component_set_option(
-    ($ComponentsSet: ident, $T: ty) => {
-        impl<'a> ComponentSetOption<$T> for $ComponentsSet<'a> {
-            #[inline(always)]
-            fn get(&self, handle: Index) -> Option<&$T> {
-                match (self.0.entity(handle.entity())) {
-                    Ok(entity) => entity.get::<$T>().map(|data| &*data),
-                    Err(_) => None,
-                }
+                self.0
+                    .get_mut::<$T>(handle.entity())
+                    .map(|mut data| f(&mut data))
+                    .ok()
             }
         }
     }
@@ -173,18 +147,95 @@ macro_rules! impl_component_set_option(
 
 pub struct RigidBodyComponentsSet<'a>(&'a World);
 
+// impl<'a> ComponentSetOption<RigidBodyPosition> for RigidBodyComponentsSet<'a> {
+//     fn get(&self, handle: Index) -> Option<&RigidBodyPosition> {
+//         self.0
+//             .get::<RigidBodyPosition>(handle.entity())
+//             .ok()
+//             .map(|data| unsafe {
+//                 let data = data.deref() as *const RigidBodyPosition;
+//                 &*data
+//             })
+//     }
+// }
+// impl<'a> ComponentSet<RigidBodyPosition> for RigidBodyComponentsSet<'a> {
+//     #[inline(always)]
+//     fn size_hint(&self) -> usize {
+//         0
+//     }
+
+//     #[inline(always)]
+//     fn for_each(&self, mut f: impl FnMut(Index, &RigidBodyPosition)) {
+//         self.0
+//             .query::<&RigidBodyPosition>()
+//             .iter()
+//             .for_each(|(entity, data)| f(entity.handle(), data));
+//     }
+// }
+// impl<'a> ComponentSetMut<RigidBodyPosition> for RigidBodyComponentsSet<'a> {
+//     #[inline(always)]
+//     fn set_internal(&mut self, handle: Index, val: RigidBodyPosition) {
+//         self.0
+//             .get_mut::<RigidBodyPosition>(handle.entity())
+//             .map(|mut data| *data = val);
+//     }
+
+//     #[inline(always)]
+//     fn map_mut_internal<Result>(
+//         &mut self,
+//         handle: Index,
+//         f: impl FnOnce(&mut RigidBodyPosition) -> Result,
+//     ) -> Option<Result> {
+//         self.0
+//             .get_mut::<RigidBodyPosition>(handle.entity())
+//             .map(|mut data| f(&mut data))
+//             .ok()
+//     }
+// }
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyPosition);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyPosition);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyPosition);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyVelocity);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyVelocity);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyVelocity);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyMassProps);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyMassProps);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyMassProps);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyIds);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyIds);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyIds);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyForces);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyForces);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyForces);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyActivation);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyActivation);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyActivation);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyChanges);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyChanges);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyChanges);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyCcd);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyCcd);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyCcd);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyColliders);
+impl_component_set!(RigidBodyComponentsSet, RigidBodyColliders);
 impl_component_set_mut!(RigidBodyComponentsSet, RigidBodyColliders);
 
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyDamping);
 impl_component_set!(RigidBodyComponentsSet, RigidBodyDamping);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyDominance);
 impl_component_set!(RigidBodyComponentsSet, RigidBodyDominance);
+
+impl_component_set_option!(RigidBodyComponentsSet, RigidBodyType);
 impl_component_set!(RigidBodyComponentsSet, RigidBodyType);
 
 #[derive(Bundle)]
@@ -224,13 +275,28 @@ impl Default for RigidBodyBundle {
 
 pub struct ColliderComponentsSet<'a>(&'a World);
 
+impl_component_set_option!(ColliderComponentsSet, ColliderChanges);
+impl_component_set!(ColliderComponentsSet, ColliderChanges);
 impl_component_set_mut!(ColliderComponentsSet, ColliderChanges);
+
+impl_component_set_option!(ColliderComponentsSet, ColliderPosition);
+impl_component_set!(ColliderComponentsSet, ColliderPosition);
 impl_component_set_mut!(ColliderComponentsSet, ColliderPosition);
+
+impl_component_set_option!(ColliderComponentsSet, ColliderBroadPhaseData);
+impl_component_set!(ColliderComponentsSet, ColliderBroadPhaseData);
 impl_component_set_mut!(ColliderComponentsSet, ColliderBroadPhaseData);
 
+impl_component_set_option!(ColliderComponentsSet, ColliderShape);
 impl_component_set!(ColliderComponentsSet, ColliderShape);
+
+impl_component_set_option!(ColliderComponentsSet, ColliderType);
 impl_component_set!(ColliderComponentsSet, ColliderType);
+
+impl_component_set_option!(ColliderComponentsSet, ColliderMaterial);
 impl_component_set!(ColliderComponentsSet, ColliderMaterial);
+
+impl_component_set_option!(ColliderComponentsSet, ColliderFlags);
 impl_component_set!(ColliderComponentsSet, ColliderFlags);
 
 impl_component_set_option!(ColliderComponentsSet, ColliderParent);

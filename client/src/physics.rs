@@ -1,4 +1,4 @@
-pub use soldank_shared::physics::{step, sync_to_world};
+pub use soldank_shared::physics::step;
 
 use crate::components;
 use gfx2d::math::*;

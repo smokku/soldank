@@ -283,10 +283,10 @@ async fn main() {
         while timeacc >= TIMESTEP_RATE {
             timeacc -= TIMESTEP_RATE;
 
-            physics::step(&resources);
+            physics::step(&world, &resources);
 
-            let scale = resources.get::<Config>().unwrap().phys.scale;
-            physics::sync_to_world(&mut world, &resources, scale);
+            // let scale = resources.get::<Config>().unwrap().phys.scale;
+            // physics::sync_to_world(&mut world, &resources, scale);
 
             {
                 // remove inactive bullets
