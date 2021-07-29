@@ -10,8 +10,8 @@ pub fn build_state_message(world: &World, _client_entity: Entity, time: &systems
     // FIXME: send only entities changed since last client acknowledged tick
 
     let mut entities = HashMap::new();
-    for (entity, entity_ref) in world.iter() {
-        let components = entities.entry(entity).or_insert_with(Vec::new);
+    for entity_ref in world.iter() {
+        let components = entities.entry(entity_ref.entity()).or_insert_with(Vec::new);
         if let Some(soldier) = entity_ref.get::<components::Soldier>() {
             components.push(ComponentValue::Soldier((*soldier).clone()));
         }

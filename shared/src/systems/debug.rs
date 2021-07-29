@@ -5,8 +5,12 @@ use crate::{messages::NetworkMessage, systems};
 
 pub fn tick_debug(world: &World, time: &systems::Time) {
     log::debug!("tick {}, entities: {}", time.tick, world.len());
-    for (entity, entity_ref) in world.iter() {
-        log::debug!("{:?}, components: {:?}", entity, entity_ref.len());
+    for entity_ref in world.iter() {
+        log::debug!(
+            "{:?}, components: {:?}",
+            entity_ref.entity(),
+            entity_ref.len()
+        );
     }
 }
 
