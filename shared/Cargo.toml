@@ -14,7 +14,7 @@ num-traits = "0.2"
 enum-primitive-derive = "0.2"
 bitflags = "1.2"
 nanoserde = "0.1"
-hecs = { version = "0.5", features = ["macros"] }
+hecs = { version = "0.6", features = ["macros"] }
 resources = "1.1"
 cvar = "0.3"
 clap = "2.33"

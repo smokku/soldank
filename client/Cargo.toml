@@ -28,7 +28,7 @@ clap = "2.33"
 naia-client-socket = "0.6"
 laminar = "0.5"
 smol = "1.2"
-hecs = { version = "0.5", features = ["macros"] }
+hecs = { version = "0.6", features = ["macros"] }
 resources = "1.1"
 cvar = "0.3"
 log = "0.4"

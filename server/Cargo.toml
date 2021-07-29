@@ -20,7 +20,7 @@ env_logger = "0.8"
 smol = "1.2"
 clap = "2.33"
 laminar = "0.5"
-hecs = { version = "0.5", features = [] }
+hecs = { version = "0.6", features = [] }
 bitflags = "1.2"
 bytes = "1.0"
 color-eyre = "0.5"
