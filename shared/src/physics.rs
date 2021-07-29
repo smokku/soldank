@@ -41,10 +41,10 @@ pub fn init(resources: &mut Resources) {
     resources.insert(CCDSolver::new());
 }
 
-pub fn step(world: &World, resources: &Resources) {
+pub fn step(world: &World, resources: &Resources, dt: f32) {
     let gravity = vector![0.0, 9.81];
     let integration_parameters = IntegrationParameters {
-        dt: TIMESTEP_RATE as f32,
+        dt,
         ..Default::default()
     };
     let physics_hooks = ();
@@ -56,9 +56,6 @@ pub fn step(world: &World, resources: &Resources) {
     let mut narrow_phase = resources.get_mut::<NarrowPhase>().unwrap();
     let mut joint_set = resources.get_mut::<JointSet>().unwrap();
     let mut ccd_solver = resources.get_mut::<CCDSolver>().unwrap();
-
-    // let bodies_query = world.query::<RigidBodyComponentsQuery>();
-    // let colliders_query = world.query::<ColliderComponentsQuery>();
 
     let mut rigid_body_components_set = RigidBodyComponentsSet(world);
     let mut collider_components_set = ColliderComponentsSet(world);

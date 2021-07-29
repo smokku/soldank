@@ -283,7 +283,18 @@ async fn main() {
         while timeacc >= TIMESTEP_RATE {
             timeacc -= TIMESTEP_RATE;
 
-            physics::step(&world, &resources);
+            physics::step(
+                &world,
+                &resources,
+                resources
+                    .get::<Config>()
+                    .unwrap()
+                    .net
+                    .orb
+                    .read()
+                    .unwrap()
+                    .timestep_seconds as f32,
+            );
 
             {
                 // remove inactive bullets
