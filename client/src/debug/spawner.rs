@@ -22,7 +22,7 @@ impl IVisit for SpawnerState {
 impl SpawnerState {
     pub fn build_ui(self: &mut Self, world: &mut World, x: f32, y: f32, scale: f32) {
         if self.visible {
-            widgets::Window::new(hash!(), vec2(10., 100.), vec2(200., 106.))
+            widgets::Window::new(hash!(), vec2(10., 104.), vec2(200., 106.))
                 .label("Spawn Entity")
                 .ui(&mut *root_ui(), |ui| {
                     if ui.button(
@@ -113,7 +113,7 @@ impl SpawnerState {
                     ..Default::default()
                 };
                 let collider = ColliderBundle {
-                    shape: ColliderShape::ball(0.5),
+                    shape: ColliderShape::ball(0.75), // TODO: compute this value from Sprite size
                     material: ColliderMaterial {
                         restitution: 0.7,
                         ..Default::default()
