@@ -62,6 +62,8 @@ impl IntoEntity for ColliderHandle {
     }
 }
 
+struct AddedColliderParent; // FIXME: remove after adding change tracking to hecs
+
 pub fn init(resources: &mut Resources) {
     resources.insert(PhysicsPipeline::new());
     resources.insert(IslandManager::new());
@@ -121,14 +123,29 @@ pub fn step(world: &mut World, resources: &Resources, dt: f32) {
         }
         for (collider_entity, co_parent) in co_parents.drain(..) {
             world.insert_one(collider_entity, co_parent).unwrap();
+            world
+                .insert_one(collider_entity, AddedColliderParent)
+                .unwrap();
         }
     }
 
     // ----------- finalize_collider_attach_to_bodies --------
     {
         // println!("finalize_collider_attach_to_bodies");
-        let mut colliders_query = world.query::<
+        let mut remove_added_collider_parent = Vec::new();
+        for (
+            collider_entity,
             (
+                mut co_changes,
+                mut co_bf_data,
+                mut co_pos,
+                co_shape,
+                co_mprops,
+                co_parent,
+                _added_colider_parent,
+            ),
+        ) in world
+            .query::<(
                 // Collider.
                 &mut ColliderChanges,
                 &mut ColliderBroadPhaseData,
@@ -136,14 +153,9 @@ pub fn step(world: &mut World, resources: &Resources, dt: f32) {
                 &ColliderShape,
                 &ColliderMassProps,
                 &ColliderParent,
-            ),
-            // Added<ColliderParent>,
-        >();
-
-        for (
-            collider_entity,
-            (mut co_changes, mut co_bf_data, mut co_pos, co_shape, co_mprops, co_parent),
-        ) in colliders_query.iter()
+                &AddedColliderParent, // FIXME:: Added<ColliderParent>,
+            )>()
+            .iter()
         {
             let mut body_query = world.query_one::<(
                 // Rigid-bodies.
@@ -191,7 +203,13 @@ pub fn step(world: &mut World, resources: &Resources, dt: f32) {
                     &co_shape,
                     &co_mprops,
                 );
+                remove_added_collider_parent.push(collider_entity);
             }
+        }
+        for collider_entity in remove_added_collider_parent.drain(..) {
+            world
+                .remove_one::<AddedColliderParent>(collider_entity)
+                .unwrap();
         }
     }
 

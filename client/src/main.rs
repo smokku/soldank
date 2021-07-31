@@ -378,7 +378,7 @@ async fn main() {
         );
 
         if cfg!(debug_assertions) {
-            debug::build_ui(&resources, timecur as u32, p as f32);
+            debug::build_ui(&mut world, &resources, timecur as u32, p as f32);
         }
 
         {

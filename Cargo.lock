@@ -2225,6 +2225,7 @@ dependencies = [
  "log",
  "naia-client-socket",
  "nalgebra",
+ "rand 0.8.4",
  "rapier2d",
  "resources",
  "rust-ini",

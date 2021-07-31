@@ -17,40 +17,4 @@ pub fn init(world: &mut World, resources: &mut Resources) {
         ..Default::default()
     };
     world.spawn(collider);
-
-    /* Create the bouncing ball. */
-    let rigid_body = RigidBodyBundle {
-        position: Vec2::new(0.0, -30.0).into(),
-        changes: RigidBodyChanges::all(), // FIXME: remove after implementing change detection system
-        ..Default::default()
-    };
-    let collider = ColliderBundle {
-        shape: ColliderShape::ball(0.5),
-        material: ColliderMaterial {
-            restitution: 0.7,
-            ..Default::default()
-        },
-        changes: ColliderChanges::all(), // FIXME: remove after implementing change detection system
-        ..Default::default()
-    };
-    let ball = world.spawn(rigid_body);
-    world.insert(ball, collider).unwrap();
-
-    /* Ball that will be drawn */
-    let sprite_scale = 0.5; // make the sprite half size than the actual PNG image
-    world
-        .insert_one(
-            ball,
-            Sprite {
-                group: "Ball".into(),
-                name: "Ball1".into(),
-                transform: gfx2d::Transform::origin(
-                    vec2(50., 50.) * (sprite_scale / -2.),
-                    vec2(1.0, 1.0) * sprite_scale,
-                    (0.0, vec2(50., 50.) * (sprite_scale / 2.)),
-                ),
-                ..Default::default()
-            },
-        )
-        .unwrap();
 }
