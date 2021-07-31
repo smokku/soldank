@@ -196,8 +196,19 @@ pub fn physics(world: &World, resources: &Resources) {
         const CL: Color = mq::GREEN;
         const TH: f32 = 1.0;
 
-        let tr = coll.position.0.translation;
+        let Isometry {
+            translation: tr,
+            rotation: rot,
+        } = coll.position.0;
         let center = vec2(tr.x, tr.y) * scale;
+        mq::draw_line(
+            center.x,
+            center.y,
+            center.x + rot.re * 10.,
+            center.y + rot.im * 10.,
+            0.5,
+            CL,
+        );
         mq::draw_circle(center.x, center.y, 1.5, CL);
         mq::draw_circle(center.x, center.y, 0.75, mq::BLACK);
 

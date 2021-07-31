@@ -360,7 +360,7 @@ async fn main() {
                 };
             }
 
-            systems::rotate_balls(&mut world, timecur);
+            // systems::rotate_balls(&mut world, timecur);
 
             timecur = current_time();
             timeacc += timecur - timeprv;

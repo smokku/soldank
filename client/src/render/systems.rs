@@ -25,35 +25,42 @@ pub fn render_sprites(
         .query::<(&mut Sprite, Option<&Position>, Option<&RigidBodyPosition>)>()
         .iter()
     {
-        let pos = if let Some(rbp) = rb_position {
-            Some(Position::new(
-                rbp.position.translation.vector.x * phys_scale,
-                rbp.position.translation.vector.y * phys_scale,
+        let iso = if let Some(rbp) = rb_position {
+            Some((
+                Position::new(
+                    rbp.position.translation.vector.x * phys_scale,
+                    rbp.position.translation.vector.y * phys_scale,
+                ),
+                rbp.position.rotation.angle(),
             ))
         } else if let Some(pos) = position {
-            Some(pos.clone())
+            Some((pos.clone(), 0.0))
         } else {
             None
         };
 
-        if let Some(pos) = pos {
+        if let Some((pos, rot)) = iso {
             let transform = match transform {
                 Transform::Pos(p) => Transform::Pos(*p + *pos),
-                Transform::FromOrigin { pos: p, scale, rot } => Transform::FromOrigin {
+                Transform::FromOrigin {
+                    pos: p,
+                    scale,
+                    rot: r,
+                } => Transform::FromOrigin {
                     pos: *p + *pos,
                     scale: *scale,
-                    rot: *rot,
+                    rot: (r.0 + rot, r.1),
                 },
                 Transform::WithPivot {
                     pivot,
                     pos: p,
                     scale,
-                    rot,
+                    rot: r,
                 } => Transform::WithPivot {
                     pivot: *pivot,
                     pos: *p + *pos,
                     scale: *scale,
-                    rot: *rot,
+                    rot: *r + rot,
                 },
                 t => *t,
             };
