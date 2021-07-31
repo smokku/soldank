@@ -1,5 +1,5 @@
-use crate::constants::*;
-use hecs::{Bundle, Entity, Query, World};
+use crate::components::Parent;
+use hecs::{Bundle, Entity, Query, Without, World};
 use rapier2d::{
     data::{ComponentSet, ComponentSetMut, ComponentSetOption, Index},
     prelude::*,
@@ -32,6 +32,36 @@ impl IntoEntity for Index {
     }
 }
 
+impl IntoHandle<RigidBodyHandle> for Entity {
+    #[inline]
+    fn handle(self) -> RigidBodyHandle {
+        let bits = self.to_bits();
+        RigidBodyHandle::from_raw_parts(bits as u32, (bits >> 32) as u32)
+    }
+}
+
+impl IntoEntity for RigidBodyHandle {
+    #[inline]
+    fn entity(self) -> Entity {
+        self.0.entity()
+    }
+}
+
+impl IntoHandle<ColliderHandle> for Entity {
+    #[inline]
+    fn handle(self) -> ColliderHandle {
+        let bits = self.to_bits();
+        ColliderHandle::from_raw_parts(bits as u32, (bits >> 32) as u32)
+    }
+}
+
+impl IntoEntity for ColliderHandle {
+    #[inline]
+    fn entity(self) -> Entity {
+        self.0.entity()
+    }
+}
+
 pub fn init(resources: &mut Resources) {
     resources.insert(PhysicsPipeline::new());
     resources.insert(IslandManager::new());
@@ -41,7 +71,8 @@ pub fn init(resources: &mut Resources) {
     resources.insert(CCDSolver::new());
 }
 
-pub fn step(world: &World, resources: &Resources, dt: f32) {
+pub fn step(world: &mut World, resources: &Resources, dt: f32) {
+    // println!("step");
     let gravity = vector![0.0, 9.81];
     let integration_parameters = IntegrationParameters {
         dt,
@@ -57,12 +88,130 @@ pub fn step(world: &World, resources: &Resources, dt: f32) {
     let mut joint_set = resources.get_mut::<JointSet>().unwrap();
     let mut ccd_solver = resources.get_mut::<CCDSolver>().unwrap();
 
+    // ----------- attach_bodies_and_colliders_system --------
+    {
+        // println!("attach_bodies_and_colliders_system");
+        let mut co_parents = Vec::new();
+        'outer: for (collider_entity, co_pos) in world
+            .query::<Without<
+                ColliderParent,
+                // Colliders.
+                &ColliderPosition,
+            >>()
+            .iter()
+        {
+            // Find the closest ancestor (possibly the same entity) with a body
+            let mut body_entity = collider_entity;
+            loop {
+                if world.get::<RigidBodyPosition>(body_entity).is_ok() {
+                    // Found it!
+                    break;
+                } else if let Ok(parent_entity) = world.get::<Parent>(body_entity) {
+                    body_entity = **parent_entity;
+                } else {
+                    continue 'outer;
+                }
+            }
+
+            let co_parent = ColliderParent {
+                pos_wrt_parent: co_pos.0,
+                handle: body_entity.handle(),
+            };
+            co_parents.push((collider_entity, co_parent));
+        }
+        for (collider_entity, co_parent) in co_parents.drain(..) {
+            world.insert_one(collider_entity, co_parent).unwrap();
+        }
+    }
+
+    // ----------- finalize_collider_attach_to_bodies --------
+    {
+        // println!("finalize_collider_attach_to_bodies");
+        let mut colliders_query = world.query::<
+            (
+                // Collider.
+                &mut ColliderChanges,
+                &mut ColliderBroadPhaseData,
+                &mut ColliderPosition,
+                &ColliderShape,
+                &ColliderMassProps,
+                &ColliderParent,
+            ),
+            // Added<ColliderParent>,
+        >();
+
+        for (
+            collider_entity,
+            (mut co_changes, mut co_bf_data, mut co_pos, co_shape, co_mprops, co_parent),
+        ) in colliders_query.iter()
+        {
+            let mut body_query = world.query_one::<(
+                // Rigid-bodies.
+                &mut RigidBodyChanges,
+                &mut RigidBodyCcd,
+                &mut RigidBodyColliders,
+                &mut RigidBodyMassProps,
+                &RigidBodyPosition,
+            )>(co_parent.handle.entity()).unwrap();
+            if let Some((mut rb_changes, mut rb_ccd, mut rb_colliders, mut rb_mprops, rb_pos)) =
+                body_query.get()
+            {
+                // Contract:
+                // - Reset collider's references.
+                // - Set collider's parent handle.
+                // - Attach the collider to the body.
+
+                // Update the modification tracker.
+                // NOTE: this must be done before the `.attach_collider` because
+                //       `.attach_collider` will set the `MODIFIED` flag.
+
+                // if !rb_changes.contains(RigidBodyChanges::MODIFIED) {
+                //     modif_tracker.modified_bodies.push(co_parent.handle);
+                // }
+
+                // modif_tracker
+                //     .body_colliders
+                //     .entry(co_parent.handle)
+                //     .or_insert(vec![])
+                //     .push(collider_entity.handle());
+                // modif_tracker
+                //     .colliders_parent
+                //     .insert(collider_entity.handle(), co_parent.handle);
+
+                *co_changes = ColliderChanges::default();
+                *co_bf_data = ColliderBroadPhaseData::default();
+                rb_colliders.attach_collider(
+                    &mut rb_changes,
+                    &mut rb_ccd,
+                    &mut rb_mprops,
+                    &rb_pos,
+                    collider_entity.handle(),
+                    &mut co_pos,
+                    &co_parent,
+                    &co_shape,
+                    &co_mprops,
+                );
+            }
+        }
+    }
+
     let mut rigid_body_components_set = RigidBodyComponentsSet(world);
     let mut collider_components_set = ColliderComponentsSet(world);
 
-    let mut modified_bodies = Vec::new(); // FIXME: implement
-    let mut modified_colliders = Vec::new(); // FIXME: implement
+    // let mut modified_bodies = Vec::new(); // FIXME: implement
+    // let mut modified_colliders = Vec::new(); // FIXME: implement
     let mut removed_colliders = Vec::new(); // FIXME: implement
+
+    let mut modified_bodies = world
+        .query::<RigidBodyComponentsQuery>()
+        .iter()
+        .map(|(entity, _rb)| RigidBodyHandle(entity.handle()))
+        .collect();
+    let mut modified_colliders = world
+        .query::<ColliderComponentsQuery>()
+        .iter()
+        .map(|(entity, _co)| ColliderHandle(entity.handle()))
+        .collect();
 
     physics_pipeline.step_generic(
         &gravity,
@@ -86,13 +235,15 @@ macro_rules! impl_component_set_option(
     ($ComponentsSet: ident, $T: ty) => {
         impl<'a> ComponentSetOption<$T> for $ComponentsSet<'a> {
             fn get(&self, handle: Index) -> Option<&$T> {
-                self.0
+                let ret = self.0
                     .get::<$T>(handle.entity())
                     .ok()
                     .map(|data| unsafe {
                         let data = data.deref() as *const $T;
                         &*data
-                    })
+                    });
+                // println!("ComponentSetOption get {:?} {} : {:?}", handle, std::any::type_name::<$T>(), ret);
+                ret
             }
         }
     }
@@ -102,11 +253,13 @@ macro_rules! impl_component_set(
         impl<'a> ComponentSet<$T> for $ComponentsSet<'a> {
             #[inline(always)]
             fn size_hint(&self) -> usize {
+                // println!("ComponentSet size_hint");
                 0
             }
 
             #[inline(always)]
             fn for_each(&self, mut f: impl FnMut(Index, &$T)) {
+                // println!("ComponentSet for_each");
                 self.0
                     .query::<&$T>()
                     .iter()
@@ -120,6 +273,7 @@ macro_rules! impl_component_set_mut(
         impl<'a> ComponentSetMut<$T> for $ComponentsSet<'a> {
             #[inline(always)]
             fn set_internal(&mut self, handle: Index, val: $T) {
+                // println!("ComponentSetMut set_internal {:?} {} : {:?}", handle, std::any::type_name::<$T>(), val);
                 let _ = self.0
                     .get_mut::<$T>(handle.entity())
                     .map(|mut data| *data = val);
@@ -131,6 +285,7 @@ macro_rules! impl_component_set_mut(
                 handle: Index,
                 f: impl FnOnce(&mut $T) -> Result,
             ) -> Option<Result> {
+                // println!("ComponentSetMut map_mut_internal");
                 self.0
                     .get_mut::<$T>(handle.entity())
                     .map(|mut data| f(&mut data))

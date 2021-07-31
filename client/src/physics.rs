@@ -13,6 +13,7 @@ pub fn init(world: &mut World, resources: &mut Resources) {
     let collider = ColliderBundle {
         shape: ColliderShape::cuboid(100.0, 0.1),
         position: Vec2::new(0.0, -20.0).into(),
+        changes: ColliderChanges::all(), // FIXME: remove after implementing change detection system
         ..Default::default()
     };
     world.spawn(collider);
@@ -20,6 +21,7 @@ pub fn init(world: &mut World, resources: &mut Resources) {
     /* Create the bouncing ball. */
     let rigid_body = RigidBodyBundle {
         position: Vec2::new(0.0, -30.0).into(),
+        changes: RigidBodyChanges::all(), // FIXME: remove after implementing change detection system
         ..Default::default()
     };
     let collider = ColliderBundle {
@@ -28,6 +30,7 @@ pub fn init(world: &mut World, resources: &mut Resources) {
             restitution: 0.7,
             ..Default::default()
         },
+        changes: ColliderChanges::all(), // FIXME: remove after implementing change detection system
         ..Default::default()
     };
     let ball = world.spawn(rigid_body);

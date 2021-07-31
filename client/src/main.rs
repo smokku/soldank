@@ -284,7 +284,7 @@ async fn main() {
             timeacc -= TIMESTEP_RATE;
 
             physics::step(
-                &world,
+                &mut world,
                 &resources,
                 resources
                     .get::<Config>()
