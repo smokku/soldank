@@ -16,7 +16,7 @@ use-webrtc = ["naia-server-socket/use-webrtc"]
 soldank-shared = { path = "../shared" }
 naia-server-socket = "0.5"
 log = "0.4"
-env_logger = "0.8"
+env_logger = "0.9"
 smol = "1.2"
 clap = "2.33"
 laminar = "0.5"

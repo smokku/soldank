@@ -20,12 +20,12 @@ cvar = "0.3"
 clap = "2.33"
 rapier2d = { version = "0.10", features = ["simd-stable"] }
 nalgebra = { version = "0.28", features = ["convert-glam014"] }
-glam = "0.14"
+glam = "0.14" # bound to macroquad's dependency
 derive_deref = "1.1"
 simple-error = "0.2"
 
 [dev-dependencies]
 itertools = "0.10"
-float-cmp = "0.8"
+float-cmp = "0.9"
 env_logger = "0.9"
 test-env-log = "0.2"

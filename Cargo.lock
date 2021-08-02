@@ -189,9 +189,9 @@ checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
 
 [[package]]
 name = "async-trait"
-version = "0.1.50"
+version = "0.1.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b98e84bbb4cbcdd97da190ba0c58a1bb0de2c1fdf67d159e192ed766aeca722"
+checksum = "44318e776df68115a881de9a8fd1b9e53368d7a4a5ce4cc48517da3393233a5e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -495,9 +495,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-deque"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94af6efb46fef72616855b036a624cf27ba656ffc9be1b9a3c931cfc7749a9a9"
+checksum = "6455c0ca19f0d2fbf751b908d5c55c1f5cbc65e03c4225427254b46890bdde1e"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-epoch",
@@ -688,19 +688,6 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a19187fea3ac7e84da7dacf48de0c45d63c6a76f9490dae389aead16c243fce3"
-dependencies = [
- "atty",
- "humantime",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
@@ -760,9 +747,9 @@ dependencies = [
 
 [[package]]
 name = "float-cmp"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
+checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
 dependencies = [
  "num-traits",
 ]
@@ -1193,7 +1180,7 @@ dependencies = [
 [[package]]
 name = "macroquad"
 version = "0.3.7"
-source = "git+https://github.com/not-fl3/macroquad.git#7b1f28c0aa38f7ab77ec90e4331d3487a54dbac4"
+source = "git+https://github.com/not-fl3/macroquad.git#238d6d601a1f075ba969e4884d0d53b9107ea64e"
 dependencies = [
  "bumpalo",
  "fontdue",
@@ -1208,7 +1195,7 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/macroquad.git#7b1f28c0aa38f7ab77ec90e4331d3487a54dbac4"
+source = "git+https://github.com/not-fl3/macroquad.git#238d6d601a1f075ba969e4884d0d53b9107ea64e"
 
 [[package]]
 name = "matrixmultiply"
@@ -2051,18 +2038,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.126"
+version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
+checksum = "f03b9878abf6d14e6779d3f24f07b2cfa90352cfec4acc5aab8f1ac7f146fae8"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.126"
+version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "963a7dbc9895aeac7ac90e74f34a5d5261828f79df35cbed41e10189d3804d43"
+checksum = "a024926d3432516606328597e0f224a51355a493b49fdd67e9209187cbe55ecc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2071,9 +2058,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.65"
+version = "1.0.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28c5e91e4240b46c4c19219d6cc84784444326131a4210f496f948d5cc827a29"
+checksum = "336b10da19a12ad094b59d870ebde26a45402e5b470add4b5fd03c5048a32127"
 dependencies = [
  "itoa",
  "ryu",
@@ -2097,9 +2084,9 @@ checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
 
 [[package]]
 name = "sharded-slab"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79c719719ee05df97490f80a45acfc99e5a30ce98a1e4fb67aee422745ae14e3"
+checksum = "ef79578eaf1846837727db975d587f15f6d8abd3900f4aa58e3fa6ae0fd9e4d1"
 dependencies = [
  "lazy_static",
 ]
@@ -2215,7 +2202,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "cvar",
- "env_logger 0.8.4",
+ "env_logger",
  "gfx2d",
  "gvfs",
  "hecs",
@@ -2244,7 +2231,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "cvar",
- "env_logger 0.8.4",
+ "env_logger",
  "hecs",
  "laminar",
  "log",
@@ -2263,7 +2250,7 @@ dependencies = [
  "cvar",
  "derive_deref",
  "enum-primitive-derive",
- "env_logger 0.9.0",
+ "env_logger",
  "float-cmp",
  "glam",
  "hecs",
