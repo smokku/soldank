@@ -13,6 +13,6 @@ incremental = false
 [patch.crates-io]
 # laminar = { git = "https://github.com/amethyst/laminar.git" }
 cvar = { git = "https://github.com/CasualX/cvar.git" }
-# hecs = { git = "https://github.com/Ralith/hecs.git" }
+hecs = { git = "https://github.com/smokku/hecs.git" }
 # miniquad = { git = "https://github.com/not-fl3/miniquad.git" }
 macroquad = { git = "https://github.com/not-fl3/macroquad.git" }

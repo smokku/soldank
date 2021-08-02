@@ -8,23 +8,17 @@ pub fn render_sprites(
     batch: &mut DrawBatch,
     phys_scale: f32,
 ) {
-    for (
-        _entity,
-        (
-            Sprite {
-                group,
-                name,
-                sprite,
-                color,
-                transform,
-            },
-            position,
-            rb_position,
-        ),
-    ) in world
+    for (_entity, (mut sprite, position, rb_position)) in world
         .query::<(&mut Sprite, Option<&Position>, Option<&RigidBodyPosition>)>()
         .iter()
     {
+        let Sprite {
+            group,
+            name,
+            sprite,
+            color,
+            transform,
+        } = &mut *sprite;
         let iso = if let Some(rbp) = rb_position {
             Some((
                 Position::new(

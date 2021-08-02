@@ -1,7 +1,6 @@
 pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
 
-use crate::components::Sprite;
 use gfx2d::math::*;
 use hecs::World;
 use resources::Resources;

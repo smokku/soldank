@@ -46,7 +46,8 @@ pub fn process_network_messages(
         }
     }
 
-    for (_entity, (addr, control)) in world.query::<(&SocketAddr, &mut ControlBuffer)>().iter() {
+    for (_entity, (addr, mut control)) in world.query::<(&SocketAddr, &mut ControlBuffer)>().iter()
+    {
         if let Some((tick, mut ctrl)) = control_updates.remove(addr) {
             if let Some(connection) = connections.get(addr) {
                 for (i, (c, v)) in ctrl.drain(..).enumerate() {
