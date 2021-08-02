@@ -6,7 +6,7 @@ use hecs::World;
 use resources::Resources;
 
 pub fn init(world: &mut World, resources: &mut Resources) {
-    soldank_shared::physics::init(resources);
+    systems::init(resources);
 
     /* Create the ground. */
     let collider = ColliderBundle {

@@ -283,7 +283,7 @@ async fn main() {
         while timeacc >= TIMESTEP_RATE {
             timeacc -= TIMESTEP_RATE;
 
-            physics::step(
+            physics::systems::step(
                 &mut world,
                 &resources,
                 resources
