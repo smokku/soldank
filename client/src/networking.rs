@@ -319,11 +319,14 @@ impl Networking {
                         }
                     }
 
+                    if !self.cvars_received {
+                        self.send(LaminarPacket::reliable_unordered(
+                            self.server_address,
+                            messages::connection_ready().to_vec(),
+                        ));
+                    }
                     self.cvars_received = true;
-                    self.send(LaminarPacket::reliable_unordered(
-                        self.server_address,
-                        messages::connection_ready().to_vec(),
-                    ));
+                    // TODO: broadcast cvar change event on event bus
                 }
                 NetworkMessage::GameState { tick, entities } => {
                     if tick > self.server_tick_received {

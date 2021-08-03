@@ -20,22 +20,37 @@ pub fn init(resources: &mut Resources) {
     resources.insert(resources::ModificationTracker::default());
 }
 
-pub fn step_world(world: &mut World, resources: &Resources, dt: f32) {
+// TODO: connect to event bus
+pub fn config_update(resources: &mut Resources, dt: f32) {
+    // let dt = resources
+    //     .get::<Config>()
+    //     .unwrap()
+    //     .net
+    //     .orb
+    //     .read()
+    //     .unwrap()
+    //     .timestep_seconds as f32;
+    let mut integration_parameters = resources.get_mut::<IntegrationParameters>().unwrap();
+    integration_parameters.dt = dt;
+}
+
+pub fn step_world(world: &mut World, resources: &Resources) {
     // println!("step");
     let gravity = vector![0.0, 9.81];
-    let integration_parameters = IntegrationParameters {
-        dt,
-        ..Default::default()
-    };
-    let physics_hooks = ();
-    let event_handler = ();
+
+    // let configuration = resources.get::<RapierConfiguration>().unwrap();
+    let integration_parameters = resources.get::<IntegrationParameters>().unwrap();
 
     let mut physics_pipeline = resources.get_mut::<PhysicsPipeline>().unwrap();
+    // let mut query_pipeline = resources.get_mut::<QueryPipeline>().unwrap();
     let mut island_manager = resources.get_mut::<IslandManager>().unwrap();
     let mut broad_phase = resources.get_mut::<BroadPhase>().unwrap();
     let mut narrow_phase = resources.get_mut::<NarrowPhase>().unwrap();
-    let mut joint_set = resources.get_mut::<JointSet>().unwrap();
     let mut ccd_solver = resources.get_mut::<CCDSolver>().unwrap();
+    let mut joint_set = resources.get_mut::<JointSet>().unwrap();
+    // let mut joints_entity_map = resources.get_mut::<JointsEntityMap>().unwrap();
+    let physics_hooks = ();
+    let event_handler = ();
 
     let mut rigid_body_components_set = RigidBodyComponentsSet(world);
     let mut collider_components_set = ColliderComponentsSet(world);
