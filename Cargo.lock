@@ -1177,8 +1177,9 @@ dependencies = [
 
 [[package]]
 name = "macroquad"
-version = "0.3.7"
-source = "git+https://github.com/not-fl3/macroquad.git#238d6d601a1f075ba969e4884d0d53b9107ea64e"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01cd857aa6338beb13b14bc26e662652e2d78b9341ed82ee91ef2c7fceb35ed3"
 dependencies = [
  "bumpalo",
  "fontdue",
@@ -1193,7 +1194,8 @@ dependencies = [
 [[package]]
 name = "macroquad_macro"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/macroquad.git#238d6d601a1f075ba969e4884d0d53b9107ea64e"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ecb8935bc6a74b8374439c0bd8d2857ae1499fde9fbba76bb00722f7213b42d"
 
 [[package]]
 name = "matrixmultiply"
@@ -2082,9 +2084,9 @@ checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
 
 [[package]]
 name = "sharded-slab"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef79578eaf1846837727db975d587f15f6d8abd3900f4aa58e3fa6ae0fd9e4d1"
+checksum = "740223c51853f3145fe7c90360d2d4232f2b62e3449489c207eccde818979982"
 dependencies = [
  "lazy_static",
 ]
