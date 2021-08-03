@@ -5,6 +5,7 @@ use rapier2d::{
 };
 use std::ops::Deref;
 
+pub mod resources;
 pub mod systems;
 
 pub trait IntoHandle<H> {

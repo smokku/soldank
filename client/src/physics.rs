@@ -1,9 +1,9 @@
 pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
 
+use ::resources::Resources;
 use gfx2d::math::*;
 use hecs::World;
-use resources::Resources;
 
 pub fn init(world: &mut World, resources: &mut Resources) {
     systems::init(resources);

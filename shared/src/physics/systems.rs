@@ -1,15 +1,23 @@
 use super::*;
 use crate::components::Parent;
+use ::resources::Resources;
 use hecs::{Without, World};
-use resources::Resources;
 
 pub fn init(resources: &mut Resources) {
     resources.insert(PhysicsPipeline::new());
-    resources.insert(IslandManager::new());
+    // resources.insert(QueryPipeline::new());
+    // resources.insert(RapierConfiguration::default());
+    resources.insert(IntegrationParameters::default());
     resources.insert(BroadPhase::new());
     resources.insert(NarrowPhase::new());
+    resources.insert(IslandManager::new());
     resources.insert(JointSet::new());
     resources.insert(CCDSolver::new());
+    // resources.insert(Events::<IntersectionEvent>::default());
+    // resources.insert(Events::<ContactEvent>::default());
+    // resources.insert(SimulationToRenderTime::default());
+    // resources.insert(JointsEntityMap::default());
+    resources.insert(resources::ModificationTracker::default());
 }
 
 pub fn step_world(world: &mut World, resources: &Resources, dt: f32) {
@@ -103,8 +111,12 @@ pub fn attach_bodies_and_colliders(world: &mut World) {
     }
 }
 
-pub fn finalize_collider_attach_to_bodies(world: &mut World) {
+pub fn finalize_collider_attach_to_bodies(world: &mut World, resources: &Resources) {
     // println!("finalize_collider_attach_to_bodies");
+    let mut modif_tracker = resources
+        .get_mut::<resources::ModificationTracker>()
+        .unwrap();
+
     let mut remove_added_collider_parent = Vec::new();
     for (
         collider_entity,
@@ -154,14 +166,14 @@ pub fn finalize_collider_attach_to_bodies(world: &mut World) {
             //     modif_tracker.modified_bodies.push(co_parent.handle);
             // }
 
-            // modif_tracker
-            //     .body_colliders
-            //     .entry(co_parent.handle)
-            //     .or_insert(vec![])
-            //     .push(collider_entity.handle());
-            // modif_tracker
-            //     .colliders_parent
-            //     .insert(collider_entity.handle(), co_parent.handle);
+            modif_tracker
+                .body_colliders
+                .entry(co_parent.handle)
+                .or_insert_with(Vec::new)
+                .push(collider_entity.handle());
+            modif_tracker
+                .colliders_parent
+                .insert(collider_entity.handle(), co_parent.handle);
 
             *co_changes = ColliderChanges::default();
             *co_bf_data = ColliderBroadPhaseData::default();

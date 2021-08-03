@@ -248,7 +248,7 @@ async fn main() {
     while running {
         physics::systems::attach_bodies_and_colliders(&mut world);
         // physics::systems::create_joints_system();
-        physics::systems::finalize_collider_attach_to_bodies(&mut world);
+        physics::systems::finalize_collider_attach_to_bodies(&mut world, &resources);
 
         networking.tick += 1;
         networking.update();
