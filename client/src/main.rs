@@ -246,8 +246,11 @@ async fn main() {
 
     let mut running = true;
     while running {
-        networking.tick += 1;
+        physics::systems::attach_bodies_and_colliders(&mut world);
+        // physics::systems::create_joints_system();
+        physics::systems::finalize_collider_attach_to_bodies(&mut world);
 
+        networking.tick += 1;
         networking.update();
 
         {
@@ -283,7 +286,7 @@ async fn main() {
         while timeacc >= TIMESTEP_RATE {
             timeacc -= TIMESTEP_RATE;
 
-            physics::systems::step(
+            physics::systems::step_world(
                 &mut world,
                 &resources,
                 resources
@@ -392,10 +395,13 @@ async fn main() {
         }
 
         networking.set_input_state(&soldier.control);
+
         networking.process(&mut *resources.get_mut::<Config>().unwrap(), &mut client);
-        log::info!("ready_client_display_state: {:?}", client.display_state());
+        log::trace!("ready_client_display_state: {:?}", client.display_state());
         client.update(timeacc, timecur);
         networking.post_process(&*resources.get::<Config>().unwrap());
+
+        // physics::systems::collect_removals();
 
         macroquad::window::next_frame().await;
     }
