@@ -390,7 +390,7 @@ async fn main() {
         client.update(timeacc, timecur);
         networking.post_process(&*resources.get::<Config>().unwrap());
 
-        // physics::systems::collect_removals();
+        physics::despawn_outliers(&mut world, &resources);
 
         macroquad::window::next_frame().await;
     }
