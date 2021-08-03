@@ -216,7 +216,7 @@ async fn main() {
 
     let mut timecur: f64 = current_time();
     let mut timeprv: f64 = timecur;
-    let mut timeacc: f64 = 0.0;
+    let mut timeacc: f64 = TIMESTEP_RATE;
 
     let mut zoomin_pressed;
     let mut zoomout_pressed;
@@ -391,7 +391,9 @@ async fn main() {
         networking.post_process(&*resources.get::<Config>().unwrap());
 
         physics::despawn_outliers(&mut world, &resources);
+        physics::systems::collect_removals(&mut world, &resources);
 
         macroquad::window::next_frame().await;
+        world.clear_trackers();
     }
 }

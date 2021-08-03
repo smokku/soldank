@@ -109,7 +109,6 @@ impl SpawnerState {
                 /* Create the bouncing ball. */
                 let rigid_body = RigidBodyBundle {
                     position: (pos / scale).into(),
-                    changes: RigidBodyChanges::all(), // FIXME: remove after implementing change detection system
                     ..Default::default()
                 };
                 let collider = ColliderBundle {
@@ -118,7 +117,6 @@ impl SpawnerState {
                         restitution: 0.7,
                         ..Default::default()
                     },
-                    changes: ColliderChanges::all(), // FIXME: remove after implementing change detection system
                     ..Default::default()
                 };
                 let ball = world.spawn(rigid_body);

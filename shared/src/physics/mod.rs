@@ -63,8 +63,6 @@ impl IntoEntity for ColliderHandle {
     }
 }
 
-struct AddedColliderParent; // FIXME: remove after adding change tracking to hecs
-
 macro_rules! impl_component_set_option(
     ($ComponentsSet: ident, $T: ty) => {
         impl<'a> ComponentSetOption<$T> for $ComponentsSet<'a> {
