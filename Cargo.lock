@@ -996,6 +996,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hecs_rapier"
+version = "0.10.2"
+source = "git+https://github.com/smokku/hecs_rapier.git#5457006b70ed3a5ab54364e65d84bd32626dce9c"
+dependencies = [
+ "hecs",
+ "rapier2d",
+ "resources",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2254,6 +2264,7 @@ dependencies = [
  "float-cmp",
  "glam",
  "hecs",
+ "hecs_rapier",
  "hexdump",
  "itertools 0.10.1",
  "log",

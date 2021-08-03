@@ -18,6 +18,20 @@ pub fn init(world: &mut World, resources: &mut Resources) {
     world.spawn(collider);
 }
 
+// TODO: connect to event bus
+pub fn config_update(resources: &mut Resources, dt: f32) {
+    // let dt = resources
+    //     .get::<Config>()
+    //     .unwrap()
+    //     .net
+    //     .orb
+    //     .read()
+    //     .unwrap()
+    //     .timestep_seconds as f32;
+    let mut integration_parameters = resources.get_mut::<IntegrationParameters>().unwrap();
+    integration_parameters.dt = dt;
+}
+
 pub fn despawn_outliers(world: &mut World, resources: &Resources) {
     const MAX_POS: f32 = 2500.;
     let mut to_despawn = Vec::new();

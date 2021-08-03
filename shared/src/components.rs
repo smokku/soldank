@@ -1,10 +1,6 @@
 use crate::math::{vec2, Vec2};
 use derive_deref::{Deref, DerefMut};
-use hecs::Entity;
 use nanoserde::{DeBin, DeBinErr, SerBin};
-
-#[derive(Debug, Clone, Deref, DerefMut)]
-pub struct Parent(pub Entity);
 
 #[derive(Debug, Clone, DeBin, SerBin, Deref, DerefMut)]
 pub struct Nick(pub String);
