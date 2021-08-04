@@ -215,7 +215,7 @@ pub fn physics(world: &World, resources: &Resources) {
         match coll.shape.as_typed_shape() {
             TypedShape::Ball(ball) => {
                 let r = ball.radius * scale;
-                mq::draw_circle_lines(center.x, center.y, r, TH, CL)
+                mq::draw_circle_lines(center.x, center.y, r, TH, CL);
             }
             TypedShape::Cuboid(cuboid) => {
                 let hw = cuboid.half_extents.x * scale;
@@ -224,7 +224,12 @@ pub fn physics(world: &World, resources: &Resources) {
             }
             TypedShape::Capsule(_) => todo!(),
             TypedShape::Segment(_) => todo!(),
-            TypedShape::Triangle(_) => todo!(),
+            TypedShape::Triangle(triangle) => {
+                let a: Vec2 = triangle.a.into();
+                let b: Vec2 = triangle.b.into();
+                let c: Vec2 = triangle.c.into();
+                mq::draw_triangle_lines(a * scale, b * scale, c * scale, TH, CL);
+            }
             TypedShape::TriMesh(_) => todo!(),
             TypedShape::Polyline(_) => todo!(),
             TypedShape::HalfSpace(_) => todo!(),

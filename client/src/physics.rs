@@ -1,21 +1,14 @@
 pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
 
-use crate::{components::Position, cvars::Config};
+use crate::{components::Position, cvars::Config, MapFile, PolyType};
 use ::resources::Resources;
-use gfx2d::math::*;
 use hecs::World;
 
-pub fn init(world: &mut World, resources: &mut Resources) {
+pub fn init(_world: &mut World, resources: &mut Resources) {
     systems::init(resources);
 
-    /* Create the ground. */
-    let collider = ColliderBundle {
-        shape: ColliderShape::cuboid(100.0, 0.1),
-        position: Vec2::new(0.0, -20.0).into(),
-        ..Default::default()
-    };
-    world.spawn(collider);
+    // possibly spawn stuff here
 }
 
 // TODO: connect to event bus
@@ -53,5 +46,31 @@ pub fn despawn_outliers(world: &mut World, resources: &Resources) {
 
     for entity in to_despawn {
         world.despawn(entity).unwrap();
+    }
+}
+
+pub fn create_map_colliders(world: &mut World, resources: &Resources) {
+    let map = resources.get::<MapFile>().unwrap();
+    let scale = resources.get::<Config>().unwrap().phys.scale;
+
+    for polygon in map.polygons.iter() {
+        match polygon.polytype {
+            PolyType::NoCollide | PolyType::Background | PolyType::BackgroundTransition => continue,
+            _ => {}
+        }
+
+        let vertices: Vec<Point<Real>> = polygon
+            .vertices
+            .iter()
+            .map(|v| point![v.x / scale, v.y / scale])
+            .collect();
+        let mut collider = ColliderBundle {
+            shape: ColliderShape::triangle(vertices[0], vertices[1], vertices[2]),
+            ..Default::default()
+        };
+        if polygon.polytype == PolyType::Bouncy {
+            collider.material.restitution = polygon.bounciness;
+        }
+        world.spawn(collider);
     }
 }

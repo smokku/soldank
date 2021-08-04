@@ -978,7 +978,7 @@ dependencies = [
 [[package]]
 name = "hecs"
 version = "0.6.0"
-source = "git+https://github.com/smokku/hecs.git#2d09f8ceea7a6720e6c57c7af15e0e746843c170"
+source = "git+https://github.com/smokku/hecs.git#a688e337d6342dcc9233c635b93c263934a759f0"
 dependencies = [
  "hashbrown 0.11.2",
  "hecs-macros",
@@ -988,7 +988,7 @@ dependencies = [
 [[package]]
 name = "hecs-macros"
 version = "0.7.0"
-source = "git+https://github.com/smokku/hecs.git#2d09f8ceea7a6720e6c57c7af15e0e746843c170"
+source = "git+https://github.com/smokku/hecs.git#a688e337d6342dcc9233c635b93c263934a759f0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -998,7 +998,7 @@ dependencies = [
 [[package]]
 name = "hecs_rapier"
 version = "0.10.2"
-source = "git+https://github.com/smokku/hecs_rapier.git#5457006b70ed3a5ab54364e65d84bd32626dce9c"
+source = "git+https://github.com/smokku/hecs_rapier.git#5a797c5fc67ce8e8badbe6781e5c4f39a0e7fcd8"
 dependencies = [
  "hecs",
  "rapier2d",

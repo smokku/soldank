@@ -241,6 +241,7 @@ async fn main() {
     resources.insert(bullets);
 
     physics::init(&mut world, &mut resources);
+    physics::create_map_colliders(&mut world, &resources);
 
     let resources = resources; // This shadows the mutable binding with an immutable one.
 
