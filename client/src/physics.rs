@@ -73,4 +73,17 @@ pub fn create_map_colliders(world: &mut World, resources: &Resources) {
         }
         world.spawn(collider);
     }
+
+    for coll in map.colliders.iter() {
+        if !coll.active {
+            continue;
+        }
+
+        let collider = ColliderBundle {
+            shape: ColliderShape::ball(coll.diameter / scale / 2.),
+            position: vector![coll.x / scale, coll.y / scale].into(),
+            ..Default::default()
+        };
+        world.spawn(collider);
+    }
 }
