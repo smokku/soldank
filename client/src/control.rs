@@ -44,6 +44,7 @@ pub struct Control {
 }
 
 impl Soldier {
+    #[allow(clippy::collapsible_if)]
     pub fn control(&mut self, resources: &resources::Resources) {
         let state = resources.get::<MainState>().unwrap();
         let config = resources.get::<Config>().unwrap();
@@ -524,18 +525,15 @@ impl Soldier {
                             if self.direction == 1 {
                                 self.body_apply_animation(Anim::Roll, 1);
                                 self.legs_animation = AnimState::new(Anim::Roll);
-                                self.legs_animation.frame = 1;
                             } else {
                                 self.body_apply_animation(Anim::RollBack, 1);
                                 self.legs_animation = AnimState::new(Anim::RollBack);
-                                self.legs_animation.frame = 1;
                             }
+                            self.legs_animation.frame = 1;
+                        } else if self.direction == 1 {
+                            self.legs_apply_animation(Anim::CrouchRun, 1);
                         } else {
-                            if self.direction == 1 {
-                                self.legs_apply_animation(Anim::CrouchRun, 1);
-                            } else {
-                                self.legs_apply_animation(Anim::CrouchRunBack, 1);
-                            }
+                            self.legs_apply_animation(Anim::CrouchRunBack, 1);
                         }
 
                         if (self.legs_animation.id == Anim::CrouchRun)
@@ -571,18 +569,15 @@ impl Soldier {
                             if self.direction == 1 {
                                 self.body_apply_animation(Anim::RollBack, 1);
                                 self.legs_animation = AnimState::new(Anim::RollBack);
-                                self.legs_animation.frame = 1;
                             } else {
                                 self.body_apply_animation(Anim::Roll, 1);
                                 self.legs_animation = AnimState::new(Anim::Roll);
-                                self.legs_animation.frame = 1;
                             }
+                            self.legs_animation.frame = 1;
+                        } else if self.direction == 1 {
+                            self.legs_apply_animation(Anim::CrouchRunBack, 1);
                         } else {
-                            if self.direction == 1 {
-                                self.legs_apply_animation(Anim::CrouchRunBack, 1);
-                            } else {
-                                self.legs_apply_animation(Anim::CrouchRun, 1);
-                            }
+                            self.legs_apply_animation(Anim::CrouchRun, 1);
                         }
 
                         if (self.legs_animation.id == Anim::CrouchRun)
@@ -766,12 +761,10 @@ impl Soldier {
                     } else {
                         self.particle.force.x = -FLYSPEED;
                     }
+                } else if self.on_ground {
+                    self.legs_apply_animation(Anim::Stand, 1);
                 } else {
-                    if self.on_ground {
-                        self.legs_apply_animation(Anim::Stand, 1);
-                    } else {
-                        self.legs_apply_animation(Anim::Fall, 1);
-                    }
+                    self.legs_apply_animation(Anim::Fall, 1);
                 }
             }
             // Body animations
@@ -894,12 +887,10 @@ impl Soldier {
                             } else {
                                 self.body_apply_animation(Anim::HandsUpAim, 1);
                             }
+                        } else if self.body_animation.id == Anim::AimRecoil {
+                            self.body_apply_animation(Anim::Aim, 6);
                         } else {
-                            if self.body_animation.id == Anim::AimRecoil {
-                                self.body_apply_animation(Anim::Aim, 6);
-                            } else {
-                                self.body_apply_animation(Anim::Aim, 1);
-                            }
+                            self.body_apply_animation(Anim::Aim, 1);
                         }
                     }
                 } else {

@@ -433,6 +433,7 @@ pub mod tests {
     }
 
     #[test]
+    #[allow(clippy::float_cmp)]
     fn test_timestamp_as_seconds() {
         assert_eq!(Timestamp::from_seconds(0.0, 1.0).as_seconds(1.0), 0.0);
         assert_eq!(Timestamp::from_seconds(1.0, 1.0).as_seconds(1.0), 1.0);

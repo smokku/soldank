@@ -16,10 +16,7 @@ impl QuadGlProjectionExt for QuadGl {
         self.draw_mode(DrawMode::Triangles);
 
         for cmd in slice.commands() {
-            self.texture(
-                cmd.texture
-                    .map(|texture| Texture2D::from_miniquad_texture(texture)),
-            );
+            self.texture(cmd.texture.map(Texture2D::from_miniquad_texture));
 
             let mut vertices: Vec<Vertex> = Vec::new();
             let mut indices: Vec<u16> = Vec::new();
@@ -80,12 +77,11 @@ impl Sprites {
             }
         }
 
-        &self
-            .dynamic
+        self.dynamic
             .get(&group)
-            .expect(format!("Sprite group '{}' unavailable", group).as_str())
+            .unwrap_or_else(|| panic!("Sprite group '{}' unavailable", group))
             .get(&sprite)
-            .expect(format!("Sprite '{} / {}' unavailable", group, sprite).as_str())
+            .unwrap_or_else(|| panic!("Sprite '{} / {}' unavailable", group, sprite))
     }
 }
 

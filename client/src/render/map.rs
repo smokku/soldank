@@ -17,10 +17,10 @@ fn is_prop_active(map: &MapFile, prop: &MapProp) -> bool {
 }
 
 fn is_background_poly(poly: &MapPolygon) -> bool {
-    match poly.polytype {
-        PolyType::Background | PolyType::BackgroundTransition => true,
-        _ => false,
-    }
+    matches!(
+        poly.polytype,
+        PolyType::Background | PolyType::BackgroundTransition
+    )
 }
 
 fn add_poly(batch: &mut DrawBatch, poly: &MapPolygon, texture: &Texture) {

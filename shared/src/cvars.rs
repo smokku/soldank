@@ -27,11 +27,10 @@ pub fn set_cli_cvars(config: &mut dyn IVisit, cmd: &clap::ArgMatches) {
     }
 
     log::info!("--- cvars:");
-    cvar::console::walk(config, |path, node| match node.as_node() {
-        cvar::Node::Prop(prop) => {
+    cvar::console::walk(config, |path, node| {
+        if let cvar::Node::Prop(prop) = node.as_node() {
             log::info!("{} = `{}`", path, prop.get());
         }
-        _ => {}
     });
 }
 

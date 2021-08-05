@@ -75,7 +75,7 @@ pub fn lobby(world: &mut World, game_state: &mut GameState, networking: &Network
         log::error!("Running lobby system outside Lobby GameState");
     }
 
-    let ready = networking.connections.len() > 0
+    let ready = !networking.connections.is_empty()
         && networking
             .connections
             .iter()
@@ -107,7 +107,7 @@ pub fn apply_input(world: &World, time: &Time) {
     for (entity, buffer) in world.query::<&mut ControlBuffer>().iter() {
         // FIXME: apply all queued inputs in rollback manner
         let max_tick = buffer.keys().max().unwrap();
-        if let Some((control, _)) = buffer.get(&max_tick) {
+        if let Some((control, _)) = buffer.get(max_tick) {
             systems::apply_input(world.entity(entity).unwrap(), *control);
         } else {
             log::warn!(

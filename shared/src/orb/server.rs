@@ -24,6 +24,7 @@ use std::{
 /// [`Client`](crate::client::Client) for game clients. You create, store, and update this server
 /// instance to run your game on the server side.
 #[derive(Debug)]
+#[allow(clippy::type_complexity)]
 pub struct Server<WorldType: World> {
     timekeeping_simulation: TimeKeeper<
         Simulation<WorldType /*, { InitializationType::PreInitialized }*/>,
@@ -41,6 +42,7 @@ pub struct Server<WorldType: World> {
     outgoing_snapshots: VecDeque<Timestamped<WorldType::SnapshotType>>,
 }
 
+#[allow(clippy::type_complexity)]
 impl<WorldType: World> Server<WorldType> {
     /// Constructs a new [`Server`]. This function requires a `seconds_since_startup` parameter to
     /// initialize the server's simulation timestamp.
@@ -136,7 +138,7 @@ impl<WorldType: World> Server<WorldType> {
         // && command.timestamp() >= self.timekeeping_simulation.last_completed_timestamp()
         // && command.timestamp() <= self.estimated_client_simulating_timestamp()
         {
-            self.apply_validated_command(&command, Some(command_source));
+            self.apply_validated_command(command, Some(command_source));
         }
     }
 

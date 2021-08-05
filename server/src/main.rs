@@ -154,7 +154,7 @@ fn main() -> Result<()> {
                     // };
                     // systems::tick_debug(&world, &time);
 
-                    if networking.connections.iter().count() == 0 {
+                    if networking.connections.is_empty() {
                         log::info!("No connections left - exiting");
                         running = false;
                     }

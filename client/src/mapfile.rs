@@ -187,7 +187,7 @@ impl MapFile {
         let random_id = buf.read_i32::<LittleEndian>().unwrap();
 
         let n = buf.read_i32::<LittleEndian>().unwrap();
-        if (n > MAX_POLYS) || (n < 0) {
+        if !(0..=MAX_POLYS).contains(&n) {
             panic!("Wrong PMS data (number of polygons)");
         }
 
@@ -265,8 +265,8 @@ impl MapFile {
         let sectors_division = buf.read_i32::<LittleEndian>().unwrap();
         let sectors_num = buf.read_i32::<LittleEndian>().unwrap();
 
-        if (sectors_num > MAX_SECTOR) || (sectors_num < 0) {
-            panic!("Wrong PMS data (number of sectors)");
+        if !(0..=MAX_SECTOR).contains(&sectors_num) {
+            panic!("Wrong PMS data (number of sectors): {}", sectors_num);
         }
 
         let n = (2 * sectors_num + 1) * (2 * sectors_num + 1);
@@ -290,8 +290,8 @@ impl MapFile {
 
         let mut k = 0;
         let sector = MapSector { polys: Vec::new() };
-        let sectores = vec![sector.clone(); 51];
-        let mut sectored = vec![sectores.clone(); 51];
+        let sectores = vec![sector; 51];
+        let mut sectored = vec![sectores; 51];
 
         for sec_i in sectored.iter_mut().take(51) {
             for sec_ij in sec_i.iter_mut().take(51) {
@@ -303,7 +303,7 @@ impl MapFile {
         let sectors_poly = sectored;
 
         let n = buf.read_i32::<LittleEndian>().unwrap();
-        if (n > MAX_PROPS) || (n < 0) {
+        if !(0..=MAX_PROPS).contains(&n) {
             panic!("Wrong PMS data (number of props)");
         }
 

@@ -60,7 +60,7 @@ impl Sprite {
             height: texture.height as f32 / pixel_ratio.y,
             texcoords_x: (0.0, 1.0),
             texcoords_y: (0.0, 1.0),
-            texture: Some(texture.clone()),
+            texture: Some(*texture),
         }
     }
 }
@@ -175,7 +175,7 @@ impl Spritesheet {
             let (x0, x1) = (rc.left() as f32, (rc.right() - padding) as f32);
             let (y0, y1) = (rc.top() as f32, (rc.bottom() - padding) as f32);
 
-            sprite.texture = Some(texture.clone());
+            sprite.texture = Some(*texture);
             sprite.texcoords_x = (x0 / texture.width as f32, x1 / texture.width as f32);
             sprite.texcoords_y = (y0 / texture.height as f32, y1 / texture.height as f32);
         }
@@ -183,6 +183,7 @@ impl Spritesheet {
         Spritesheet { textures, sprites }
     }
 
+    #[allow(clippy::comparison_chain)]
     fn pack_recursive(rects: &mut [Rect], sheets: &mut Vec<(i32, i32)>, pad: i32, max_size: i32) {
         if rects.len() == 1 {
             rects[0].x = 0;

@@ -17,7 +17,7 @@ impl IVisit for CliState {
 }
 
 impl CliState {
-    pub fn build_ui(self: &mut Self) {
+    pub fn build_ui(&mut self) {
         if self.visible {
             widgets::Window::new(hash!(), vec2(10., 110.), vec2(600., 280.))
                 .label("Command Line Interface")
@@ -40,7 +40,7 @@ impl CliState {
 
                     if ui.active_window_focused() && is_key_pressed(KeyCode::Enter) {
                         let input = self.input.trim();
-                        if input.len() > 0 {
+                        if !input.is_empty() {
                             self.history.push(input.to_owned());
                             self.input.clear();
                             self.auto_scroll = Some(ui.scroll_max().y);

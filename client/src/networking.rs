@@ -232,7 +232,7 @@ impl Networking {
         client: &mut Client<MyWorld>,
     ) {
         let data = packet.payload();
-        if data.len() < 1 {
+        if data.is_empty() {
             return;
         }
 
@@ -349,7 +349,7 @@ impl Networking {
             return true;
         }
 
-        return false;
+        false
     }
 
     pub fn set_input_state(&mut self, control: &crate::control::Control) {

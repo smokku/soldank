@@ -349,10 +349,10 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
 pub fn connection_request() -> Bytes {
     vec![
         OperationCode::CCREQ_CONNECT as u8,
-        'S' as u8,
-        'L' as u8,
-        'D' as u8,
-        'T' as u8,
+        b'S',
+        b'L',
+        b'D',
+        b'T',
         NET_PROTOCOL_VERSION,
     ]
     .into()
@@ -361,10 +361,10 @@ pub fn connection_request() -> Bytes {
 pub fn connection_accept() -> Bytes {
     vec![
         OperationCode::CCREP_ACCEPT as u8,
-        'S' as u8,
-        'L' as u8,
-        'D' as u8,
-        'T' as u8,
+        b'S',
+        b'L',
+        b'D',
+        b'T',
         NET_PROTOCOL_VERSION,
     ]
     .into()
@@ -373,20 +373,20 @@ pub fn connection_accept() -> Bytes {
 pub fn connection_reject() -> Bytes {
     vec![
         OperationCode::CCREP_REJECT as u8,
-        'S' as u8,
-        'L' as u8,
-        'D' as u8,
-        'T' as u8,
+        b'S',
+        b'L',
+        b'D',
+        b'T',
         NET_PROTOCOL_VERSION,
     ]
     .into()
 }
 
 pub fn packet_verify(packet: &[u8]) -> bool {
-    packet[1] == 'S' as u8
-        && packet[2] == 'L' as u8
-        && packet[3] == 'D' as u8
-        && packet[4] == 'T' as u8
+    packet[1] == b'S'
+        && packet[2] == b'L'
+        && packet[3] == b'D'
+        && packet[4] == b'T'
         && packet[5] == NET_PROTOCOL_VERSION
 }
 

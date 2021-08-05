@@ -139,8 +139,11 @@ impl Bullet {
         for i in 0..steps + 1 {
             let (x, y) = lerp(a, b, i as f32 / steps as f32).into();
 
-            for p in map.sector_polys(vec2(x, y)) {
-                let p = (*p - 1) as usize;
+            for p in map
+                .sector_polys(vec2(x, y))
+                .iter()
+                .map(|p| (*p - 1) as usize)
+            {
                 let poly = &map.polygons[p];
 
                 if poly.bullet_collides(self.team) && map.point_in_poly_edges(x, y, p as i32) {

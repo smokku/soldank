@@ -424,7 +424,7 @@ sprites! {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 soldier_parts! {
     SecondaryDeagles       = Sprite(None),                    Point( 5, 10), Center( 0.300,  0.500), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )
     SecondaryMp5           = Sprite(Weapon::Mp5),             Point( 5, 10), Center( 0.300,  0.300), Show(false), Flip(true),  Team(false), Flex(0.0), Color(None),      Alpha(Base )

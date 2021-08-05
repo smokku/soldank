@@ -183,6 +183,7 @@ impl Soldier {
         }
     }
 
+    #[allow(clippy::manual_range_contains)]
     pub fn update(&mut self, resources: &Resources) {
         let map = &*resources.get::<MapFile>().unwrap();
         let config = &*resources.get::<Config>().unwrap();

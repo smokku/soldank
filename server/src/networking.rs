@@ -120,9 +120,9 @@ impl Networking {
             SocketAddr::new(addr, SERVER_PORT)
         };
 
-        let mut webrtc_listen_address = bind_address.clone();
+        let mut webrtc_listen_address = bind_address;
         webrtc_listen_address.set_port(webrtc_listen_address.port() + 1);
-        let public_webrtc_address = webrtc_listen_address.clone();
+        let public_webrtc_address = webrtc_listen_address;
 
         let mut server_socket =
             ServerSocket::listen(bind_address, webrtc_listen_address, public_webrtc_address).await;
@@ -218,9 +218,7 @@ impl Networking {
                 }
                 SocketEvent::Connect(addr) => {
                     log::info!("!! Connect {}", addr);
-                    if !self.connections.contains_key(&addr) {
-                        self.connections.insert(addr, Connection::new());
-                    }
+                    self.connections.entry(addr).or_insert_with(Connection::new);
                 }
                 SocketEvent::Timeout(addr) | SocketEvent::Disconnect(addr) => {
                     log::info!("!! Disconnect {}", addr);
@@ -258,7 +256,7 @@ impl Networking {
     ) -> Option<NetworkMessage> {
         let address = packet.addr();
         let data = packet.payload();
-        if data.len() < 1 {
+        if data.is_empty() {
             return None;
         }
 
@@ -313,11 +311,8 @@ impl Networking {
                                         let mut cvars = Vec::new();
                                         cvar::console::walk(config, |path, node| {
                                             if !path.starts_with("server.") {
-                                                match node.as_node() {
-                                                    cvar::Node::Prop(prop) => {
-                                                        cvars.push((path.to_owned(), prop.get()));
-                                                    }
-                                                    _ => {}
+                                                if let cvar::Node::Prop(prop) = node.as_node() {
+                                                    cvars.push((path.to_owned(), prop.get()));
                                                 }
                                             }
                                         });

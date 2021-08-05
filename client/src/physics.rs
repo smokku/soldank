@@ -33,7 +33,7 @@ pub fn despawn_outliers(world: &mut World, resources: &Resources) {
     for (entity, pos) in world.query::<&RigidBodyPosition>().iter() {
         let x = pos.position.translation.x * scale;
         let y = pos.position.translation.y * scale;
-        if x > MAX_POS || x < -MAX_POS || y > MAX_POS || y < -MAX_POS {
+        if !(-MAX_POS..=MAX_POS).contains(&x) || !(-MAX_POS..=MAX_POS).contains(&y) {
             to_despawn.push(entity);
         }
     }
