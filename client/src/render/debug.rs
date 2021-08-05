@@ -46,8 +46,8 @@ pub fn debug_render(
                 PolyType::OnlyFlaggers => state.hlt_poly_flagger_coll,
                 PolyType::NotFlaggers => state.hlt_poly_non_flagger_coll,
                 PolyType::FlagCollide => state.hlt_poly_flag_coll,
-                PolyType::Background => false,
-                PolyType::BackgroundTransition => false,
+                PolyType::Background => state.hlt_poly_background,
+                PolyType::BackgroundTransition => state.hlt_poly_background_transition,
             } {
                 let vertices = poly
                     .vertices

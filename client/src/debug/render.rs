@@ -46,6 +46,8 @@ pub struct RenderState {
     pub hlt_poly_flagger_coll: bool,
     pub hlt_poly_non_flagger_coll: bool,
     pub hlt_poly_flag_coll: bool,
+    pub hlt_poly_background: bool,
+    pub hlt_poly_background_transition: bool,
 }
 
 impl IVisit for RenderState {
@@ -182,7 +184,9 @@ impl RenderState {
                         toggle_state(ui, None, &mut self.hlt_poly_flagger_coll, "Flagger Collides");
                         toggle_state(ui, None, &mut self.hlt_poly_non_flagger_coll, "Non Flagger Collides");
                         toggle_state(ui, None, &mut self.hlt_poly_flag_coll, "Flag Collides");
-                    });
+                        toggle_state(ui, None, &mut self.hlt_poly_background, "Background");
+                        toggle_state(ui, None, &mut self.hlt_poly_background_transition, "Background Transition");
+                                        });
                 self.highlight_polygons = self.hlt_poly_normal
                     || self.hlt_poly_only_bullets_coll
                     || self.hlt_poly_only_players_coll
@@ -206,7 +210,9 @@ impl RenderState {
                     || self.hlt_poly_hurt_flaggers
                     || self.hlt_poly_flagger_coll
                     || self.hlt_poly_non_flagger_coll
-                    || self.hlt_poly_flag_coll;
+                    || self.hlt_poly_flag_coll
+                    || self.hlt_poly_background
+                    || self.hlt_poly_background_transition;
             },
         );
         }
