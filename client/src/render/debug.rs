@@ -113,11 +113,7 @@ pub fn debug_render(
                 };
 
                 let (texture, tx, ty) = if let Some(sprite) = sprite {
-                    (
-                        sprite.texture.clone(),
-                        sprite.texcoords_x,
-                        sprite.texcoords_y,
-                    )
+                    (sprite.texture, sprite.texcoords_x, sprite.texcoords_y)
                 } else {
                     (None, (0., 0.), (0., 0.))
                 };
@@ -194,7 +190,7 @@ pub fn physics(world: &World, resources: &Resources) {
         .iter()
     {
         const CL: Color = mq::GREEN;
-        const TH: f32 = 1.0;
+        const TH: f32 = 0.5;
 
         let Isometry {
             translation: tr,
@@ -220,7 +216,14 @@ pub fn physics(world: &World, resources: &Resources) {
             TypedShape::Cuboid(cuboid) => {
                 let hw = cuboid.half_extents.x * scale;
                 let hh = cuboid.half_extents.y * scale;
-                mq::draw_rectangle_lines(center.x - hw, center.y - hh, hw * 2., hh * 2., TH, CL);
+                mq::draw_rectangle_lines(
+                    center.x - hw,
+                    center.y - hh,
+                    hw * 2.,
+                    hh * 2.,
+                    TH * 2.,
+                    CL,
+                );
             }
             TypedShape::Capsule(_) => todo!(),
             TypedShape::Segment(_) => todo!(),

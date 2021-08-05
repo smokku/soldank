@@ -140,13 +140,12 @@ async fn main() {
     for (md, path) in mods.drain(..) {
         match md {
             File::VfsFile(file) => {
-                filesystem.add_zip_file(file).expect(
-                    format!(
-                        "Failed to add `{}` file to VFS. Make sure it is a proper ZIP file.",
-                        path
+                filesystem.add_zip_file(file).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to add `{}` file to VFS. (Make sure it is a proper ZIP file.): {}",
+                        path, err
                     )
-                    .as_str(),
-                );
+                });
             }
         }
     }

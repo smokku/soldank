@@ -144,7 +144,7 @@ impl AnimData {
 
         let file = fs
             .open(&path)
-            .expect(format!("Error opening animation file: {:?}", path).as_str());
+            .unwrap_or_else(|err| panic!("Error opening animation file: {:?}: {}", path, err));
         let mut line = String::new();
         let mut buf = BufReader::new(file);
         let mut frames: Vec<AnimFrame> = Vec::new();

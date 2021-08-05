@@ -20,7 +20,7 @@ impl IVisit for SpawnerState {
 }
 
 impl SpawnerState {
-    pub fn build_ui(self: &mut Self, world: &mut World, x: f32, y: f32, scale: f32) {
+    pub fn build_ui(&mut self, world: &mut World, x: f32, y: f32, scale: f32) {
         if self.visible {
             widgets::Window::new(hash!(), vec2(10., 104.), vec2(200., 106.))
                 .label("Spawn Entity")
@@ -129,7 +129,7 @@ impl SpawnerState {
                         ball,
                         Sprite {
                             group: "Ball".into(),
-                            name: format!("Ball{}", thread_rng().gen_range(1..=8)).into(),
+                            name: format!("Ball{}", thread_rng().gen_range(1..=8)),
                             transform: gfx2d::Transform::origin(
                                 vec2(50., 50.) * (sprite_scale / -2.),
                                 vec2(1.0, 1.0) * sprite_scale,

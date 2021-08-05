@@ -154,8 +154,7 @@ impl RenderState {
                 self.render_spawns = self
                     .render_spawns_team
                     .iter()
-                    .find(|spawn| **spawn)
-                    .is_some();
+                    .any(|spawn| *spawn);
 
                 #[rustfmt::skip]
                     ui.tree_node(hash!(), "Highlight polygons", |ui| {

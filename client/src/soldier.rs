@@ -453,8 +453,8 @@ impl Soldier {
                 let polytype = map.polygons[poly].polytype;
 
                 if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
-                    let mut polygons = map.polygons[poly];
-                    if map.point_in_poly(pos, &mut polygons) {
+                    let polygons = map.polygons[poly];
+                    if map.point_in_poly(pos, &polygons) {
                         self.handle_special_polytypes(map, polytype, pos);
 
                         let mut dist = 0.0;

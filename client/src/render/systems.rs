@@ -27,10 +27,8 @@ pub fn render_sprites(
                 ),
                 rbp.position.rotation.angle(),
             ))
-        } else if let Some(pos) = position {
-            Some((pos.clone(), 0.0))
         } else {
-            None
+            position.map(|pos| (pos.clone(), 0.0))
         };
 
         if let Some((pos, rot)) = iso {

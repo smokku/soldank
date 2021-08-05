@@ -27,7 +27,7 @@ impl IVisit for DebugState {
         f(&mut cvar::List("cli", &mut self.cli));
         f(&mut cvar::List("spawner", &mut self.spawner));
         f(&mut cvar::List("render", &mut self.render));
-        f(&mut cvar::ReadOnlyProp("fps", &mut self.fps, 0));
+        f(&mut cvar::ReadOnlyProp("fps", &self.fps, 0));
     }
 }
 
