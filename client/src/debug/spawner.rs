@@ -22,8 +22,9 @@ impl IVisit for SpawnerState {
 impl SpawnerState {
     pub fn build_ui(&mut self, world: &mut World, x: f32, y: f32, scale: f32) {
         if self.visible {
-            widgets::Window::new(hash!(), vec2(10., 104.), vec2(200., 106.))
+            self.visible = widgets::Window::new(hash!(), vec2(10., 104.), vec2(200., 106.))
                 .label("Spawn Entity")
+                .close_button(true)
                 .ui(&mut *root_ui(), |ui| {
                     if ui.button(
                         None,

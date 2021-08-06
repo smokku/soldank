@@ -19,8 +19,9 @@ impl IVisit for CliState {
 impl CliState {
     pub fn build_ui(&mut self) {
         if self.visible {
-            widgets::Window::new(hash!(), vec2(10., 110.), vec2(600., 280.))
+            self.visible = widgets::Window::new(hash!(), vec2(10., 110.), vec2(600., 280.))
                 .label("Command Line Interface")
+                .close_button(true)
                 .ui(&mut *root_ui(), |ui| {
                     for line in &self.history {
                         widgets::Label::new(line).ui(ui);

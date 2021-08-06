@@ -114,9 +114,12 @@ impl IVisit for RenderState {
 impl RenderState {
     pub fn build_ui(&mut self) {
         if self.visible {
-            widgets::Window::new(hash!(),
+            self.visible = widgets::Window::new(hash!(),
             vec2(980., 10.),
-            vec2(270., 680.)).label("Renderer").ui(&mut *root_ui(),
+            vec2(270., 680.))
+            .label("Renderer")
+            .close_button(true)
+            .ui(&mut *root_ui(),
             |ui| {
                 toggle_state(ui, None, &mut self.render_skeleton, "Skeleton");
                 toggle_state(ui, None, &mut self.render_physics, "Physics");
