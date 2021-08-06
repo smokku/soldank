@@ -7,10 +7,14 @@ use naia_client_socket::{
     find_my_ip_address, ClientSocket, ClientSocketTrait, LinkConditionerConfig, MessageSender,
     Packet as NaiaPacket,
 };
+use resources::Resources;
 use smol::channel::{unbounded, Receiver, Sender};
 use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
-use crate::cvars::Config;
+use crate::{
+    cvars::Config,
+    events::{AppEvent, AppEventsQueue},
+};
 use soldank_shared::{
     constants::SERVER_PORT,
     control::Control,
@@ -167,7 +171,7 @@ impl Networking {
         self.connection.update(messenger, time);
     }
 
-    pub fn process(&mut self, config: &mut Config, client: &mut Client<MyWorld>) {
+    pub fn process(&mut self, resources: &Resources, client: &mut Client<MyWorld>) {
         if self.state == ConnectionState::Disconnected {
             if backoff_enabled(self.backoff_round) {
                 let msg = messages::connection_request();
@@ -179,7 +183,9 @@ impl Networking {
 
         while let Ok(event) = self.event_receiver.try_recv() {
             match event {
-                laminar::SocketEvent::Packet(packet) => self.process_packet(packet, config, client),
+                laminar::SocketEvent::Packet(packet) => {
+                    self.process_packet(packet, resources, client)
+                }
                 laminar::SocketEvent::Connect(addr) => {
                     log::info!("!! Connect {}", addr)
                 }
@@ -228,7 +234,7 @@ impl Networking {
     fn process_packet(
         &mut self,
         packet: LaminarPacket,
-        config: &mut Config,
+        resources: &Resources,
         client: &mut Client<MyWorld>,
     ) {
         let data = packet.payload();
@@ -270,7 +276,7 @@ impl Networking {
                     }
                 }
                 _ => {
-                    if !self.process_message(data, config, client) {
+                    if !self.process_message(data, resources, client) {
                         log::error!(
                             "Unhandled packet: 0x{:x} ({:?}) {} bytes",
                             code,
@@ -290,7 +296,7 @@ impl Networking {
     fn process_message(
         &mut self,
         data: &[u8],
-        config: &mut Config,
+        resources: &Resources,
         client: &mut Client<MyWorld>,
     ) -> bool {
         if let Some(msg) = messages::decode_message(data) {
@@ -301,6 +307,7 @@ impl Networking {
                 }
                 NetworkMessage::Cvars(cvars) => {
                     log::info!("--- cvars server sync:");
+                    let config = &mut *resources.get_mut::<Config>().unwrap();
                     for (path, val) in cvars {
                         if let Some(old_val) = cvar::console::get(config, path.as_str()) {
                             if old_val == val {
@@ -326,7 +333,10 @@ impl Networking {
                         ));
                     }
                     self.cvars_received = true;
-                    // TODO: broadcast cvar change event on event bus
+                    resources
+                        .get_mut::<AppEventsQueue>()
+                        .unwrap()
+                        .push(AppEvent::CvarsChanged);
                 }
                 NetworkMessage::GameState { tick, entities } => {
                     if tick > self.server_tick_received {

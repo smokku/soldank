@@ -13,6 +13,7 @@ mod constants;
 mod control;
 mod cvars;
 mod debug;
+mod events;
 mod mapfile;
 mod networking;
 mod particles;
@@ -28,6 +29,7 @@ use bullet::*;
 use calc::*;
 use constants::*;
 use control::*;
+use events::*;
 use mapfile::*;
 use networking::*;
 use particles::*;
@@ -232,6 +234,10 @@ async fn main() {
     let mut world = World::new();
 
     let mut resources = Resources::new();
+
+    let app_events = AppEventsQueue::new();
+
+    resources.insert(app_events);
     resources.insert(map);
     resources.insert(config);
     resources.insert(state);
@@ -385,15 +391,17 @@ async fn main() {
 
         networking.set_input_state(&soldier.control);
 
-        networking.process(&mut *resources.get_mut::<Config>().unwrap(), &mut client);
+        networking.process(&resources, &mut client);
         log::trace!("ready_client_display_state: {:?}", client.display_state());
         client.update(timeacc, timecur);
         networking.post_process(&*resources.get::<Config>().unwrap());
 
         physics::despawn_outliers(&mut world, &resources);
         physics::systems::collect_removals(&mut world, &resources);
+        physics::config_update(&resources);
 
         macroquad::window::next_frame().await;
         world.clear_trackers();
+        resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 }

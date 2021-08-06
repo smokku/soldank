@@ -1,7 +1,12 @@
 pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
 
-use crate::{components::Position, cvars::Config, MapFile, PolyType};
+use crate::{
+    components::Position,
+    cvars::Config,
+    events::{AppEvent, AppEventsQueue},
+    MapFile, PolyType,
+};
 use ::resources::Resources;
 use hecs::World;
 
@@ -11,18 +16,24 @@ pub fn init(_world: &mut World, resources: &mut Resources) {
     // possibly spawn stuff here
 }
 
-// TODO: connect to event bus
-pub fn config_update(resources: &mut Resources, dt: f32) {
-    // let dt = resources
-    //     .get::<Config>()
-    //     .unwrap()
-    //     .net
-    //     .orb
-    //     .read()
-    //     .unwrap()
-    //     .timestep_seconds as f32;
-    let mut integration_parameters = resources.get_mut::<IntegrationParameters>().unwrap();
-    integration_parameters.dt = dt;
+pub fn config_update(resources: &Resources) {
+    let app_events = resources.get::<AppEventsQueue>().unwrap();
+    if app_events
+        .iter()
+        .any(|event| matches!(event, AppEvent::CvarsChanged))
+    {
+        let dt = resources
+            .get::<Config>()
+            .unwrap()
+            .net
+            .orb
+            .read()
+            .unwrap()
+            .timestep_seconds as f32;
+        let mut integration_parameters = resources.get_mut::<IntegrationParameters>().unwrap();
+        integration_parameters.dt = dt;
+        log::debug!("IntegrationParameters updated: {}", dt);
+    }
 }
 
 pub fn despawn_outliers(world: &mut World, resources: &Resources) {
