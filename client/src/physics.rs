@@ -10,12 +10,6 @@ use crate::{
 use ::resources::Resources;
 use hecs::World;
 
-pub fn init(_world: &mut World, resources: &mut Resources) {
-    systems::init(resources);
-
-    // possibly spawn stuff here
-}
-
 pub fn config_update(resources: &Resources) {
     let app_events = resources.get::<AppEventsQueue>().unwrap();
     if app_events

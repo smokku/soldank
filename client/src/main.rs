@@ -245,16 +245,32 @@ async fn main() {
     resources.insert(weapons);
     resources.insert(bullets);
 
-    physics::init(&mut world, &mut resources);
+    resources.insert(physics::PhysicsPipeline::new());
+    // resources.insert(physics::QueryPipeline::new());
+    // resources.insert(physics::RapierConfiguration::default());
+    resources.insert(physics::IntegrationParameters::default());
+    resources.insert(physics::BroadPhase::new());
+    resources.insert(physics::NarrowPhase::new());
+    resources.insert(physics::IslandManager::new());
+    resources.insert(physics::JointSet::new());
+    resources.insert(physics::CCDSolver::new());
+    // resources.insert(physics::Events::<IntersectionEvent>::default());
+    // resources.insert(physics::Events::<ContactEvent>::default());
+    // resources.insert(physics::SimulationToRenderTime::default());
+    // resources.insert(physics::JointsEntityMap::default());
+    resources.insert(physics::ModificationTracker::default());
     physics::create_map_colliders(&mut world, &resources);
 
     let resources = resources; // This shadows the mutable binding with an immutable one.
 
     let mut running = true;
     while running {
-        physics::systems::attach_bodies_and_colliders(&mut world);
-        // physics::systems::create_joints_system();
-        physics::systems::finalize_collider_attach_to_bodies(&mut world, &resources);
+        physics::attach_bodies_and_colliders(&mut world);
+        // physics::create_joints_system();
+        physics::finalize_collider_attach_to_bodies(
+            &mut world,
+            &mut *resources.get_mut::<physics::ModificationTracker>().unwrap(),
+        );
 
         networking.tick += 1;
         networking.update();
@@ -292,7 +308,39 @@ async fn main() {
         while timeacc >= TIMESTEP_RATE {
             timeacc -= TIMESTEP_RATE;
 
-            physics::systems::step_world(&mut world, &resources);
+            {
+                use physics::*;
+                let gravity = vector![0.0, 9.81];
+
+                // let configuration = resources.get::<RapierConfiguration>().unwrap();
+                let integration_parameters = resources.get::<IntegrationParameters>().unwrap();
+                let mut modifs_tracker = resources.get_mut::<ModificationTracker>().unwrap();
+
+                let mut physics_pipeline = resources.get_mut::<PhysicsPipeline>().unwrap();
+                // let mut query_pipeline = resources.get_mut::<QueryPipeline>().unwrap();
+                let mut island_manager = resources.get_mut::<IslandManager>().unwrap();
+                let mut broad_phase = resources.get_mut::<BroadPhase>().unwrap();
+                let mut narrow_phase = resources.get_mut::<NarrowPhase>().unwrap();
+                let mut ccd_solver = resources.get_mut::<CCDSolver>().unwrap();
+                let mut joint_set = resources.get_mut::<JointSet>().unwrap();
+                // let mut joints_entity_map = resources.get_mut::<JointsEntityMap>().unwrap();
+                // let physics_hooks = ();
+                let event_handler = ();
+
+                physics::step_world(
+                    &mut world,
+                    &gravity,
+                    &integration_parameters,
+                    &mut physics_pipeline,
+                    &mut modifs_tracker,
+                    &mut island_manager,
+                    &mut broad_phase,
+                    &mut narrow_phase,
+                    &mut joint_set,
+                    &mut ccd_solver,
+                    &event_handler,
+                );
+            }
 
             {
                 // remove inactive bullets
@@ -397,7 +445,10 @@ async fn main() {
         networking.post_process(&*resources.get::<Config>().unwrap());
 
         physics::despawn_outliers(&mut world, &resources);
-        physics::systems::collect_removals(&mut world, &resources);
+        physics::collect_removals(
+            &mut world,
+            &mut *resources.get_mut::<physics::ModificationTracker>().unwrap(),
+        );
         physics::config_update(&resources);
 
         macroquad::window::next_frame().await;
