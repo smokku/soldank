@@ -84,6 +84,14 @@ impl World for MyWorld {
     type SnapshotType = MySnapshot;
     type DisplayStateType = MyDisplayState;
 
+    fn command_is_valid(command: &MyCommand, client_id: Self::ClientId) -> bool {
+        // Only localhost has permission to cheat, for example.
+        match command {
+            MyCommand::Cheat => client_id.ip() == "127.0.0.1:0".parse::<SocketAddr>().unwrap().ip(),
+            _ => true,
+        }
+    }
+
     fn apply_command(&mut self, command: &MyCommand) {
         match command {
             MyCommand::Accelerate => self.velocity += 1.0,
@@ -110,10 +118,6 @@ impl World for MyWorld {
             position: self.position,
             velocity: self.velocity,
         }
-    }
-
-    fn command_is_valid(_command: &Self::CommandType, _client_id: Self::ClientId) -> bool {
-        true
     }
 }
 
