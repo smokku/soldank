@@ -16,7 +16,7 @@ use crate::{
     cvars::{set_cli_cvars, Config, NetConfig},
     networking::Networking,
 };
-use soldank_shared::{messages::NetworkMessage, networking::MyWorld, orb};
+use soldank_shared::{messages::NetworkMessage, networking::NetWorld, orb};
 
 mod cheat;
 mod constants;
@@ -102,7 +102,7 @@ fn main() -> Result<()> {
 
         let mut game_state = GameState::Lobby;
 
-        let mut server = orb::server::Server::<MyWorld>::new(config.net.orb.clone(), 0.0);
+        let mut server = orb::server::Server::<NetWorld>::new(config.net.orb.clone(), 0.0);
 
         let startup_time = Instant::now();
         let mut previous_time = Instant::now();

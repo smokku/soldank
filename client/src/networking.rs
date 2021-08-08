@@ -20,7 +20,7 @@ use soldank_shared::{
     control::Control,
     math::vec2,
     messages::{self, NetworkMessage},
-    networking::{MyWorld, PacketStats},
+    networking::{NetWorld, PacketStats},
     orb::client::Client,
     trace_dump_packet,
 };
@@ -171,7 +171,7 @@ impl Networking {
         self.connection.update(messenger, time);
     }
 
-    pub fn process(&mut self, resources: &Resources, client: &mut Client<MyWorld>) {
+    pub fn process(&mut self, resources: &Resources, client: &mut Client<NetWorld>) {
         if self.state == ConnectionState::Disconnected {
             if backoff_enabled(self.backoff_round) {
                 let msg = messages::connection_request();
@@ -235,7 +235,7 @@ impl Networking {
         &mut self,
         packet: LaminarPacket,
         resources: &Resources,
-        client: &mut Client<MyWorld>,
+        client: &mut Client<NetWorld>,
     ) {
         let data = packet.payload();
         if data.is_empty() {
@@ -297,7 +297,7 @@ impl Networking {
         &mut self,
         data: &[u8],
         resources: &Resources,
-        client: &mut Client<MyWorld>,
+        client: &mut Client<NetWorld>,
     ) -> bool {
         if let Some(msg) = messages::decode_message(data) {
             match msg {

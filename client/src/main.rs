@@ -48,7 +48,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use soldank_shared::{networking::MyWorld, orb};
+use soldank_shared::{networking::NetWorld, orb};
 
 fn config() -> mq::Conf {
     mq::Conf {
@@ -229,7 +229,7 @@ async fn main() {
 
     let bullets: Vec<Bullet> = Vec::new();
 
-    let mut client = orb::client::Client::<MyWorld>::new(timecur, config.net.orb.clone());
+    let mut client = orb::client::Client::<NetWorld>::new(timecur, config.net.orb.clone());
 
     let mut world = World::new();
 

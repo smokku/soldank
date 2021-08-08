@@ -2,7 +2,7 @@ use crate::{
     components,
     control::Control,
     math::Vec2,
-    networking::{MyCommand, MySnapshot},
+    networking::{NetCommand, NetSnapshot},
     orb::timestamp::{Timestamp, Timestamped},
 };
 use bytes::Bytes;
@@ -49,8 +49,8 @@ pub enum NetworkMessage {
         tick: usize,
         entities: HashMap<Entity, Vec<ComponentValue>>,
     },
-    Snapshot(Timestamped<MySnapshot>),
-    Command(Timestamped<MyCommand>),
+    Snapshot(Timestamped<NetSnapshot>),
+    Command(Timestamped<NetCommand>),
 }
 
 #[repr(u8)]
@@ -326,7 +326,7 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                     snapshot,
                 }) = DeBin::deserialize_bin(&data[1..])
                 {
-                    return Some(NetworkMessage::Snapshot(Timestamped::<MySnapshot>::new(
+                    return Some(NetworkMessage::Snapshot(Timestamped::<NetSnapshot>::new(
                         snapshot,
                         Timestamp::from_i16(timestamp),
                     )));
@@ -335,7 +335,7 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
             OperationCode::STT_COMMAND => {
                 if let Ok(CommandPacket { timestamp, command }) = DeBin::deserialize_bin(&data[1..])
                 {
-                    return Some(NetworkMessage::Command(Timestamped::<MyCommand>::new(
+                    return Some(NetworkMessage::Command(Timestamped::<NetCommand>::new(
                         command,
                         Timestamp::from_i16(timestamp),
                     )));
@@ -427,11 +427,11 @@ struct StatePacket {
 #[derive(DeBin, SerBin)]
 struct SnapshotPacket {
     timestamp: i16,
-    snapshot: MySnapshot,
+    snapshot: NetSnapshot,
 }
 
 #[derive(DeBin, SerBin)]
 struct CommandPacket {
     timestamp: i16,
-    command: MyCommand,
+    command: NetCommand,
 }
