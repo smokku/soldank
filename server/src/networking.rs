@@ -20,7 +20,7 @@ use crate::{cheat::Cheats, constants::*, cvars::Config, state::build_state_messa
 use soldank_shared::{
     constants::SERVER_PORT,
     messages::{self, encode_message, NetworkMessage},
-    networking::{NetWorld, PacketStats},
+    networking::{GameWorld, PacketStats},
     orb::server::Server,
     trace_dump_packet,
 };
@@ -352,7 +352,7 @@ impl Networking {
         None
     }
 
-    pub fn process_simulation(&mut self, server: &mut Server<NetWorld>) {
+    pub fn process_simulation(&mut self, server: &mut Server<GameWorld>) {
         for snapshot in server.take_outgoing_snapshots().drain(..) {
             log::trace!("outgoing snapshot: {:?}", snapshot);
             let mut packets = Vec::new();

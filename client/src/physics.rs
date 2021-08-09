@@ -2,7 +2,6 @@ pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
 
 use crate::{
-    components::Position,
     cvars::Config,
     events::{AppEvent, AppEventsQueue},
     MapFile, PolyType,
@@ -27,30 +26,6 @@ pub fn config_update(resources: &Resources) {
         let mut integration_parameters = resources.get_mut::<IntegrationParameters>().unwrap();
         integration_parameters.dt = dt;
         log::debug!("IntegrationParameters updated: {}", dt);
-    }
-}
-
-pub fn despawn_outliers(world: &mut World, resources: &Resources) {
-    const MAX_POS: f32 = 2500.;
-    let mut to_despawn = Vec::new();
-    let scale = resources.get::<Config>().unwrap().phys.scale;
-
-    for (entity, pos) in world.query::<&RigidBodyPosition>().iter() {
-        let x = pos.position.translation.x * scale;
-        let y = pos.position.translation.y * scale;
-        if !(-MAX_POS..=MAX_POS).contains(&x) || !(-MAX_POS..=MAX_POS).contains(&y) {
-            to_despawn.push(entity);
-        }
-    }
-
-    for (entity, pos) in world.query::<&Position>().iter() {
-        if pos.x > MAX_POS || pos.x < -MAX_POS || pos.y > MAX_POS || pos.y < -MAX_POS {
-            to_despawn.push(entity);
-        }
-    }
-
-    for entity in to_despawn {
-        world.despawn(entity).unwrap();
     }
 }
 

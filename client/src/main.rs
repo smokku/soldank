@@ -48,7 +48,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use soldank_shared::{networking::NetWorld, orb};
+use soldank_shared::{networking::GameWorld, orb};
 
 fn config() -> mq::Conf {
     mq::Conf {
@@ -229,7 +229,7 @@ async fn main() {
 
     let bullets: Vec<Bullet> = Vec::new();
 
-    let mut client = orb::client::Client::<NetWorld>::new(timecur, config.net.orb.clone());
+    let mut client = orb::client::Client::<GameWorld>::new(timecur, config.net.orb.clone());
 
     let mut world = World::new();
 
@@ -446,7 +446,11 @@ async fn main() {
         }
         networking.post_process(&*resources.get::<Config>().unwrap());
 
-        physics::despawn_outliers(&mut world, &resources);
+        physics::despawn_outliers(
+            &mut world,
+            2500.,
+            resources.get::<Config>().unwrap().phys.scale,
+        );
         physics::collect_removals(
             &mut world,
             &mut *resources.get_mut::<physics::ModificationTracker>().unwrap(),

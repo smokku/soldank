@@ -4,6 +4,7 @@ use crate::{
         fixed_timestepper::Stepper,
         world::{DisplayState, World as OrbWorld},
     },
+    physics::{self as physics, PhysicsEngine},
     world::World,
 };
 use nanoserde::{DeBin, SerBin};
@@ -46,8 +47,9 @@ impl PacketStats {
 }
 
 #[derive(Default)]
-pub struct NetWorld {
+pub struct GameWorld {
     world: World,
+    physics: PhysicsEngine,
 }
 
 #[derive(Debug, Clone, SerBin, DeBin)]
@@ -58,7 +60,7 @@ pub enum NetCommand {
 #[derive(Debug, Default, Clone, SerBin, DeBin)]
 pub struct NetSnapshot {}
 
-impl OrbWorld for NetWorld {
+impl OrbWorld for GameWorld {
     type ClientId = SocketAddr;
     type CommandType = NetCommand;
     type SnapshotType = NetSnapshot;
@@ -80,9 +82,12 @@ impl OrbWorld for NetWorld {
         }
     }
 
-    fn apply_snapshot(&mut self, snapshot: NetSnapshot) {}
+    fn apply_snapshot(&mut self, snapshot: NetSnapshot) {
+        todo!()
+    }
 
     fn snapshot(&self) -> NetSnapshot {
+        todo!();
         NetSnapshot {}
     }
 
@@ -93,8 +98,36 @@ impl OrbWorld for NetWorld {
 
 impl Command for NetCommand {}
 
-impl Stepper for NetWorld {
-    fn step(&mut self) {}
+impl Stepper for GameWorld {
+    fn step(&mut self) {
+        physics::attach_bodies_and_colliders(&mut self.world);
+        // physics::create_joints_system();
+        physics::finalize_collider_attach_to_bodies(
+            &mut self.world,
+            &mut self.physics.modification_tracker,
+        );
+
+        physics::step_world(
+            &mut self.world,
+            &self.physics.gravity,
+            &self.physics.integration_parameters,
+            &mut self.physics.physics_pipeline,
+            &mut self.physics.modification_tracker,
+            &mut self.physics.island_manager,
+            &mut self.physics.broad_phase,
+            &mut self.physics.narrow_phase,
+            &mut self.physics.joint_set,
+            &mut self.physics.ccd_solver,
+            &(),
+        );
+
+        physics::despawn_outliers(&mut self.world, 2500., 16.); // FIXME: use config.phys.scale
+        physics::collect_removals(&mut self.world, &mut self.physics.modification_tracker);
+        // physics::config_update(&resources);
+
+        self.world.clear_trackers();
+        // resources.get_mut::<AppEventsQueue>().unwrap().clear();
+    }
 }
 
 impl DisplayState for World {
@@ -103,6 +136,8 @@ impl DisplayState for World {
     }
 }
 
-impl NetWorld {
-    pub fn spawn_object(&mut self) {}
+impl GameWorld {
+    pub fn spawn_object(&mut self) {
+        todo!()
+    }
 }
