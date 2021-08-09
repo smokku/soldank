@@ -11,7 +11,7 @@ use std::{fmt::Debug, ops::Deref};
 /// (e.g. an entire physics engine)
 ///
 /// [world]: [crate::world::World]
-pub trait DisplayState: Send + Sync + Clone + Debug {
+pub trait DisplayState: Send + Sync + Clone {
     /// CrystalOrb needs to mix different [`DisplayState`]s from different [`World`][world]s
     /// together, as well as mix [`DisplayState`] from two adjacent timestamps. The
     /// [`from_interpolation`](DisplayState::from_interpolation) method tells CrystalOrb how to

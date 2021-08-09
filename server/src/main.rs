@@ -138,10 +138,12 @@ fn main() -> Result<()> {
                     systems::lobby(&mut world, &mut game_state, &networking);
                 }
                 GameState::InGame => {
-                    let server_display_state = server.display_state();
-                    log::info!("server_display_state: {:?}", server_display_state);
-
                     server.update(delta_seconds, seconds_since_startup);
+                    let server_display_state = server.display_state();
+                    log::trace!(
+                        "server_display_state: {}",
+                        server_display_state.inner().len()
+                    );
                     networking.process_simulation(&mut server); // push above server's results in the wild
 
                     // let time = systems::Time {

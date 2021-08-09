@@ -6,6 +6,7 @@ pub mod messages;
 pub mod networking;
 pub mod orb;
 pub mod systems;
+pub mod world;
 
 use hexdump::hexdump_iter;
 

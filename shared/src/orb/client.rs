@@ -76,7 +76,6 @@ use std::{
 /// This is the top-level structure of CrystalOrb for your game client, analogous to the
 /// [`Server`](crate::server::Server) for game servers. You create, store, and update this client
 /// instance to run your game on the client side.
-#[derive(Debug)]
 pub struct Client<WorldType: World> {
     config: Arc<RwLock<Config>>,
     // stage: StageOwned<WorldType>,
@@ -241,7 +240,6 @@ impl<WorldType: World> Client<WorldType> {
 
 /// The internal CrystalOrb structure used to actively run the simulations, which is not
 /// constructed until the [`ClockSyncer`] is ready.
-#[derive(Debug)]
 pub struct ActiveClient<WorldType: World> {
     // clocksyncer: ClockSyncer,
     timekeeping_simulations: TimeKeeper<

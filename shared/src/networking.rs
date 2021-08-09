@@ -1,7 +1,10 @@
-use crate::orb::{
-    command::Command,
-    fixed_timestepper::Stepper,
-    world::{DisplayState, World as OrbWorld},
+use crate::{
+    orb::{
+        command::Command,
+        fixed_timestepper::Stepper,
+        world::{DisplayState, World as OrbWorld},
+    },
+    world::World,
 };
 use nanoserde::{DeBin, SerBin};
 use std::{fmt::Debug, net::SocketAddr, time::Instant};
@@ -42,8 +45,10 @@ impl PacketStats {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct NetWorld {}
+#[derive(Default)]
+pub struct NetWorld {
+    world: World,
+}
 
 #[derive(Debug, Clone, SerBin, DeBin)]
 pub enum NetCommand {
@@ -53,14 +58,11 @@ pub enum NetCommand {
 #[derive(Debug, Default, Clone, SerBin, DeBin)]
 pub struct NetSnapshot {}
 
-#[derive(Clone, Default, Debug)]
-pub struct NetDisplayState {}
-
 impl OrbWorld for NetWorld {
     type ClientId = SocketAddr;
     type CommandType = NetCommand;
     type SnapshotType = NetSnapshot;
-    type DisplayStateType = NetDisplayState;
+    type DisplayStateType = World;
 
     fn command_is_valid(command: &NetCommand, client_id: Self::ClientId) -> bool {
         // Only localhost has permission to spawn
@@ -84,8 +86,8 @@ impl OrbWorld for NetWorld {
         NetSnapshot {}
     }
 
-    fn display_state(&self) -> NetDisplayState {
-        NetDisplayState {}
+    fn display_state(&self) -> Self::DisplayStateType {
+        self.world.clone()
     }
 }
 
@@ -95,9 +97,9 @@ impl Stepper for NetWorld {
     fn step(&mut self) {}
 }
 
-impl DisplayState for NetDisplayState {
+impl DisplayState for World {
     fn from_interpolation(state1: &Self, state2: &Self, t: f64) -> Self {
-        NetDisplayState {}
+        state2.clone()
     }
 }
 

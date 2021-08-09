@@ -440,8 +440,10 @@ async fn main() {
         networking.set_input_state(&soldier.control);
 
         networking.process(&resources, &mut client);
-        log::trace!("ready_client_display_state: {:?}", client.display_state());
         client.update(timeacc, timecur);
+        if let Some(state) = client.display_state() {
+            log::trace!("client_display_state: {}", state.display_state().len());
+        }
         networking.post_process(&*resources.get::<Config>().unwrap());
 
         physics::despawn_outliers(&mut world, &resources);
