@@ -429,10 +429,10 @@ pub fn render_skeleton(soldier: &Soldier, batch: &mut DrawBatch, px: f32, frame_
         batch.add_quad(
             None,
             &[
-                vertex(m * vec2(0.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
-                vertex(m * vec2(1.0, -0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
-                vertex(m * vec2(1.0, 0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
-                vertex(m * vec2(0.0, 0.5 * px), Vec2::zero(), rgb(255, 255, 0)),
+                vertex(m * vec2(0.0, -0.5 * px), Vec2::ZERO, rgb(255, 255, 0)),
+                vertex(m * vec2(1.0, -0.5 * px), Vec2::ZERO, rgb(255, 255, 0)),
+                vertex(m * vec2(1.0, 0.5 * px), Vec2::ZERO, rgb(255, 255, 0)),
+                vertex(m * vec2(0.0, 0.5 * px), Vec2::ZERO, rgb(255, 255, 0)),
             ],
         );
     }
@@ -444,10 +444,10 @@ pub fn render_skeleton(soldier: &Soldier, batch: &mut DrawBatch, px: f32, frame_
         batch.add_quad(
             None,
             &[
-                vertex(m * vec2(-1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
-                vertex(m * vec2(1.0 * px, -1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
-                vertex(m * vec2(1.0 * px, 1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
-                vertex(m * vec2(-1.0 * px, 1.0 * px), Vec2::zero(), rgb(0, 0, 255)),
+                vertex(m * vec2(-1.0 * px, -1.0 * px), Vec2::ZERO, rgb(0, 0, 255)),
+                vertex(m * vec2(1.0 * px, -1.0 * px), Vec2::ZERO, rgb(0, 0, 255)),
+                vertex(m * vec2(1.0 * px, 1.0 * px), Vec2::ZERO, rgb(0, 0, 255)),
+                vertex(m * vec2(-1.0 * px, 1.0 * px), Vec2::ZERO, rgb(0, 0, 255)),
             ],
         );
     }

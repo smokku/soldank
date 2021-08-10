@@ -9,5 +9,5 @@ publish = false
 [dependencies]
 miniquad = "0.3.0-alpha.37"
 image = "0.23"
-glam = "0.11"
+glam = "0.14"
 rgb = "0.8"

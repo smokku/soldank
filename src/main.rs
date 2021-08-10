@@ -112,9 +112,9 @@ impl GameStage {
                 game_width: W as f32 * (480.0 / H as f32),
                 game_height: 480.0,
                 camera: soldier.particle.pos,
-                camera_prev: Vec2::zero(),
-                mouse: Vec2::zero(),
-                mouse_prev: Vec2::zero(),
+                camera_prev: Vec2::ZERO,
+                mouse: Vec2::ZERO,
+                mouse_prev: Vec2::ZERO,
                 gravity: GRAV,
                 zoom: 0.0,
                 bullets: vec![],
@@ -185,7 +185,7 @@ impl mq::EventHandler for GameStage {
 
             self.state.camera = {
                 let z = f32::exp(self.state.zoom);
-                let mut m = Vec2::zero();
+                let mut m = Vec2::ZERO;
 
                 m.x = z * (self.state.mouse.x - self.state.game_width / 2.0) / 7.0
                     * ((2.0 * 640.0 / self.state.game_width - 1.0)
