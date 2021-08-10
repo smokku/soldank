@@ -147,7 +147,7 @@ pub fn render_soldier(
 
             let color = {
                 let color = colors[part.color as usize];
-                rgba(color.r.0, color.g.0, color.b.0, alpha[part.alpha as usize])
+                rgba(color.r, color.g, color.b, alpha[part.alpha as usize])
             };
 
             let sprite = match part.sprite {
@@ -322,9 +322,11 @@ fn parts_visibility(base_visibility: &BitSet, soldier: &Soldier, blood: bool) ->
 
         if grabbed || soldier.wear_helmet != 1 || hair_style == 3 {
             match hair_style {
-                1 => for i in 0..6 {
-                    visible.set(SoldierPart::HairDreadlocks.id() + i, true);
-                },
+                1 => {
+                    for i in 0..6 {
+                        visible.set(SoldierPart::HairDreadlocks.id() + i, true);
+                    }
+                }
                 2 => visible.set(SoldierPart::HairPunk.id(), true),
                 3 => visible.set(SoldierPart::MrT.id(), true),
                 4 => visible.set(SoldierPart::HairNormal.id(), true),
@@ -421,7 +423,8 @@ pub fn render_skeleton(soldier: &Soldier, batch: &mut DrawBatch, px: f32, frame_
             pivot: vec2(0.0, 0.0),
             scale: vec2(distance(a, b), 1.0),
             rot: vec2angle(b - a),
-        }.matrix();
+        }
+        .matrix();
 
         batch.add_quad(
             None,

@@ -2,17 +2,19 @@
 name = "soldank"
 version = "0.1.0"
 authors = ["helloer <im.helloer@gmail.com>"]
+edition = "2018"
+license = "MIT"
+publish = false
 
 [dependencies]
 byteorder = "1.3.2"
 gfx2d = { path = "gfx2d" }
-gfx = "0.18"
-gfx_window_glutin = { version = "0.33", git = "https://github.com/bebrws/gfx_window_glutin.git" }
-glutin = "0.25"
-image = "0.21"
 time = "0.1.42"
 rust-ini = "0.16"
 bit-array = "0.4.4"
 typenum = "1.12"
 clap = "2.33"
 lazy_static = "1.4"
+
+[patch.crates-io]
+miniquad = { git = "https://github.com/not-fl3/miniquad.git" }

@@ -55,11 +55,9 @@ impl Sprite {
     }
 
     pub fn from_texture(texture: &Texture, pixel_ratio: Vec2) -> Sprite {
-        let (w, h) = texture.dimensions();
-
         Sprite {
-            width: f32::from(w) / pixel_ratio.x,
-            height: f32::from(h) / pixel_ratio.y,
+            width: texture.width as f32 / pixel_ratio.x,
+            height: texture.height as f32 / pixel_ratio.y,
             texcoords_x: (0.0, 1.0),
             texcoords_y: (0.0, 1.0),
             texture: Some(texture.clone()),
@@ -76,16 +74,15 @@ impl Spritesheet {
     }
 
     pub fn new(
-        context: &mut Gfx2dContext,
+        ctx: &mut Context,
         padding: i32,
-        filter: FilterMethod,
+        filter: FilterMode,
         info: &[SpriteInfo],
     ) -> Spritesheet {
         if info.is_empty() {
             return Spritesheet::empty();
         }
 
-        let max_size = context.max_texture_size() as i32;
         let mut images: Vec<Image> = Vec::with_capacity(info.len());
         let mut sprites: Vec<Sprite> = Vec::with_capacity(info.len());
         let mut rects: Vec<Rect> = Vec::with_capacity(info.len());
@@ -111,8 +108,8 @@ impl Spritesheet {
                 texture: None,
             });
 
-            let w = i32::min(max_size, img.width() as i32);
-            let h = i32::min(max_size, img.height() as i32);
+            let w = i32::min(MAX_TEXTURE_SIZE, img.width() as i32);
+            let h = i32::min(MAX_TEXTURE_SIZE, img.height() as i32);
 
             if w != img.width() as i32 || h != img.height() as i32 {
                 let filter = image::imageops::FilterType::Lanczos3;
@@ -131,7 +128,7 @@ impl Spritesheet {
         }
 
         let mut sheets: Vec<(i32, i32)> = Vec::new();
-        Self::pack_recursive(&mut rects[..], &mut sheets, padding, max_size);
+        Self::pack_recursive(&mut rects[..], &mut sheets, padding, MAX_TEXTURE_SIZE);
 
         let mut sheets: Vec<Image> = sheets
             .iter()
@@ -149,12 +146,16 @@ impl Spritesheet {
         let textures: Vec<Texture> = sheets
             .drain(..)
             .map(|ref img| {
-                Texture::new(
-                    context,
-                    (img.width() as u16, img.height() as u16),
+                Texture::from_data_and_format(
+                    ctx,
                     img,
-                    filter,
-                    WrapMode::Clamp,
+                    TextureParams {
+                        width: img.width(),
+                        height: img.height(),
+                        format: TextureFormat::RGBA8,
+                        filter,
+                        wrap: TextureWrap::Clamp,
+                    },
                 )
             })
             .collect();
@@ -163,13 +164,12 @@ impl Spritesheet {
             let sprite = &mut sprites[rc.data.0];
             let texture = &textures[rc.data.1];
 
-            let (w, h) = texture.dimensions();
             let (x0, x1) = (rc.left() as f32, (rc.right() - padding) as f32);
             let (y0, y1) = (rc.top() as f32, (rc.bottom() - padding) as f32);
 
             sprite.texture = Some(texture.clone());
-            sprite.texcoords_x = (x0 / f32::from(w), x1 / f32::from(w));
-            sprite.texcoords_y = (y0 / f32::from(h), y1 / f32::from(h));
+            sprite.texcoords_x = (x0 / texture.width as f32, x1 / texture.width as f32);
+            sprite.texcoords_y = (y0 / texture.height as f32, y1 / texture.height as f32);
         }
 
         Spritesheet { textures, sprites }

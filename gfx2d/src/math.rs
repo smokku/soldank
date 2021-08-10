@@ -16,7 +16,7 @@ pub fn deg(angle: f32) -> Deg {
 
 // Indexed by row. Works like a 3x3 matrix where last row is always [0, 0, 1]
 #[derive(Debug, Copy, Clone)]
-pub struct Mat2d(pub (f32, f32, f32), pub (f32, f32, f32));
+pub struct Mat2d(pub(crate) (f32, f32, f32), pub(crate) (f32, f32, f32));
 
 impl Mat2d {
     pub fn identity() -> Mat2d {
