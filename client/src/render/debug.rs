@@ -66,10 +66,9 @@ pub fn debug_render(
                     .vertices
                     .iter()
                     .map(|v| {
-                        let color = if v.color.a < 8 {
-                            color_u8!(255, 0, 0, 255 - v.color.a)
-                        } else {
-                            color_u8!(v.color.r, v.color.g, v.color.b, v.color.a)
+                        let mut color = color_u8!(v.color.r, v.color.g, v.color.b, v.color.a);
+                        if color.a < 0.5 {
+                            color.a = 1. - color.a;
                         };
                         Vertex::new(v.x, v.y, 0., 0., 0., color)
                     })
