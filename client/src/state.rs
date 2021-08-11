@@ -25,6 +25,7 @@ pub struct MainState {
     pub camera_prev: Vec2,
     pub mouse: Vec2,
     pub mouse_prev: Vec2,
+    pub mouse_phys: Vec2,
     pub game_width: f32,
     pub game_height: f32,
     pub zoom: f32,

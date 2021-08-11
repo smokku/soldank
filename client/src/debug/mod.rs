@@ -16,9 +16,9 @@ pub struct DebugState {
     spawner: spawner::SpawnerState,
     pub render: RenderState,
 
-    pub fps: u32,
-    fps_second: u32,
-    fps_count: u32,
+    pub fps: u16,
+    fps_second: u64,
+    fps_count: u16,
 }
 
 impl IVisit for DebugState {
@@ -31,125 +31,92 @@ impl IVisit for DebugState {
     }
 }
 
-// pub fn build_ui(
-//     world: &mut World,
-//     resources: &Resources,
-//     seconds_since_startup: u32,
-//     overstep_percentage: f32,
-// ) {
-//     let game = resources.get::<MainState>().unwrap();
-//     let mut config = resources.get_mut::<Config>().unwrap();
-//     let scale = config.phys.scale;
+pub fn build_ui(
+    ctx: &mut mq::Context,
+    egui_ctx: &egui::CtxRef,
+    world: &mut World,
+    resources: &Resources,
+    seconds_since_startup: u64,
+    overstep_percentage: f32,
+) {
+    let game = resources.get::<MainState>().unwrap();
+    let mut config = resources.get_mut::<Config>().unwrap();
+    let scale = config.phys.scale;
 
-//     if mq::is_key_pressed(mq::KeyCode::GraveAccent) && mq::is_key_down(mq::KeyCode::LeftControl) {
-//         config.debug.visible = !config.debug.visible;
-//     }
+    if config.debug.fps_second != seconds_since_startup {
+        config.debug.fps = config.debug.fps_count;
+        config.debug.fps_second = seconds_since_startup;
+        config.debug.fps_count = 0;
+    }
+    config.debug.fps_count += 1;
 
-//     if config.debug.fps_second != seconds_since_startup {
-//         config.debug.fps = config.debug.fps_count;
-//         config.debug.fps_second = seconds_since_startup;
-//         config.debug.fps_count = 0;
-//     }
-//     config.debug.fps_count += 1;
+    if config.debug.visible {
+        let (dx, dy, _w, _h) = game.viewport(1.0);
+        let (x, y) = game.mouse_to_world(1.0, game.mouse.x, game.mouse.y);
 
-//     if config.debug.visible {
-//         let (mouse_x, mouse_y) = mq::mouse_position();
-//         let game_x = mouse_x * GAME_WIDTH / WINDOW_WIDTH as f32;
-//         let game_y = mouse_y * GAME_HEIGHT / WINDOW_HEIGHT as f32;
-//         let (dx, dy, _w, _h) = game.viewport(1.0);
-//         let (x, y) = game.mouse_to_world(1.0, game_x, game_y);
+        egui::Window::new("Egui Window")
+            .title_bar(false)
+            .resizable(false)
+            .collapsible(false)
+            .show(egui_ctx, |ui| {
+                ui.horizontal_wrapped(|ui| {
+                    if ui
+                        .selectable_label(config.debug.cli.visible, "CLI")
+                        .clicked()
+                    {
+                        config.debug.cli.visible = !config.debug.cli.visible;
+                    }
+                    if ui
+                        .selectable_label(config.debug.spawner.visible, "Spawn")
+                        .clicked()
+                    {
+                        config.debug.spawner.visible = !config.debug.spawner.visible;
+                    }
+                    if ui
+                        .selectable_label(false, /*config.debug.entities.visible*/ "Entities")
+                        .clicked()
+                    {
+                        // config.debug.entities.visible = !config.debug.entities.visible;
+                    }
+                    if ui
+                        .selectable_label(config.debug.render.visible, "Render")
+                        .clicked()
+                    {
+                        config.debug.render.visible = !config.debug.render.visible;
+                    }
+                });
 
-//         widgets::Window::new(hash!(), vec2(10., 10.), vec2(296., 91.))
-//             .titlebar(false)
-//             .ui(&mut *root_ui(), |ui| {
-//                 if ui.button(
-//                     None,
-//                     toggle_button_label(config.debug.cli.visible, "CLI").as_str(),
-//                 ) {
-//                     config.debug.cli.visible = !config.debug.cli.visible;
-//                 }
-//                 if ui.button(
-//                     vec2(45., 2.),
-//                     toggle_button_label(config.debug.spawner.visible, "Spawn").as_str(),
-//                 ) {
-//                     config.debug.spawner.visible = !config.debug.spawner.visible;
-//                 }
-//                 if ui.button(
-//                     vec2(102., 2.),
-//                     toggle_button_label(false /*config.debug.entities.visible*/, "Entities")
-//                         .as_str(),
-//                 ) {
-//                     // config.debug.entities.visible = !config.debug.entities.visible;
-//                 }
-//                 if ui.button(
-//                     vec2(180., 2.),
-//                     toggle_button_label(config.debug.render.visible, "Render").as_str(),
-//                 ) {
-//                     config.debug.render.visible = !config.debug.render.visible;
-//                 }
+                ui.separator();
+                ui.scope(|ui| {
+                    ui.style_mut().override_text_style = Some(egui::TextStyle::Monospace);
 
-//                 ui.separator();
-//                 ui.label(
-//                     None,
-//                     format!("{:4}FPS \u{B1}{}", config.debug.fps, overstep_percentage).as_str(),
-//                 );
+                    ui.label(format!(
+                        "{:4}FPS \u{B1}{}",
+                        config.debug.fps, overstep_percentage
+                    ));
 
-//                 ui.label(
-//                     None,
-//                     format!(
-//                         " \u{86} {:4} {:3} [{:.3} {:.3}]",
-//                         mouse_x as u32, mouse_y as u32, game_x, game_y
-//                     )
-//                     .as_str(),
-//                 );
-//                 if ui.button(vec2(6., 47.), "\u{86}") {
-//                     let mq::InternalGlContext {
-//                         quad_context: ctx, ..
-//                     } = unsafe { mq::get_internal_gl() };
-//                     ctx.set_cursor_grab(false);
-//                 }
-//                 ui.label(
-//                     None,
-//                     format!(" \u{AC} {:4.3} {:3.3} ({:.3},{:.3})", x, y, dx, dy).as_str(),
-//                 );
-//             });
+                    ui.horizontal_wrapped(|ui| {
+                        if ui.button("\u{2196}").clicked() {
+                            ctx.set_cursor_grab(false);
+                        }
+                        ui.label(format!(
+                            "{:4} {:3} [{:.3} {:.3}]",
+                            game.mouse_phys.x as u32,
+                            game.mouse_phys.y as u32,
+                            game.mouse.x,
+                            game.mouse.y
+                        ));
+                    });
+                    ui.label(format!(
+                        " \u{1F5FA} {:4.3} {:3.3} ({:.3},{:.3})",
+                        x, y, dx, dy
+                    ));
+                });
+            });
 
-//         config.debug.cli.build_ui();
-//         config.debug.spawner.build_ui(world, x, y, scale);
-//         // config.debug.entities.build_ui();
-//         config.debug.render.build_ui();
-//     }
-// }
-
-// pub(crate) fn toggle_button_label<S: std::fmt::Display>(state: bool, label: S) -> String {
-//     if state {
-//         format!("[{}]", label)
-//     } else {
-//         format!(" {} ", label)
-//     }
-// }
-
-// pub(crate) fn checkbox_label<S: std::fmt::Display>(state: bool, label: S) -> String {
-//     if state {
-//         format!("[x] {}", label)
-//     } else {
-//         format!("[ ] {}", label)
-//     }
-// }
-
-// fn toggle_state<P: Into<Option<Vec2>>>(ui: &mut Ui, position: P, state: &mut bool, label: &str) {
-//     if ui.button(position, checkbox_label(*state, label).as_str()) {
-//         *state = !*state;
-//     }
-// }
-
-// fn toggle_state_inv<P: Into<Option<Vec2>>>(
-//     ui: &mut Ui,
-//     position: P,
-//     state: &mut bool,
-//     label: &str,
-// ) {
-//     if ui.button(position, checkbox_label(!*state, label).as_str()) {
-//         *state = !*state;
-//     }
-// }
+        // config.debug.cli.build_ui();
+        // config.debug.spawner.build_ui(world, x, y, scale);
+        // // config.debug.entities.build_ui();
+        // config.debug.render.build_ui();
+    }
+}

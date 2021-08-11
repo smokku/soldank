@@ -176,6 +176,7 @@ fn main() {
         camera_prev: Vec2::ZERO,
         mouse: Vec2::ZERO,
         mouse_prev: Vec2::ZERO,
+        mouse_phys: Vec2::ZERO,
         zoom: 0.0,
         mouse_over_ui: false,
     };
@@ -244,6 +245,7 @@ pub struct GameStage {
     graphics: GameGraphics,
     last_frame: f64,
     timeacc: f64,
+    egui_mq: egui_miniquad::EguiMq,
 
     soldier: Soldier,
     emitter: Vec<EmitterItem>,
@@ -294,6 +296,7 @@ impl GameStage {
             graphics,
             last_frame: mq::date::now(),
             timeacc: 0.0,
+            egui_mq: egui_miniquad::EguiMq::new(ctx),
 
             soldier,
             emitter: Vec::new(),
@@ -454,13 +457,25 @@ impl mq::EventHandler for GameStage {
         self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 
+    fn char_event(
+        &mut self,
+        _ctx: &mut mq::Context,
+        character: char,
+        _keymods: mq::KeyMods,
+        _repeat: bool,
+    ) {
+        self.egui_mq.char_event(character);
+    }
+
     fn key_down_event(
         &mut self,
         ctx: &mut mq::Context,
         keycode: mq::KeyCode,
-        _keymods: mq::KeyMods,
+        keymods: mq::KeyMods,
         _repeat: bool,
     ) {
+        self.egui_mq.key_down_event(ctx, keycode, keymods);
+
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
             mq::KeyCode::Equal => {
@@ -475,6 +490,13 @@ impl mq::EventHandler for GameStage {
                 let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
                 self.soldier.weapons[self.soldier.active_weapon] = weapons[index];
             }
+            mq::KeyCode::GraveAccent => {
+                if keymods.ctrl {
+                    let mut config = self.resources.get_mut::<Config>().unwrap();
+                    config.debug.visible = !config.debug.visible;
+                }
+            }
+
             _ => self.soldier.update_keys(true, keycode),
         }
     }
@@ -483,8 +505,10 @@ impl mq::EventHandler for GameStage {
         &mut self,
         ctx: &mut gfx2d::Context,
         keycode: mq::KeyCode,
-        _keymods: mq::KeyMods,
+        keymods: mq::KeyMods,
     ) {
+        self.egui_mq.key_up_event(keycode, keymods);
+
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
             mq::KeyCode::Equal => {
@@ -504,11 +528,13 @@ impl mq::EventHandler for GameStage {
 
     fn mouse_button_down_event(
         &mut self,
-        _ctx: &mut mq::Context,
+        ctx: &mut mq::Context,
         button: mq::MouseButton,
-        _x: f32,
-        _y: f32,
+        x: f32,
+        y: f32,
     ) {
+        self.egui_mq.mouse_button_down_event(ctx, button, x, y);
+
         let state = self.resources.get::<MainState>().unwrap();
         if !state.mouse_over_ui {
             self.soldier.update_mouse_button(true, button);
@@ -517,22 +543,45 @@ impl mq::EventHandler for GameStage {
 
     fn mouse_button_up_event(
         &mut self,
-        _ctx: &mut gfx2d::Context,
+        ctx: &mut gfx2d::Context,
         button: mq::MouseButton,
-        _x: f32,
-        _y: f32,
+        x: f32,
+        y: f32,
     ) {
+        self.egui_mq.mouse_button_up_event(ctx, button, x, y);
+
         self.soldier.update_mouse_button(false, button);
     }
 
-    fn mouse_motion_event(&mut self, _ctx: &mut mq::Context, x: f32, y: f32) {
+    fn mouse_motion_event(&mut self, ctx: &mut mq::Context, x: f32, y: f32) {
+        self.egui_mq.mouse_motion_event(ctx, x, y);
+
         let mut state = self.resources.get_mut::<MainState>().unwrap();
         state.mouse.x = x * state.game_width / WINDOW_WIDTH as f32;
         state.mouse.y = y * state.game_height / WINDOW_HEIGHT as f32;
+        state.mouse_phys.x = x;
+        state.mouse_phys.y = y;
+    }
+
+    fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {
+        self.egui_mq.mouse_wheel_event(ctx, dx, dy);
     }
 
     fn draw(&mut self, ctx: &mut mq::Context) {
         let p = f64::min(1.0, f64::max(0.0, self.timeacc / TIMESTEP_RATE));
+
+        self.egui_mq.begin_frame(ctx);
+        if cfg!(debug_assertions) {
+            debug::build_ui(
+                ctx,
+                self.egui_mq.egui_ctx(),
+                &mut self.world,
+                &self.resources,
+                self.last_frame as u64,
+                p as f32,
+            );
+        }
+        self.egui_mq.end_frame(ctx);
 
         self.graphics.render_frame(
             &mut self.context,
@@ -545,13 +594,11 @@ impl mq::EventHandler for GameStage {
             p as f32,
         );
 
-        if cfg!(debug_assertions) {
-            // debug::build_ui(&mut world, &resources, timecur as u32, p as f32);
-        }
+        self.egui_mq.draw(ctx);
 
         {
             let mut state = self.resources.get_mut::<MainState>().unwrap();
-            let mouse_over_ui = false; // macroquad::ui::root_ui().is_mouse_over(Vec2::from(mq::mouse_position()));
+            let mouse_over_ui = self.egui_mq.egui_ctx().wants_pointer_input();
             if state.mouse_over_ui != mouse_over_ui {
                 state.mouse_over_ui = mouse_over_ui;
                 ctx.show_mouse(state.mouse_over_ui);
