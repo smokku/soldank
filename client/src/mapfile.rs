@@ -1,7 +1,6 @@
 use super::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::error::Error;
-use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 
@@ -43,7 +42,7 @@ pub enum PolyType {
     HurtsFlaggers,
     OnlyFlaggers,
     NotFlaggers,
-    NonFlaggersCollide,
+    FlagCollide,
     Background,
     BackgroundTransition,
 }
@@ -104,10 +103,10 @@ pub struct MapScenery {
 
 #[derive(Debug)]
 pub struct MapCollider {
-    active: bool,
-    x: f32,
-    y: f32,
-    radius: f32,
+    pub active: bool,
+    pub x: f32,
+    pub y: f32,
+    pub diameter: f32,
 }
 
 #[derive(Debug)]
@@ -167,11 +166,11 @@ impl MapPolygon {
 }
 
 impl MapFile {
-    pub fn load_map_file(file_name: &str) -> MapFile {
+    pub fn load_map_file(fs: &mut Filesystem, file_name: &str) -> MapFile {
         let mut path = PathBuf::new();
-        path.push("assets/maps/");
+        path.push("maps/");
         path.push(file_name);
-        let file = File::open(&path).expect("Error opening File");
+        let file = fs.open(&path).expect("Error opening File");
         let mut buf = BufReader::new(file);
 
         let filename = path.to_string_lossy().into_owned();
@@ -188,7 +187,7 @@ impl MapFile {
         let random_id = buf.read_i32::<LittleEndian>().unwrap();
 
         let n = buf.read_i32::<LittleEndian>().unwrap();
-        if (n > MAX_POLYS) || (n < 0) {
+        if !(0..=MAX_POLYS).contains(&n) {
             panic!("Wrong PMS data (number of polygons)");
         }
 
@@ -234,7 +233,7 @@ impl MapFile {
                     20 => PolyType::HurtsFlaggers,
                     21 => PolyType::OnlyFlaggers,
                     22 => PolyType::NotFlaggers,
-                    23 => PolyType::NonFlaggersCollide,
+                    23 => PolyType::FlagCollide,
                     24 => PolyType::Background,
                     25 => PolyType::BackgroundTransition,
                     _ => PolyType::Normal,
@@ -266,8 +265,8 @@ impl MapFile {
         let sectors_division = buf.read_i32::<LittleEndian>().unwrap();
         let sectors_num = buf.read_i32::<LittleEndian>().unwrap();
 
-        if (sectors_num > MAX_SECTOR) || (sectors_num < 0) {
-            panic!("Wrong PMS data (number of sectors)");
+        if !(0..=MAX_SECTOR).contains(&sectors_num) {
+            panic!("Wrong PMS data (number of sectors): {}", sectors_num);
         }
 
         let n = (2 * sectors_num + 1) * (2 * sectors_num + 1);
@@ -291,8 +290,8 @@ impl MapFile {
 
         let mut k = 0;
         let sector = MapSector { polys: Vec::new() };
-        let sectores = vec![sector.clone(); 51];
-        let mut sectored = vec![sectores.clone(); 51];
+        let sectores = vec![sector; 51];
+        let mut sectored = vec![sectores; 51];
 
         for sec_i in sectored.iter_mut().take(51) {
             for sec_ij in sec_i.iter_mut().take(51) {
@@ -304,7 +303,7 @@ impl MapFile {
         let sectors_poly = sectored;
 
         let n = buf.read_i32::<LittleEndian>().unwrap();
-        if (n > MAX_PROPS) || (n < 0) {
+        if !(0..=MAX_PROPS).contains(&n) {
             panic!("Wrong PMS data (number of props)");
         }
 
@@ -358,13 +357,13 @@ impl MapFile {
             let active = buf.read_i32::<LittleEndian>().unwrap() != 0;
             let x = buf.read_f32::<LittleEndian>().unwrap();
             let y = buf.read_f32::<LittleEndian>().unwrap();
-            let radius = buf.read_f32::<LittleEndian>().unwrap();
+            let diameter = buf.read_f32::<LittleEndian>().unwrap();
 
             colliders.push(MapCollider {
                 active,
                 x,
                 y,
-                radius,
+                diameter,
             });
         }
 

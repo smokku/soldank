@@ -1,12 +1,58 @@
 use super::*;
 use gfx::SpriteData;
+use hocon::{Hocon, HoconLoader};
 use ini::Ini;
-use std::str::FromStr;
+use std::{collections::HashMap, io::Read, str::FromStr};
+
+#[derive(Default)]
+pub struct Sprites {
+    stat: Vec<Vec<Sprite>>,
+    dynamic: HashMap<String, HashMap<String, Sprite>>,
+}
+
+impl Sprites {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn get<S: Into<String>>(&self, group: S, sprite: S) -> &gfx2d::Sprite {
+        let group = group.into();
+        let sprite = sprite.into();
+
+        if let Some(grp) = gfx::Group::values().iter().position(|g| g.name() == group) {
+            if let Some(spr) = match gfx::Group::values()[grp] {
+                gfx::Group::Soldier => gfx::Soldier::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+                gfx::Group::Weapon => gfx::Weapon::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+                gfx::Group::Spark => gfx::Spark::values().iter().position(|s| s.name() == sprite),
+                gfx::Group::Object => gfx::Object::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+                gfx::Group::Interface => gfx::Interface::values()
+                    .iter()
+                    .position(|s| s.name() == sprite),
+            } {
+                return &self.stat[grp][spr];
+            } else {
+                panic!("Sprite '{} / {}' unavailable", group, sprite);
+            }
+        }
+
+        self.dynamic
+            .get(&group)
+            .unwrap_or_else(|| panic!("Sprite group '{}' unavailable", group))
+            .get(&sprite)
+            .unwrap_or_else(|| panic!("Sprite '{} / {}' unavailable", group, sprite))
+    }
+}
 
 pub struct GameGraphics {
     map: MapGraphics,
     soldier_graphics: SoldierGraphics,
-    sprites: Vec<Vec<Sprite>>,
+    pub sprites: Sprites,
     batch: DrawBatch,
 }
 
@@ -15,7 +61,7 @@ impl GameGraphics {
         GameGraphics {
             map: MapGraphics::empty(),
             soldier_graphics: SoldierGraphics::new(),
-            sprites: Vec::new(),
+            sprites: Sprites::new(),
             batch: DrawBatch::new(),
         }
     }
@@ -24,11 +70,16 @@ impl GameGraphics {
         &mut self,
         context: &mut Gfx2dContext,
         ctx: &mut Context,
-        state: &MainState,
+        world: &World,
+        resources: &Resources,
         soldier: &Soldier,
+        bullets: &Vec<Bullet>,
         elapsed: f64,
         frame_percent: f32,
     ) {
+        let state = resources.get::<MainState>().unwrap();
+        let config = resources.get::<Config>().unwrap();
+
         let zoom = f32::exp(state.zoom);
         let cam = lerp(state.camera_prev, state.camera, frame_percent);
         let (w, h) = (zoom * state.game_width, zoom * state.game_height);
@@ -36,25 +87,27 @@ impl GameGraphics {
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
         let transform_bg = Transform::ortho(0.0, 1.0, dy, dy + h).matrix();
 
+        let debug_state = &config.debug;
+
         self.batch.clear();
 
         render_soldier(
-            soldier,
+            &*soldier,
             &self.soldier_graphics,
-            &self.sprites,
+            &self.sprites.stat,
             &mut self.batch,
             frame_percent,
         );
 
-        if false {
+        if debug_state.render.render_skeleton {
             let px = h / ctx.screen_size().1;
-            render_skeleton(soldier, &mut self.batch, px, frame_percent);
+            render_skeleton(&*soldier, &mut self.batch, px, frame_percent);
         }
 
-        for bullet in &state.bullets {
+        for bullet in bullets.iter() {
             render_bullet(
                 bullet,
-                &self.sprites,
+                &self.sprites.stat,
                 &mut self.batch,
                 elapsed,
                 frame_percent,
@@ -62,14 +115,42 @@ impl GameGraphics {
         }
 
         ctx.begin_default_pass(mq::PassAction::clear_color(0.5, 0.1, 0.7, 1.0));
-        context.draw(ctx, &mut self.map.background(), &transform_bg);
-        context.draw(ctx, &mut self.map.polys_back(), &transform);
-        context.draw(ctx, &mut self.map.scenery_back(), &transform);
+
+        if !debug_state.render.disable_background {
+            context.draw(ctx, &mut self.map.background(), &transform_bg);
+        }
+
+        if !debug_state.render.disable_polygon {
+            if !debug_state.render.disable_texture {
+                context.draw(ctx, &mut self.map.polys_back(), &transform);
+            } else {
+                // draw using white texture
+            }
+        }
+        if !debug_state.render.disable_scenery_back {
+            context.draw(ctx, &mut self.map.scenery_back(), &transform);
+        }
+        render::systems::render_sprites(world, &self.sprites, &mut self.batch, config.phys.scale);
         context.draw(ctx, &mut self.batch.all(), &transform);
-        context.draw(ctx, &mut self.map.scenery_mid(), &transform);
-        context.draw(ctx, &mut self.map.polys_front(), &transform);
-        context.draw(ctx, &mut self.map.scenery_front(), &transform);
-        self.render_cursor(context, ctx, state);
+        if !debug_state.render.disable_scenery_middle {
+            context.draw(ctx, &mut self.map.scenery_mid(), &transform);
+        }
+        if !debug_state.render.disable_polygon {
+            if !debug_state.render.disable_texture {
+                context.draw(ctx, &mut self.map.polys_front(), &transform);
+            } else {
+                // draw using white texture
+            }
+        }
+        if !debug_state.render.disable_scenery_front {
+            context.draw(ctx, &mut self.map.scenery_front(), &transform);
+        }
+
+        if debug_state.visible {
+            // debug::debug_render(gl, debug_state, self, world, resources);
+        }
+
+        self.render_cursor(context, ctx, &*state);
         ctx.end_render_pass();
     }
 
@@ -106,16 +187,16 @@ impl GameGraphics {
         context.draw(ctx, &mut self.batch.all(), &screen);
     }
 
-    pub fn load_map(&mut self, ctx: &mut Context, map: &MapFile) {
-        self.map = MapGraphics::new(ctx, map);
+    pub fn load_map(&mut self, ctx: &mut Context, fs: &mut Filesystem, map: &MapFile) {
+        self.map = MapGraphics::new(ctx, fs, map);
     }
 
-    pub fn load_sprites(&mut self, ctx: &mut Context) {
+    pub fn load_sprites(&mut self, ctx: &mut Context, fs: &mut Filesystem) {
         let mut main: Vec<SpriteInfo> = Vec::new();
         let mut intf: Vec<SpriteInfo> = Vec::new();
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
-            let fname = filename_override("assets/", fname);
+            let fname = filename_override(fs, "", fname);
             v.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
         };
 
@@ -148,7 +229,8 @@ impl GameGraphics {
             }
         }
 
-        if let Ok(cfg) = Ini::load_from_file("assets/mod.ini") {
+        let mut file = fs.open("mod.ini").expect("Error opening File");
+        if let Ok(cfg) = Ini::read_from(&mut file) {
             self.soldier_graphics.load_data(&cfg);
 
             if let Some(data) = cfg.section(Some("SCALE".to_owned())) {
@@ -158,12 +240,7 @@ impl GameGraphics {
                 };
 
                 for sprite_info in main.iter_mut().chain(intf.iter_mut()) {
-                    let fname = sprite_info
-                        .filename
-                        .strip_prefix("assets/")
-                        .unwrap()
-                        .to_str()
-                        .unwrap();
+                    let fname = sprite_info.filename.to_str().unwrap();
 
                     let scale = match data.get(fname) {
                         None => default_scale,
@@ -175,11 +252,90 @@ impl GameGraphics {
             }
         }
 
-        let main = Spritesheet::new(ctx, 8, FilterMode::Linear, &main);
-        let intf = Spritesheet::new(ctx, 8, FilterMode::Linear, &intf);
+        let mut sprites_config = String::new();
+        match fs.open("/sprites.conf") {
+            Ok(mut file) => {
+                if let Err(err) = file.read_to_string(&mut sprites_config) {
+                    log::error!("Cannot read sprites.conf: {}", err);
+                    std::process::abort();
+                }
+            }
+            Err(err) => {
+                log::error!("Cannot open sprites.conf: {}", err);
+                std::process::abort();
+            }
+        }
 
-        self.sprites.clear();
-        self.sprites.resize(gfx::Group::values().len(), Vec::new());
+        let mut loader = HoconLoader::new().no_system();
+        loader = match loader.load_str(&sprites_config) {
+            Ok(loader) => loader,
+            Err(err) => {
+                log::error!("Cannot load sprites.conf: {}", err);
+                std::process::abort();
+            }
+        };
+
+        let sprites_config = match loader.hocon() {
+            Ok(hocon) => hocon,
+            Err(err) => {
+                log::error!("Cannot parse sprites.conf: {}", err);
+                std::process::abort();
+            }
+        };
+        log::trace!("Parsed sprites.conf: {:#?}", sprites_config);
+
+        let groups = match sprites_config {
+            Hocon::Hash(groups) => groups,
+            _ => {
+                log::error!("Error parsing sprites.conf groups: not a Hash");
+                std::process::abort();
+            }
+        };
+
+        let mut dynamic_sprites: HashMap<String, HashMap<String, usize>> = HashMap::new();
+        for group in groups.keys() {
+            let sprites = match &groups[group] {
+                Hocon::Hash(sprites) => sprites,
+                _ => {
+                    log::error!("Error parsing sprites.conf group {}: not a Hash", group);
+                    std::process::abort();
+                }
+            };
+            for sprite in sprites.keys() {
+                let fname = match &sprites[sprite] {
+                    Hocon::String(fname) => fname,
+                    Hocon::Hash(data) => match &data["path"] {
+                        Hocon::String(fname) => fname,
+                        _ => {
+                            log::error!(
+                                "Error parsing sprites.conf sprite {}/{}: Missing 'path'",
+                                group,
+                                sprite
+                            );
+                            std::process::abort();
+                        }
+                    },
+                    _ => {
+                        log::error!("Error parsing sprites.conf sprite {}/{}", group, sprite);
+                        std::process::abort();
+                    }
+                };
+                dynamic_sprites
+                    .entry((*group).clone())
+                    .or_default()
+                    .insert((*sprite).clone(), main.len());
+                let fname = filename_override(fs, "", fname);
+                main.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
+            }
+        }
+
+        let main = Spritesheet::new(ctx, fs, 8, FilterMode::Linear, &main);
+        let intf = Spritesheet::new(ctx, fs, 8, FilterMode::Linear, &intf);
+
+        self.sprites.stat.clear();
+        self.sprites
+            .stat
+            .resize(gfx::Group::values().len(), Vec::new());
 
         let mut imain = 0;
         let mut iintf = 0;
@@ -190,34 +346,44 @@ impl GameGraphics {
             match *group {
                 gfx::Group::Soldier => {
                     for _ in gfx::Soldier::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Weapon => {
                     for _ in gfx::Weapon::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Spark => {
                     for _ in gfx::Spark::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Object => {
                     for _ in gfx::Object::values() {
-                        self.sprites[index].push(main.sprites[imain].clone());
+                        self.sprites.stat[index].push(main.sprites[imain].clone());
                         imain += 1;
                     }
                 }
                 gfx::Group::Interface => {
                     for _ in gfx::Interface::values() {
-                        self.sprites[index].push(intf.sprites[iintf].clone());
+                        self.sprites.stat[index].push(intf.sprites[iintf].clone());
                         iintf += 1;
                     }
                 }
+            }
+        }
+
+        for group in dynamic_sprites.keys() {
+            for (sprite, &index) in dynamic_sprites[group].iter() {
+                self.sprites
+                    .dynamic
+                    .entry((*group).clone())
+                    .or_default()
+                    .insert((*sprite).clone(), main.sprites[index].clone());
             }
         }
     }

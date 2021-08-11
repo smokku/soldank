@@ -1,0 +1,18 @@
+[workspace]
+members = ["client", "client/gfx2d", "server", "shared"]
+resolver = "2"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = true
+codegen-units = 1
+incremental = false
+
+[patch.crates-io]
+miniquad = { git = "https://github.com/not-fl3/miniquad.git" }
+# laminar = { git = "https://github.com/amethyst/laminar.git" }
+cvar = { git = "https://github.com/CasualX/cvar.git" }
+hecs = { git = "https://github.com/smokku/hecs.git" }
+hecs_rapier = { git = "https://github.com/smokku/hecs_rapier.git" }

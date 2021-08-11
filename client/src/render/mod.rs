@@ -1,25 +1,37 @@
 use super::*;
 
 pub mod bullets;
+// pub mod debug;
 pub mod game;
 pub mod gfx;
 pub mod map;
 pub mod soldiers;
+pub mod systems;
 
-pub use self::game::GameGraphics;
+pub use self::game::{GameGraphics, Sprites};
 
 use self::bullets::*;
 use self::map::*;
 use self::soldiers::*;
 use gfx2d::*;
+use std::path::PathBuf;
 
-fn filename_override(prefix: &str, fname: &str) -> ::std::path::PathBuf {
-    let mut path = ::std::path::PathBuf::from(prefix);
+fn filename_override(fs: &Filesystem, prefix: &str, fname: &str) -> PathBuf {
+    let mut path = PathBuf::from(prefix);
     path.push(fname);
+
+    // Use / even if OS uses \, as gvfs supports / only.
+    let path_string = path
+        .as_path()
+        .iter()
+        .map(|s| s.to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/");
+    let mut path = PathBuf::from(path_string);
 
     for ext in &["png", "jpg", "gif", "bmp"] {
         path.set_extension(ext);
-        if path.exists() {
+        if fs.is_file(path.clone()) {
             break;
         }
     }

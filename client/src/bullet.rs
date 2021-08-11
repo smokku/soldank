@@ -55,7 +55,7 @@ impl Default for BulletStyle {
 }
 
 impl Bullet {
-    pub fn new(params: &BulletParams) -> Bullet {
+    pub fn new(params: &BulletParams, config: &Config) -> Bullet {
         let particle = Particle {
             active: true,
             pos: params.position,
@@ -63,7 +63,7 @@ impl Bullet {
             velocity: params.velocity,
             one_over_mass: 1.0,
             timestep: 1.0,
-            gravity: 0.06 * 2.25,
+            gravity: config.phys.gravity * 2.25,
             e_damping: 0.99,
             ..Default::default()
         };
@@ -86,7 +86,9 @@ impl Bullet {
         }
     }
 
-    pub fn update(&mut self, map: &MapFile) {
+    pub fn update(&mut self, resources: &Resources) {
+        let map = &*resources.get::<MapFile>().unwrap();
+
         self.velocity_prev = self.particle.velocity;
         self.particle.euler();
 
@@ -137,8 +139,11 @@ impl Bullet {
         for i in 0..steps + 1 {
             let (x, y) = lerp(a, b, i as f32 / steps as f32).into();
 
-            for p in map.sector_polys(vec2(x, y)) {
-                let p = (*p - 1) as usize;
+            for p in map
+                .sector_polys(vec2(x, y))
+                .iter()
+                .map(|p| (*p - 1) as usize)
+            {
                 let poly = &map.polygons[p];
 
                 if poly.bullet_collides(self.team) && map.point_in_poly_edges(x, y, p as i32) {

@@ -1,7 +1,10 @@
 [package]
 name = "gfx2d"
 version = "0.1.0"
-authors = ["Mariano Cuatrin <mariano.cuatrin@gmail.com>"]
+authors = [
+    "Mariano Cuatrin <mariano.cuatrin@gmail.com>",
+    "Tomasz Sterna <tomasz@sterna.link>"
+]
 edition = "2018"
 license = "MIT"
 publish = false
@@ -11,3 +14,5 @@ miniquad = "0.3.0-alpha.37"
 image = "0.23"
 glam = "0.14"
 rgb = "0.8"
+gvfs = "0.1"
+log = "0.4"

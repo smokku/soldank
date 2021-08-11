@@ -60,7 +60,7 @@ impl Sprite {
             height: texture.height as f32 / pixel_ratio.y,
             texcoords_x: (0.0, 1.0),
             texcoords_y: (0.0, 1.0),
-            texture: Some(texture.clone()),
+            texture: Some(*texture),
         }
     }
 }
@@ -75,6 +75,7 @@ impl Spritesheet {
 
     pub fn new(
         ctx: &mut Context,
+        fs: &mut gvfs::filesystem::Filesystem,
         padding: i32,
         filter: FilterMode,
         info: &[SpriteInfo],
@@ -88,9 +89,13 @@ impl Spritesheet {
         let mut rects: Vec<Rect> = Vec::with_capacity(info.len());
 
         for (index, sprite_info) in info.iter().enumerate() {
-            let mut img = if sprite_info.filename.exists() {
-                gfx2d_extra::load_image_rgba(&sprite_info.filename)
+            let mut img = if fs.is_file(sprite_info.filename.clone()) {
+                gfx2d_extra::load_image_rgba(fs, &sprite_info.filename)
             } else {
+                log::error!(
+                    "Could not load texture: {}",
+                    sprite_info.filename.as_path().display()
+                );
                 Image::from_pixel(1, 1, image::Rgba([0u8; 4]))
             };
 
@@ -167,7 +172,7 @@ impl Spritesheet {
             let (x0, x1) = (rc.left() as f32, (rc.right() - padding) as f32);
             let (y0, y1) = (rc.top() as f32, (rc.bottom() - padding) as f32);
 
-            sprite.texture = Some(texture.clone());
+            sprite.texture = Some(*texture);
             sprite.texcoords_x = (x0 / texture.width as f32, x1 / texture.width as f32);
             sprite.texcoords_y = (y0 / texture.height as f32, y1 / texture.height as f32);
         }
@@ -175,6 +180,7 @@ impl Spritesheet {
         Spritesheet { textures, sprites }
     }
 
+    #[allow(clippy::comparison_chain)]
     fn pack_recursive(rects: &mut [Rect], sheets: &mut Vec<(i32, i32)>, pad: i32, max_size: i32) {
         if rects.len() == 1 {
             rects[0].x = 0;

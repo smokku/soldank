@@ -4,13 +4,6 @@ macro_rules! sprites {
             $($id:ident = $file:tt)+
         })+
     ) => {
-        pub trait SpriteData where Self: ::std::marker::Sized {
-            fn id(&self) -> usize;
-            fn group(&self) -> Group;
-            fn filename(&self) -> &'static str;
-            fn values() -> &'static [Self];
-        }
-
         #[derive(Debug, Copy, Clone)]
         pub enum Group {
             $($enm,)+
@@ -18,6 +11,9 @@ macro_rules! sprites {
 
         impl Group {
             pub fn id(&self) -> usize { *self as usize }
+            pub fn name(&self) -> &str {
+                match &self { $(Self::$enm => stringify!($enm),)+ }
+            }
             pub fn values() -> &'static [Group] {
                 static VALUES: &[Group] = &[$(Group::$enm,)+];
                 VALUES
@@ -32,6 +28,9 @@ macro_rules! sprites {
 
             impl SpriteData for $enm {
                 fn id(&self) -> usize { *self as usize }
+                fn name(&self) -> &str {
+                    match *self { $($enm::$id => stringify!($id),)+ }
+                }
                 fn group(&self) -> Group { Group::$enm }
                 fn filename(&self) -> &'static str {
                     match *self { $($enm::$id => $file,)+ }
@@ -65,8 +64,12 @@ macro_rules! sprites {
 }
 
 macro_rules! soldier_parts_sprite {
-    ( None ) => ( SoldierSprite::None );
-    ( $group:ident::$id:ident ) => ( SoldierSprite::$group($group::$id) );
+    ( None ) => {
+        SoldierSprite::None
+    };
+    ( $group:ident::$id:ident ) => {
+        SoldierSprite::$group($group::$id)
+    };
 }
 
 macro_rules! soldier_parts {
@@ -117,25 +120,6 @@ macro_rules! soldier_parts {
 
                 DATA
             }
-        }
-
-        impl ::std::convert::From<usize> for SoldierPart {
-            fn from(id: usize) -> SoldierPart {
-                match SoldierPart::values().get(id as usize) {
-                    Some(&v) => v,
-                    _ => panic!("Invalid sprite identifier."),
-                }
-            }
-        }
-
-        impl ::std::ops::Add<usize> for SoldierPart {
-            type Output = SoldierPart;
-            fn add(self, x: usize) -> SoldierPart { SoldierPart::from(self.id() + x) }
-        }
-
-        impl ::std::ops::Sub<usize> for SoldierPart {
-            type Output = SoldierPart;
-            fn sub(self, x: usize) -> SoldierPart { SoldierPart::from(self.id() - x) }
         }
     }
 }

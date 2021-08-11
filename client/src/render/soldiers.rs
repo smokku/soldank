@@ -16,10 +16,7 @@ pub enum SoldierSprite {
 
 impl SoldierSprite {
     pub fn is_none(&self) -> bool {
-        match *self {
-            SoldierSprite::None => true,
-            _ => false,
-        }
+        matches!(*self, SoldierSprite::None)
     }
 }
 

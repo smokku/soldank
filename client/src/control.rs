@@ -44,7 +44,11 @@ pub struct Control {
 }
 
 impl Soldier {
-    pub fn control(&mut self, state: &MainState, emitter: &mut Vec<EmitterItem>) {
+    #[allow(clippy::collapsible_if)]
+    pub fn control(&mut self, resources: &resources::Resources, emitter: &mut Vec<EmitterItem>) {
+        let state = resources.get::<MainState>().unwrap();
+        let config = resources.get::<Config>().unwrap();
+
         let mut player_pressed_left_right = false;
 
         if self.legs_animation.speed < 1 {
@@ -135,7 +139,8 @@ impl Soldier {
 
         if self.control.jets
             && (((self.legs_animation.id == Anim::JumpSide)
-                && (((self.direction == -1) && cright) || ((self.direction == 1) && cleft)
+                && (((self.direction == -1) && cright)
+                    || ((self.direction == 1) && cleft)
                     || player_pressed_left_right))
                 || ((self.legs_animation.id == Anim::RollBack) && self.control.up))
         {
@@ -143,16 +148,29 @@ impl Soldier {
             self.legs_apply_animation(Anim::RollBack, 1);
         } else if self.control.jets && (self.jets_count > 0) {
             if self.on_ground {
-                self.particle.force.y =
-                    -2.5 * iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
+                self.particle.force.y = -2.5
+                    * iif!(
+                        config.phys.gravity > 0.05,
+                        JETSPEED,
+                        config.phys.gravity * 2.0
+                    );
             } else if self.position != POS_PRONE {
-                self.particle.force.y -= iif!(state.gravity > 0.05, JETSPEED, state.gravity * 2.0);
+                self.particle.force.y -= iif!(
+                    config.phys.gravity > 0.05,
+                    JETSPEED,
+                    config.phys.gravity * 2.0
+                );
             } else {
                 self.particle.force.x += f32::from(self.direction)
-                    * iif!(state.gravity > 0.05, JETSPEED / 2.0, state.gravity);
+                    * iif!(
+                        config.phys.gravity > 0.05,
+                        JETSPEED / 2.0,
+                        config.phys.gravity
+                    );
             }
 
-            if (self.legs_animation.id != Anim::GetUp) && (self.body_animation.id != Anim::Roll)
+            if (self.legs_animation.id != Anim::GetUp)
+                && (self.body_animation.id != Anim::Roll)
                 && (self.body_animation.id != Anim::RollBack)
             {
                 self.legs_apply_animation(Anim::Fall, 1);
@@ -163,7 +181,8 @@ impl Soldier {
 
         // FIRE!!!!
         if self.primary_weapon().kind == WeaponKind::Chainsaw
-            || (self.body_animation.id != Anim::Roll) && (self.body_animation.id != Anim::RollBack)
+            || (self.body_animation.id != Anim::Roll)
+                && (self.body_animation.id != Anim::RollBack)
                 && (self.body_animation.id != Anim::Melee)
                 && (self.body_animation.id != Anim::Change)
         {
@@ -217,7 +236,8 @@ impl Soldier {
                     WeaponKind::FlameBow,
                     WeaponKind::NoWeapon,
                 ]
-            ) {
+            )
+        {
             self.body_apply_animation(Anim::ThrowWeapon, 1);
 
             if self.primary_weapon().kind == WeaponKind::Knife {
@@ -275,7 +295,8 @@ impl Soldier {
 
         // Prone
         if self.control.prone {
-            if (self.legs_animation.id != Anim::GetUp) && (self.legs_animation.id != Anim::Prone)
+            if (self.legs_animation.id != Anim::GetUp)
+                && (self.legs_animation.id != Anim::Prone)
                 && (self.legs_animation.id != Anim::ProneMove)
             {
                 self.legs_apply_animation(Anim::Prone, 1);
@@ -314,16 +335,21 @@ impl Soldier {
         let mut unprone = false;
         // Immediately switch from unprone to jump/sidejump, because the end of the unprone
         // animation can be seen as the "wind up" for the jump
-        if (self.legs_animation.id == Anim::GetUp) && (self.legs_animation.frame > 23 - (4 - 1))
-            && self.on_ground && self.control.up && (cright || cleft)
+        if (self.legs_animation.id == Anim::GetUp)
+            && (self.legs_animation.frame > 23 - (4 - 1))
+            && self.on_ground
+            && self.control.up
+            && (cright || cleft)
         {
             // Set sidejump frame 1 to 4 depending on which unprone frame we're in
             let id = self.legs_animation.frame - (23 - (4 - 1));
             self.legs_apply_animation(Anim::JumpSide, id);
             unprone = true;
         } else if (self.legs_animation.id == Anim::GetUp)
-            && (self.legs_animation.frame > 23 - (4 - 1)) && self.on_ground
-            && self.control.up && !(cright || cleft)
+            && (self.legs_animation.frame > 23 - (4 - 1))
+            && self.on_ground
+            && self.control.up
+            && !(cright || cleft)
         {
             // Set jump frame 6 to 9 depending on which unprone frame we're in
             let id = self.legs_animation.frame - (23 - (9 - 1));
@@ -347,7 +373,8 @@ impl Soldier {
         if unprone {
             self.position = POS_STAND;
 
-            if (self.body_animation.id != Anim::Reload) && (self.body_animation.id != Anim::Change)
+            if (self.body_animation.id != Anim::Reload)
+                && (self.body_animation.id != Anim::Change)
                 && (self.body_animation.id != Anim::ThrowWeapon)
             {
                 self.body_apply_animation(Anim::Stand, 1);
@@ -356,8 +383,10 @@ impl Soldier {
 
         if true {
             // self.stat == 0 {
-            if ((self.body_animation.id == Anim::Stand) && (self.legs_animation.id == Anim::Stand)
-                && !self.dead_meat && (self.idle_time > 0))
+            if ((self.body_animation.id == Anim::Stand)
+                && (self.legs_animation.id == Anim::Stand)
+                && !self.dead_meat
+                && (self.idle_time > 0))
                 || (self.idle_time > DEFAULT_IDLETIME)
             {
                 if self.idle_random >= 0 {
@@ -378,7 +407,8 @@ impl Soldier {
                 }
 
                 if !self.dead_meat {
-                    if (self.idle_time == 1) && (self.body_animation.id != Anim::Smoke)
+                    if (self.idle_time == 1)
+                        && (self.body_animation.id != Anim::Smoke)
                         && (self.legs_animation.id == Anim::Stand)
                     {
                         self.idle_time = DEFAULT_IDLETIME;
@@ -415,15 +445,23 @@ impl Soldier {
 
             // TODO if targetmode > freecontrols
             // End any ongoing idle animations if a key is pressed
-            if (self.body_animation.id == Anim::Cigar) || (self.body_animation.id == Anim::Match)
+            if (self.body_animation.id == Anim::Cigar)
+                || (self.body_animation.id == Anim::Match)
                 || (self.body_animation.id == Anim::Smoke)
                 || (self.body_animation.id == Anim::Wipe)
                 || (self.body_animation.id == Anim::Groin)
             {
-                if cleft || cright || self.control.up || self.control.down || self.control.fire
-                    || self.control.jets || self.control.grenade
-                    || self.control.change || self.control.change
-                    || self.control.throw || self.control.reload
+                if cleft
+                    || cright
+                    || self.control.up
+                    || self.control.down
+                    || self.control.fire
+                    || self.control.jets
+                    || self.control.grenade
+                    || self.control.change
+                    || self.control.change
+                    || self.control.throw
+                    || self.control.reload
                     || self.control.prone
                 {
                     self.body_animation.frame = self.body_animation.num_frames();
@@ -432,7 +470,8 @@ impl Soldier {
 
             // make anims out of controls
             // rolling
-            if (self.body_animation.id != Anim::TakeOff) && (self.body_animation.id != Anim::Piss)
+            if (self.body_animation.id != Anim::TakeOff)
+                && (self.body_animation.id != Anim::Piss)
                 && (self.body_animation.id != Anim::Mercy)
                 && (self.body_animation.id != Anim::Mercy2)
                 && (self.body_animation.id != Anim::Victory)
@@ -485,18 +524,15 @@ impl Soldier {
                             if self.direction == 1 {
                                 self.body_apply_animation(Anim::Roll, 1);
                                 self.legs_animation = AnimState::new(Anim::Roll);
-                                self.legs_animation.frame = 1;
                             } else {
                                 self.body_apply_animation(Anim::RollBack, 1);
                                 self.legs_animation = AnimState::new(Anim::RollBack);
-                                self.legs_animation.frame = 1;
                             }
+                            self.legs_animation.frame = 1;
+                        } else if self.direction == 1 {
+                            self.legs_apply_animation(Anim::CrouchRun, 1);
                         } else {
-                            if self.direction == 1 {
-                                self.legs_apply_animation(Anim::CrouchRun, 1);
-                            } else {
-                                self.legs_apply_animation(Anim::CrouchRunBack, 1);
-                            }
+                            self.legs_apply_animation(Anim::CrouchRunBack, 1);
                         }
 
                         if (self.legs_animation.id == Anim::CrouchRun)
@@ -532,18 +568,15 @@ impl Soldier {
                             if self.direction == 1 {
                                 self.body_apply_animation(Anim::RollBack, 1);
                                 self.legs_animation = AnimState::new(Anim::RollBack);
-                                self.legs_animation.frame = 1;
                             } else {
                                 self.body_apply_animation(Anim::Roll, 1);
                                 self.legs_animation = AnimState::new(Anim::Roll);
-                                self.legs_animation.frame = 1;
                             }
+                            self.legs_animation.frame = 1;
+                        } else if self.direction == 1 {
+                            self.legs_apply_animation(Anim::CrouchRunBack, 1);
                         } else {
-                            if self.direction == 1 {
-                                self.legs_apply_animation(Anim::CrouchRunBack, 1);
-                            } else {
-                                self.legs_apply_animation(Anim::CrouchRun, 1);
-                            }
+                            self.legs_apply_animation(Anim::CrouchRun, 1);
                         }
 
                         if (self.legs_animation.id == Anim::CrouchRun)
@@ -727,12 +760,10 @@ impl Soldier {
                     } else {
                         self.particle.force.x = -FLYSPEED;
                     }
+                } else if self.on_ground {
+                    self.legs_apply_animation(Anim::Stand, 1);
                 } else {
-                    if self.on_ground {
-                        self.legs_apply_animation(Anim::Stand, 1);
-                    } else {
-                        self.legs_apply_animation(Anim::Fall, 1);
-                    }
+                    self.legs_apply_animation(Anim::Fall, 1);
                 }
             }
             // Body animations
@@ -810,7 +841,8 @@ impl Soldier {
                 self.body_apply_animation(Anim::Stand, 1);
             }
 
-            if (!self.control.grenade && (self.body_animation.id != Anim::Recoil)
+            if (!self.control.grenade
+                && (self.body_animation.id != Anim::Recoil)
                 && (self.body_animation.id != Anim::SmallRecoil)
                 && (self.body_animation.id != Anim::AimRecoil)
                 && (self.body_animation.id != Anim::HandsUpRecoil)
@@ -854,12 +886,10 @@ impl Soldier {
                             } else {
                                 self.body_apply_animation(Anim::HandsUpAim, 1);
                             }
+                        } else if self.body_animation.id == Anim::AimRecoil {
+                            self.body_apply_animation(Anim::Aim, 6);
                         } else {
-                            if self.body_animation.id == Anim::AimRecoil {
-                                self.body_apply_animation(Anim::Aim, 6);
-                            } else {
-                                self.body_apply_animation(Anim::Aim, 1);
-                            }
+                            self.body_apply_animation(Anim::Aim, 1);
                         }
                     }
                 } else {

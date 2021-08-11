@@ -1,0 +1,32 @@
+[package]
+name = "soldank-shared"
+version = "0.1.0"
+authors = ["Tomasz Sterna <tomasz@sterna.link>"]
+edition = "2018"
+license = "MIT"
+publish = false
+
+[dependencies]
+log = "0.4"
+bytes = "1.0"
+hexdump = "0.1"
+num-traits = "0.2"
+enum-primitive-derive = "0.2"
+bitflags = "1.2"
+nanoserde = "0.1"
+hecs = { version = "0.6", features = ["macros"] }
+resources = "1.1"
+cvar = "0.3"
+clap = "2.33"
+rapier2d = { version = "0.10", features = ["simd-stable"] }
+nalgebra = { version = "0.28", features = ["convert-glam014"] }
+glam = "0.14" # bound to gfx2d's dependency
+hecs_rapier = "0.10.2"
+derive_deref = "1.1"
+simple-error = "0.2"
+
+[dev-dependencies]
+itertools = "0.10"
+float-cmp = "0.9"
+env_logger = "0.9"
+test-env-log = "0.2"

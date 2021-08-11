@@ -15,6 +15,7 @@ pub enum WeaponGroup {
     Other,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum WeaponKind {
     DesertEagles,
@@ -160,6 +161,7 @@ impl Weapon {
             ..Default::default()
         };
 
+        #[allow(clippy::branches_sharing_code)]
         match kind {
             WeaponKind::DesertEagles => {
                 weapon.name = "Desert Eagles";

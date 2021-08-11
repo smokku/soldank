@@ -1,5 +1,5 @@
 #[macro_use]
-extern crate lazy_static;
+extern crate clap;
 
 macro_rules! iif(
     ($cond:expr, $then:expr, $else:expr) => (if $cond { $then } else { $else })
@@ -8,127 +8,296 @@ macro_rules! iif(
 mod anims;
 mod bullet;
 mod calc;
+mod components;
+mod constants;
 mod control;
+mod cvars;
+mod debug;
+mod events;
 mod mapfile;
+mod networking;
 mod particles;
+mod physics;
 mod render;
 mod soldier;
 mod state;
+mod systems;
 mod weapons;
 
 use anims::*;
 use bullet::*;
 use calc::*;
+use constants::*;
 use control::*;
+use events::*;
 use mapfile::*;
+use networking::*;
 use particles::*;
 use render::*;
 use soldier::*;
 use state::*;
 use weapons::*;
 
-use clap::{App, Arg};
-use gfx2d::mq;
+use cvars::{set_cli_cvars, Config, NetConfig};
+use gfx2d::{math, mq};
+use gvfs::filesystem::{File, Filesystem};
+use hecs::World;
+use resources::Resources;
+use std::{
+    env, path,
+    sync::{Arc, RwLock},
+};
 
-const GRAV: f32 = 0.06;
-const W: u32 = 1280;
-const H: u32 = 720;
-const DT: f64 = 1.0 / 60.0;
+use soldank_shared::{networking::GameWorld, orb};
 
 fn main() {
-    let cmd = App::new("Soldank")
-        .about("open source clone of Soldat engine written in rust")
-        .version("0.0.1")
+    color_eyre::install().unwrap();
+    env_logger::init();
+
+    let cmd = clap::app_from_crate!()
         .arg(
-            Arg::with_name("map")
+            clap::Arg::with_name("map")
                 .help("name of map to load")
                 .short("m")
                 .long("map")
+                .takes_value(true)
+                .default_value(DEFAULT_MAP),
+        )
+        .arg(
+            clap::Arg::with_name("debug")
+                .help("display debug UI on start (^` to toggle)")
+                .long("debug"),
+        )
+        .arg(
+            clap::Arg::with_name("connect")
+                .value_name("address:port")
+                .help("server address and port to connect")
+                .short("c")
+                .long("connect")
                 .takes_value(true),
+        )
+        .arg(
+            clap::Arg::with_name("key")
+                .help("server connection key")
+                .short("k")
+                .long("key")
+                .takes_value(true),
+        )
+        .arg(
+            clap::Arg::with_name("nick")
+                .help("user nickname")
+                .short("n")
+                .long("nick")
+                .takes_value(true),
+        )
+        .arg(
+            clap::Arg::with_name("set")
+                .help("set cvar value [multiple]")
+                .long("set")
+                .takes_value(true)
+                .multiple(true)
+                .number_of_values(2)
+                .value_names(&["cvar", "value"]),
         )
         .get_matches();
 
-    AnimData::initialize();
-    Soldier::initialize();
+    let mut filesystem = Filesystem::new(clap::crate_name!(), "Soldat2k").unwrap();
 
-    let mut map_name = cmd.value_of("map").unwrap_or("ctf_Ash").to_owned();
+    if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+        let mut path = path::PathBuf::from(manifest_dir);
+        path.push("resources");
+        filesystem.mount(path.as_path(), true);
+    }
+    log::info!("Full VFS info: {:#?}", filesystem);
+
+    let mut mods = Vec::new();
+
+    let soldat_smod = path::Path::new("/soldat.smod");
+    if filesystem.is_file(soldat_smod) {
+        mods.push((
+            filesystem.open(soldat_smod).unwrap(),
+            soldat_smod.to_string_lossy().to_string(),
+        ));
+    }
+
+    for f in filesystem.read_dir(path::Path::new("/")).unwrap() {
+        let f = f.as_path();
+        if let Some(name) = f.to_str() {
+            if filesystem.is_file(f) && f != soldat_smod && name.ends_with(".smod") {
+                mods.push((filesystem.open(f).unwrap(), name.to_string()));
+            }
+        }
+    }
+    for (md, path) in mods.drain(..) {
+        match md {
+            File::VfsFile(file) => {
+                filesystem.add_zip_file(file).unwrap_or_else(|err| {
+                    panic!(
+                        "Failed to add `{}` file to VFS. (Make sure it is a proper ZIP file.): {}",
+                        path, err
+                    )
+                });
+            }
+        }
+    }
+    // filesystem.print_all();
+
+    let mut networking = Networking::new(cmd.value_of("connect"));
+    if let Some(key) = cmd.value_of("key") {
+        networking.connection_key = key.to_string();
+    }
+    if let Some(nick) = cmd.value_of("nick") {
+        networking.nick_name = nick.to_string();
+    }
+
+    let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
     map_name.push_str(".pms");
 
-    let map = MapFile::load_map_file(map_name.as_str());
+    let map = MapFile::load_map_file(&mut filesystem, map_name.as_str());
+    log::info!("Using map: {}", map.mapname);
+
+    let mut config = Config {
+        net: NetConfig {
+            orb: Arc::new(RwLock::new(orb::Config {
+                timestep_seconds: TIMESTEP_RATE,
+                ..Default::default()
+            })),
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    config.debug.visible = cmd.is_present("debug");
+    set_cli_cvars(&mut config, &cmd);
+
+    let state = MainState {
+        game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),
+        game_height: 480.0,
+        camera: Vec2::ZERO,
+        camera_prev: Vec2::ZERO,
+        mouse: Vec2::ZERO,
+        mouse_prev: Vec2::ZERO,
+        zoom: 0.0,
+        mouse_over_ui: false,
+    };
+
+    AnimData::initialize(&mut filesystem);
+    Soldier::initialize(&mut filesystem, &config);
+
+    let weapons: Vec<Weapon> = WeaponKind::values()
+        .iter()
+        .map(|k| Weapon::new(*k, false))
+        .collect();
+
+    let client = orb::client::Client::<GameWorld>::new(mq::date::now(), config.net.orb.clone());
+
+    let mut world = World::new();
+
+    let mut resources = Resources::new();
+
+    let app_events = AppEventsQueue::new();
+
+    resources.insert(app_events);
+    resources.insert(map);
+    resources.insert(config);
+    resources.insert(state);
+    resources.insert(weapons);
+
+    resources.insert(physics::PhysicsPipeline::new());
+    // resources.insert(physics::QueryPipeline::new());
+    // resources.insert(physics::RapierConfiguration::default());
+    resources.insert(physics::IntegrationParameters::default());
+    resources.insert(physics::BroadPhase::new());
+    resources.insert(physics::NarrowPhase::new());
+    resources.insert(physics::IslandManager::new());
+    resources.insert(physics::JointSet::new());
+    resources.insert(physics::CCDSolver::new());
+    // resources.insert(physics::Events::<IntersectionEvent>::default());
+    // resources.insert(physics::Events::<ContactEvent>::default());
+    // resources.insert(physics::SimulationToRenderTime::default());
+    // resources.insert(physics::JointsEntityMap::default());
+    resources.insert(physics::ModificationTracker::default());
+    physics::create_map_colliders(&mut world, &resources);
 
     let conf = mq::conf::Conf {
         sample_count: 4,
         window_title: clap::crate_name!().to_string(),
-        window_width: W as _,
-        window_height: H as _,
+        window_width: WINDOW_WIDTH as _,
+        window_height: WINDOW_HEIGHT as _,
         ..Default::default()
     };
     mq::start(conf, |mut ctx| {
-        mq::UserData::owning(GameStage::new(&mut ctx, map), ctx)
+        mq::UserData::owning(
+            GameStage::new(&mut ctx, world, resources, filesystem, networking, client),
+            ctx,
+        )
     });
 }
 
 pub struct GameStage {
-    state: MainState,
+    world: World,
+    resources: Resources,
+    filesystem: Filesystem,
+    networking: Networking,
+    client: orb::client::Client<GameWorld>,
 
     context: gfx2d::Gfx2dContext,
-
     graphics: GameGraphics,
     last_frame: f64,
     timeacc: f64,
 
     soldier: Soldier,
     emitter: Vec<EmitterItem>,
-    weapons: Vec<Weapon>,
+    bullets: Vec<Bullet>,
 
     zoomin_pressed: bool,
     zoomout_pressed: bool,
 }
 
 impl GameStage {
-    pub fn new(ctx: &mut mq::Context, map: MapFile) -> Self {
-        let soldier = Soldier::new(&map.spawnpoints[0]);
-
-        let emitter = Vec::new();
-
+    pub fn new(
+        ctx: &mut mq::Context,
+        world: World,
+        resources: Resources,
+        mut filesystem: Filesystem,
+        networking: Networking,
+        client: orb::client::Client<GameWorld>,
+    ) -> Self {
         // setup window, renderer & main loop
         let context = gfx2d::Gfx2dContext::new(ctx);
 
         ctx.show_mouse(false);
         ctx.set_cursor_grab(true);
 
+        let map = resources.get::<MapFile>().unwrap();
         let mut graphics = GameGraphics::new();
-        graphics.load_sprites(ctx);
-        graphics.load_map(ctx, &map);
+        graphics.load_sprites(ctx, &mut filesystem);
+        graphics.load_map(ctx, &mut filesystem, &*map);
 
-        let weapons: Vec<Weapon> = WeaponKind::values()
-            .iter()
-            .map(|k| Weapon::new(*k, false))
-            .collect();
+        let mut state = resources.get_mut::<MainState>().unwrap();
+        let config = resources.get::<Config>().unwrap();
+        let soldier = Soldier::new(&map.spawnpoints[0], &config);
+        state.camera = soldier.particle.pos;
+        state.camera_prev = state.camera;
+
+        drop(map);
+        drop(state);
+        drop(config);
 
         GameStage {
-            state: MainState {
-                map,
-                game_width: W as f32 * (480.0 / H as f32),
-                game_height: 480.0,
-                camera: soldier.particle.pos,
-                camera_prev: Vec2::ZERO,
-                mouse: Vec2::ZERO,
-                mouse_prev: Vec2::ZERO,
-                gravity: GRAV,
-                zoom: 0.0,
-                bullets: vec![],
-            },
+            world,
+            resources,
+            filesystem,
+            networking,
+            client,
 
             context,
-
             graphics,
             last_frame: mq::date::now(),
             timeacc: 0.0,
 
             soldier,
-            emitter,
-            weapons,
+            emitter: Vec::new(),
+            bullets: Vec::new(),
 
             zoomin_pressed: false,
             zoomout_pressed: false,
@@ -138,73 +307,151 @@ impl GameStage {
 
 impl mq::EventHandler for GameStage {
     fn update(&mut self, _ctx: &mut mq::Context) {
+        physics::attach_bodies_and_colliders(&mut self.world);
+        // physics::create_joints_system();
+        physics::finalize_collider_attach_to_bodies(
+            &mut self.world,
+            &mut *self
+                .resources
+                .get_mut::<physics::ModificationTracker>()
+                .unwrap(),
+        );
+
+        self.networking.tick += 1;
+        self.networking.update();
+
         let time = mq::date::now();
         self.timeacc += time - self.last_frame;
         self.last_frame = time;
 
-        while self.timeacc >= DT {
-            self.timeacc -= DT;
+        while self.timeacc >= TIMESTEP_RATE {
+            self.timeacc -= TIMESTEP_RATE;
+
+            {
+                use physics::*;
+                let gravity = vector![0.0, 9.81];
+
+                // let configuration = resources.get::<RapierConfiguration>().unwrap();
+                let integration_parameters = self.resources.get::<IntegrationParameters>().unwrap();
+                let mut modifs_tracker = self.resources.get_mut::<ModificationTracker>().unwrap();
+
+                let mut physics_pipeline = self.resources.get_mut::<PhysicsPipeline>().unwrap();
+                // let mut query_pipeline = self.resources.get_mut::<QueryPipeline>().unwrap();
+                let mut island_manager = self.resources.get_mut::<IslandManager>().unwrap();
+                let mut broad_phase = self.resources.get_mut::<BroadPhase>().unwrap();
+                let mut narrow_phase = self.resources.get_mut::<NarrowPhase>().unwrap();
+                let mut ccd_solver = self.resources.get_mut::<CCDSolver>().unwrap();
+                let mut joint_set = self.resources.get_mut::<JointSet>().unwrap();
+                // let mut joints_entity_map = self.resources.get_mut::<JointsEntityMap>().unwrap();
+                // let physics_hooks = ();
+                let event_handler = ();
+
+                physics::step_world(
+                    &mut self.world,
+                    &gravity,
+                    &integration_parameters,
+                    &mut physics_pipeline,
+                    &mut modifs_tracker,
+                    &mut island_manager,
+                    &mut broad_phase,
+                    &mut narrow_phase,
+                    &mut joint_set,
+                    &mut ccd_solver,
+                    &event_handler,
+                );
+            }
 
             // remove inactive bullets
-
             let mut i = 0;
-            while i < self.state.bullets.len() {
-                if !self.state.bullets[i].active {
-                    self.state.bullets.swap_remove(i);
+            while i < self.bullets.len() {
+                if !self.bullets[i].active {
+                    self.bullets.swap_remove(i);
                 } else {
                     i += 1;
                 }
             }
 
             // update soldiers
-
-            self.soldier.update(&self.state, &mut self.emitter);
+            self.soldier.update(&self.resources, &mut self.emitter);
 
             // update bullets
-
-            for bullet in self.state.bullets.iter_mut() {
-                bullet.update(&self.state.map);
+            for bullet in self.bullets.iter_mut() {
+                bullet.update(&self.resources);
             }
 
             // create emitted objects
-
             for item in self.emitter.drain(..) {
                 match item {
-                    EmitterItem::Bullet(params) => self.state.bullets.push(Bullet::new(&params)),
+                    EmitterItem::Bullet(params) => self.bullets.push(Bullet::new(
+                        &params,
+                        &*self.resources.get::<Config>().unwrap(),
+                    )),
                 };
             }
 
-            // update camera
+            {
+                // update camera
+                let mut state = self.resources.get_mut::<MainState>().unwrap();
 
-            self.state.camera_prev = self.state.camera;
-            self.state.mouse_prev = self.state.mouse;
+                state.camera_prev = state.camera;
+                state.mouse_prev = state.mouse;
 
-            if self.zoomin_pressed ^ self.zoomout_pressed {
-                self.state.zoom += iif!(self.zoomin_pressed, -1.0, 1.0) * DT as f32;
+                if self.zoomin_pressed ^ self.zoomout_pressed {
+                    state.zoom += iif!(self.zoomin_pressed, -1.0, 1.0) * TIMESTEP_RATE as f32;
+                }
+
+                state.camera = {
+                    let z = f32::exp(state.zoom);
+                    let mut m = Vec2::ZERO;
+
+                    m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
+                        * ((2.0 * 640.0 / state.game_width - 1.0)
+                            + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
+                    m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
+
+                    let mut cam_v = state.camera;
+                    let p = self.soldier.particle.pos;
+                    let norm = p - cam_v;
+                    let s = norm * 0.14;
+                    cam_v += s;
+                    cam_v += m;
+                    cam_v
+                };
             }
-
-            self.state.camera = {
-                let z = f32::exp(self.state.zoom);
-                let mut m = Vec2::ZERO;
-
-                m.x = z * (self.state.mouse.x - self.state.game_width / 2.0) / 7.0
-                    * ((2.0 * 640.0 / self.state.game_width - 1.0)
-                        + (self.state.game_width - 640.0) / self.state.game_width * 0.0 / 6.8);
-                m.y = z * (self.state.mouse.y - self.state.game_height / 2.0) / 7.0;
-
-                let mut cam_v = self.state.camera;
-                let p = self.soldier.particle.pos;
-                let norm = p - cam_v;
-                let s = norm * 0.14;
-                cam_v += s;
-                cam_v += m;
-                cam_v
-            };
 
             let time = mq::date::now();
             self.timeacc += time - self.last_frame;
             self.last_frame = time;
         }
+
+        // systems::rotate_balls(&mut world, self.last_frame);
+
+        self.networking.set_input_state(&self.soldier.control);
+
+        self.networking.process(&self.resources, &mut self.client);
+        self.client.update(self.timeacc, self.last_frame);
+        if let Some(state) = self.client.display_state() {
+            log::trace!("client_display_state: {}", state.display_state().len());
+        }
+        self.networking
+            .post_process(&*self.resources.get::<Config>().unwrap());
+
+        physics::despawn_outliers(
+            &mut self.world,
+            2500.,
+            self.resources.get::<Config>().unwrap().phys.scale,
+        );
+        physics::collect_removals(
+            &mut self.world,
+            &mut *self
+                .resources
+                .get_mut::<physics::ModificationTracker>()
+                .unwrap(),
+        );
+        physics::config_update(&self.resources);
+
+        self.world.clear_trackers();
+        self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 
     fn key_down_event(
@@ -223,9 +470,10 @@ impl mq::EventHandler for GameStage {
                 self.zoomout_pressed = true;
             }
             mq::KeyCode::Tab => {
+                let weapons = self.resources.get::<Vec<Weapon>>().unwrap();
                 let index = self.soldier.primary_weapon().kind.index();
                 let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
-                self.soldier.weapons[self.soldier.active_weapon] = self.weapons[index];
+                self.soldier.weapons[self.soldier.active_weapon] = weapons[index];
             }
             _ => self.soldier.update_keys(true, keycode),
         }
@@ -245,7 +493,12 @@ impl mq::EventHandler for GameStage {
             mq::KeyCode::Minus => {
                 self.zoomout_pressed = false;
             }
-            _ => self.soldier.update_keys(false, keycode),
+            _ => {
+                let state = self.resources.get::<MainState>().unwrap();
+                if !state.mouse_over_ui {
+                    self.soldier.update_keys(false, keycode)
+                }
+            }
         }
     }
 
@@ -256,7 +509,10 @@ impl mq::EventHandler for GameStage {
         _x: f32,
         _y: f32,
     ) {
-        self.soldier.update_mouse_button(true, button);
+        let state = self.resources.get::<MainState>().unwrap();
+        if !state.mouse_over_ui {
+            self.soldier.update_mouse_button(true, button);
+        }
     }
 
     fn mouse_button_up_event(
@@ -270,21 +526,37 @@ impl mq::EventHandler for GameStage {
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut mq::Context, x: f32, y: f32) {
-        self.state.mouse.x = x * self.state.game_width / W as f32;
-        self.state.mouse.y = y * self.state.game_height / H as f32;
+        let mut state = self.resources.get_mut::<MainState>().unwrap();
+        state.mouse.x = x * state.game_width / WINDOW_WIDTH as f32;
+        state.mouse.y = y * state.game_height / WINDOW_HEIGHT as f32;
     }
 
     fn draw(&mut self, ctx: &mut mq::Context) {
-        let p = f64::min(1.0, f64::max(0.0, self.timeacc / DT));
+        let p = f64::min(1.0, f64::max(0.0, self.timeacc / TIMESTEP_RATE));
 
         self.graphics.render_frame(
             &mut self.context,
             ctx,
-            &self.state,
+            &self.world,
+            &self.resources,
             &self.soldier,
-            self.last_frame - DT * (1.0 - p),
+            &self.bullets,
+            self.last_frame - TIMESTEP_RATE * (1.0 - p),
             p as f32,
         );
+
+        if cfg!(debug_assertions) {
+            // debug::build_ui(&mut world, &resources, timecur as u32, p as f32);
+        }
+
+        {
+            let mut state = self.resources.get_mut::<MainState>().unwrap();
+            let mouse_over_ui = false; // macroquad::ui::root_ui().is_mouse_over(Vec2::from(mq::mouse_position()));
+            if state.mouse_over_ui != mouse_over_ui {
+                state.mouse_over_ui = mouse_over_ui;
+                ctx.show_mouse(state.mouse_over_ui);
+            }
+        }
 
         ctx.commit_frame();
     }

@@ -1,5 +1,6 @@
 use super::*;
-use std::{fs, ops::Range};
+use gfx2d::gfx2d_extra::load_image_rgba;
+use std::ops::Range;
 
 pub struct MapGraphics {
     pub batch: DrawBatch,
@@ -16,10 +17,10 @@ fn is_prop_active(map: &MapFile, prop: &MapProp) -> bool {
 }
 
 fn is_background_poly(poly: &MapPolygon) -> bool {
-    match poly.polytype {
-        PolyType::Background | PolyType::BackgroundTransition => true,
-        _ => false,
-    }
+    matches!(
+        poly.polytype,
+        PolyType::Background | PolyType::BackgroundTransition
+    )
 }
 
 fn add_poly(batch: &mut DrawBatch, poly: &MapPolygon, texture: &Texture) {
@@ -96,15 +97,11 @@ impl MapGraphics {
         }
     }
 
-    pub fn new(ctx: &mut Context, map: &MapFile) -> MapGraphics {
-        let texture_file = filename_override("assets/textures", &map.texture_name);
+    pub fn new(ctx: &mut Context, fs: &mut Filesystem, map: &MapFile) -> MapGraphics {
+        let texture_file = filename_override(fs, "textures", &map.texture_name);
 
-        let texture = if texture_file.exists() {
-            let bytes =
-                fs::read(&texture_file).unwrap_or_else(|e| panic!("Error loading texture: {}", e));
-            let img = image::load_from_memory(&bytes)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8();
+        let texture = if fs.is_file(texture_file.clone()) {
+            let img = load_image_rgba(fs, texture_file);
             let width = img.width();
             let height = img.height();
             let bytes = img.into_raw();
@@ -162,7 +159,7 @@ impl MapGraphics {
                 .enumerate()
                 .filter(|&(i, _)| scenery_used[i])
                 .map(|(_, s)| {
-                    let fname = filename_override("assets/scenery-gfx", &s.filename);
+                    let fname = filename_override(fs, "scenery-gfx", &s.filename);
 
                     let color_key = match fname.extension() {
                         Some(ext) => {
@@ -179,7 +176,7 @@ impl MapGraphics {
                 })
                 .collect();
 
-            Spritesheet::new(ctx, 8, FilterMode::Linear, &scenery_info).sprites
+            Spritesheet::new(ctx, fs, 8, FilterMode::Linear, &scenery_info).sprites
         };
 
         let props = {

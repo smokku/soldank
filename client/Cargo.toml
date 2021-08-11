@@ -1,19 +1,39 @@
 [package]
-name = "soldank"
+name = "soldank-client"
+description = "open source clone of Soldat engine written in Rust"
 version = "0.1.0"
-authors = ["helloer <im.helloer@gmail.com>"]
+authors = [
+    "helloer <im.helloer@gmail.com>",
+    "Tomasz Sterna <tomasz@sterna.link>"
+]
 edition = "2018"
 license = "MIT"
 publish = false
 
 [dependencies]
-byteorder = "1.3"
-gfx2d = { path = "gfx2d" }
+soldank-shared = { path = "../shared" }
+gfx2d = { path = "./gfx2d" }
+gvfs = "0.1"
+zip = { version = "0.5", features = [
+    # enable deflate support in gvfs
+    "deflate"
+] }
+byteorder = "1.4"
+instant = { version = "0.1", default-features = false, features = ["now"] }
 rust-ini = "0.17"
+hocon = { version = "0.5", default-features = false }
 bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"
-lazy_static = "1.4"
-
-[patch.crates-io]
-miniquad = { git = "https://github.com/not-fl3/miniquad.git" }
+naia-client-socket = "0.6"
+laminar = "0.5"
+smol = "1.2"
+hecs = { version = "0.6", features = ["macros"] }
+resources = "1.1"
+cvar = "0.3"
+log = "0.4"
+env_logger = "0.9"
+color-eyre = "0.5"
+rapier2d = { version = "0.10", features = ["simd-stable"] }
+nalgebra = { version = "0.28", features = ["convert-glam014"] }
+rand = "0.8"

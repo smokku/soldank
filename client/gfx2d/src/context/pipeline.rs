@@ -11,7 +11,8 @@ r#"#version 120
     varying vec4 color;
 
     void main() {
-        color = in_color / 255.0;
+        vec4 clr_f = in_color / 255.0;
+        color = vec4(clr_f.rgb * clr_f.a, clr_f.a);
         texcoords = in_texcoords;
         gl_Position = transform * vec4(in_position, 0.0, 1.0);
     }
@@ -56,7 +57,12 @@ pub fn params() -> PipelineParams {
         primitive_type: PrimitiveType::Triangles,
         color_blend: Some(BlendState::new(
             Equation::Add,
-            BlendFactor::Value(BlendValue::SourceAlpha),
+            BlendFactor::One,
+            BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+        )),
+        alpha_blend: Some(BlendState::new(
+            Equation::Add,
+            BlendFactor::One,
             BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
         )),
         ..Default::default()

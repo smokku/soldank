@@ -1,0 +1,27 @@
+[package]
+name = "soldank-server"
+description = "open source clone of Soldat engine written in Rust"
+version = "0.1.0"
+authors = ["Tomasz Sterna <tomasz@sterna.link>"]
+edition = "2018"
+license = "MIT"
+publish = false
+
+[features]
+default = ["use-udp"]
+use-udp = ["naia-server-socket/use-udp"]
+use-webrtc = ["naia-server-socket/use-webrtc"]
+
+[dependencies]
+soldank-shared = { path = "../shared" }
+naia-server-socket = "0.5"
+log = "0.4"
+env_logger = "0.9"
+smol = "1.2"
+clap = "2.33"
+laminar = "0.5"
+hecs = { version = "0.6", features = [] }
+bitflags = "1.2"
+bytes = "1.0"
+color-eyre = "0.5"
+cvar = "0.3"

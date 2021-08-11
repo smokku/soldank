@@ -1,7 +1,6 @@
 use super::*;
 
 const SLIDELIMIT: f32 = 0.2;
-const GRAV: f32 = 0.06;
 const SURFACECOEFX: f32 = 0.970;
 const SURFACECOEFY: f32 = 0.970;
 const CROUCHMOVESURFACECOEFX: f32 = 0.85;
@@ -16,10 +15,7 @@ const POS_PRONE: u8 = 3;
 const MAX_VELOCITY: f32 = 11.0;
 const SOLDIER_COL_RADIUS: f32 = 3.0;
 
-lazy_static! {
-    static ref SOLDIER_SKELETON: ParticleSystem =
-        ParticleSystem::load_from_file("gostek.po", 4.5, 1.0, 1.06 * GRAV, 0.0, 0.9945);
-}
+static mut SOLDIER_SKELETON: Option<ParticleSystem> = None;
 
 #[allow(dead_code)]
 pub struct Soldier {
@@ -58,8 +54,18 @@ pub struct Soldier {
 }
 
 impl Soldier {
-    pub fn initialize() {
-        lazy_static::initialize(&SOLDIER_SKELETON);
+    pub fn initialize(fs: &mut Filesystem, config: &Config) {
+        unsafe {
+            SOLDIER_SKELETON.replace(ParticleSystem::load_from_file(
+                fs,
+                "gostek.po",
+                4.5,
+                1.0,
+                1.06 * config.phys.gravity,
+                0.0,
+                0.9945,
+            ));
+        }
     }
 
     pub fn primary_weapon(&self) -> &Weapon {
@@ -104,14 +110,14 @@ impl Soldier {
         }
     }
 
-    pub fn new(spawn: &MapSpawnpoint) -> Soldier {
+    pub fn new(spawn: &MapSpawnpoint, config: &Config) -> Soldier {
         let particle = Particle {
             active: true,
             pos: vec2(spawn.x as f32, spawn.y as f32),
             old_pos: vec2(spawn.x as f32, spawn.y as f32),
             one_over_mass: 1.0,
             timestep: 1.0,
-            gravity: GRAV,
+            gravity: config.phys.gravity,
             e_damping: 0.99,
             ..Default::default()
         };
@@ -147,7 +153,7 @@ impl Soldier {
             on_fire: 0,
             collider_distance: 255,
             half_dead: false,
-            skeleton: SOLDIER_SKELETON.clone(),
+            skeleton: unsafe { SOLDIER_SKELETON.as_ref().unwrap() }.clone(),
             legs_animation: AnimState::new(Anim::Stand),
             body_animation: AnimState::new(Anim::Stand),
             control: Default::default(),
@@ -183,13 +189,16 @@ impl Soldier {
         }
     }
 
-    pub fn update(&mut self, state: &MainState, emitter: &mut Vec<EmitterItem>) {
-        let map = &state.map;
+    #[allow(clippy::manual_range_contains)]
+    pub fn update(&mut self, resources: &Resources, emitter: &mut Vec<EmitterItem>) {
+        let map = &*resources.get::<MapFile>().unwrap();
+        let config = &*resources.get::<Config>().unwrap();
+
         let mut body_y = 0.0;
         let mut arm_s;
 
         self.particle.euler();
-        self.control(state, emitter);
+        self.control(resources, emitter);
 
         *self.skeleton.old_pos_mut(21) = self.skeleton.pos(21);
         *self.skeleton.old_pos_mut(23) = self.skeleton.pos(23);
@@ -331,7 +340,6 @@ impl Soldier {
             if (self.dead_meat || self.half_dead) && (i < 17) && (i != 7) && (i != 8) {
                 let (x, y) = self.particle.pos.into();
                 self.on_ground = self.check_skeleton_map_collision(map, i, x, y);
-                println!("ok");
             }
         }
 
@@ -342,10 +350,10 @@ impl Soldier {
             self.on_ground = false;
 
             let (x, y) = self.particle.pos.into();
-            self.check_map_collision(map, x - 3.5, y - 12.0, 1);
+            self.check_map_collision(map, config, x - 3.5, y - 12.0, 1);
 
             let (x, y) = self.particle.pos.into();
-            self.check_map_collision(map, x + 3.5, y - 12.0, 1);
+            self.check_map_collision(map, config, x + 3.5, y - 12.0, 1);
 
             body_y = 0.0;
             arm_s = 0.0;
@@ -381,10 +389,10 @@ impl Soldier {
             }
 
             let (x, y) = self.particle.pos.into();
-            self.on_ground = self.check_map_collision(map, x + 2.0, y + 2.0 - body_y, 0);
+            self.on_ground = self.check_map_collision(map, config, x + 2.0, y + 2.0 - body_y, 0);
 
             let (x, y) = self.particle.pos.into();
-            self.on_ground |= self.check_map_collision(map, x - 2.0, y + 2.0 - arm_s, 0);
+            self.on_ground |= self.check_map_collision(map, config, x - 2.0, y + 2.0 - arm_s, 0);
 
             let (x, y) = self.particle.pos.into();
             let grounded = self.on_ground;
@@ -434,7 +442,14 @@ impl Soldier {
         }
     }
 
-    pub fn check_map_collision(&mut self, map: &MapFile, x: f32, y: f32, area: i32) -> bool {
+    pub fn check_map_collision(
+        &mut self,
+        map: &MapFile,
+        config: &Config,
+        x: f32,
+        y: f32,
+        area: i32,
+    ) -> bool {
         let pos = vec2(x, y) + self.particle.velocity;
         let rx = ((pos.x / map.sectors_division as f32).round()) as i32 + 25;
         let ry = ((pos.y / map.sectors_division as f32).round()) as i32 + 25;
@@ -445,8 +460,8 @@ impl Soldier {
                 let polytype = map.polygons[poly].polytype;
 
                 if polytype != PolyType::NoCollide && polytype != PolyType::OnlyBulletsCollide {
-                    let mut polygons = map.polygons[poly];
-                    if map.point_in_poly(pos, &mut polygons) {
+                    let polygons = map.polygons[poly];
+                    if map.point_in_poly(pos, &polygons) {
                         self.handle_special_polytypes(map, polytype, pos);
 
                         let mut dist = 0.0;
@@ -496,7 +511,7 @@ impl Soldier {
                                     && (step.y > SLIDELIMIT)
                                 {
                                     self.particle.pos = self.particle.old_pos;
-                                    self.particle.force.y -= GRAV;
+                                    self.particle.force.y -= config.phys.gravity;
                                 }
 
                                 if (step.y > SLIDELIMIT)
