@@ -67,6 +67,9 @@ impl Gfx2dContext {
             ]),
         };
 
+        ctx.apply_pipeline(&self.pipeline);
+        ctx.apply_uniforms(&uniforms);
+
         for cmd in slice.commands() {
             let indices = cmd
                 .vertex_range
@@ -82,10 +85,8 @@ impl Gfx2dContext {
                 }],
             };
 
-            ctx.apply_pipeline(&self.pipeline);
             ctx.apply_bindings(&bindings);
 
-            ctx.apply_uniforms(&uniforms);
             ctx.draw(0, indices.len() as i32, 1);
         }
     }
