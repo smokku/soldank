@@ -39,3 +39,5 @@ nalgebra = { version = "0.28", features = ["convert-glam014"] }
 rand = "0.8"
 egui = "0.13"
 egui-miniquad = "0.5"
+nona = "0.1"
+nonaquad = "0.1"

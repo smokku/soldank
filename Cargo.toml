@@ -16,3 +16,5 @@ miniquad = { git = "https://github.com/not-fl3/miniquad.git" }
 cvar = { git = "https://github.com/CasualX/cvar.git" }
 hecs = { git = "https://github.com/smokku/hecs.git" }
 hecs_rapier = { git = "https://github.com/smokku/hecs_rapier.git" }
+nona = { git = "https://github.com/smokku/nonaquad.git" }
+nonaquad = { git = "https://github.com/smokku/nonaquad.git" }
