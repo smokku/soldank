@@ -1586,7 +1586,7 @@ dependencies = [
 [[package]]
 name = "nona"
 version = "0.1.1"
-source = "git+https://github.com/smokku/nonaquad.git#20630370b235253f013d6d9040beb09e4db0c210"
+source = "git+https://github.com/smokku/nonaquad.git#8087b2ddc1eba7d888d49756df6dfb72b8a9eb51"
 dependencies = [
  "bitflags",
  "clamped",
@@ -1599,7 +1599,7 @@ dependencies = [
 [[package]]
 name = "nonaquad"
 version = "0.1.1"
-source = "git+https://github.com/smokku/nonaquad.git#20630370b235253f013d6d9040beb09e4db0c210"
+source = "git+https://github.com/smokku/nonaquad.git#8087b2ddc1eba7d888d49756df6dfb72b8a9eb51"
 dependencies = [
  "anyhow",
  "glam 0.17.3",

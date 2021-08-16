@@ -600,6 +600,8 @@ impl mq::EventHandler for GameStage {
         self.graphics.render_frame(
             &mut self.context,
             ctx,
+            &mut self.nona,
+            &mut self.nona_renderer,
             &self.world,
             &self.resources,
             &self.soldier,
@@ -607,62 +609,6 @@ impl mq::EventHandler for GameStage {
             self.last_frame - TIMESTEP_RATE * (1.0 - p),
             p as f32,
         );
-
-        self.nona
-            .attach_renderer(&mut self.nona_renderer.with_context(ctx), |canvas| {
-                canvas.begin_frame(None).unwrap();
-
-                // uncomment to draw a lot of circles - more than maximum GPU vertices on openGL ES 2/WebGL
-                // note: performance is currently low, very CPU-bound. Something to fix in the future.
-                // for i in 0..405 {
-                //     canvas.begin_path();
-                //     // canvas.rect((100.0, 100.0, 400.0, 300.0));
-                //     canvas.circle(Point::new(i as f32, 110.), 32.);
-                //     canvas.fill_paint(Paint::from(Color::rgb_i(255, (i as u32 % 256 as u32) as u8, 0)));
-                //     canvas.fill().unwrap();
-                // }
-
-                canvas.begin_path();
-                // canvas.rect((100.0, 100.0, 400.0, 300.0));
-                canvas.rounded_rect((100.0, 100.0, 400.0, 300.0), 30.0);
-                canvas.fill_paint(nona::Gradient::Linear {
-                    start: (100, 100).into(),
-                    end: (400, 400).into(),
-                    start_color: nona::Color::rgb_i(0xAA, 0x6C, 0x39),
-                    end_color: nona::Color::rgb_i(0x88, 0x2D, 0x60),
-                });
-                canvas.fill().unwrap();
-
-                canvas.begin_path();
-                canvas.font("roboto");
-                canvas.font_size(40.0);
-                canvas.text_align(nona::Align::TOP | nona::Align::LEFT);
-                canvas.fill_paint(nona::Color::rgb(1.0, 1.0, 1.0));
-                canvas
-                    .text((10, 10), format!("alpha texture font - working!!!"))
-                    .unwrap();
-
-                // canvas.begin_path();
-                // canvas.rect((100.0, 100.0, 300.0, 300.0));
-                // canvas.fill_paint(nona::Gradient::Linear {
-                //     start: (100, 100).into(),
-                //     end: (400, 400).into(),
-                //     start_color: nona::Color::rgb_i(0xAA, 0x6C, 0x39),
-                //     end_color: nona::Color::rgb_i(0x88, 0x2D, 0x60),
-                // });
-                // canvas.fill().unwrap();
-
-                let origin = (150.0, 140.0);
-                canvas.begin_path();
-                canvas.circle(origin, 64.0);
-                canvas.move_to(origin);
-                canvas.line_to((origin.0 + 300.0, origin.1 - 50.0));
-                canvas.stroke_paint(nona::Color::rgba(1.0, 1.0, 0.0, 1.0));
-                canvas.stroke_width(3.0);
-                canvas.stroke().unwrap();
-
-                canvas.end_frame().unwrap();
-            });
 
         {
             let mut state = self.resources.get_mut::<MainState>().unwrap();

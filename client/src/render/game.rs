@@ -71,6 +71,8 @@ impl GameGraphics {
         &mut self,
         context: &mut Gfx2dContext,
         ctx: &mut Context,
+        nona: &mut nona::Context,
+        nona_renderer: &mut nonaquad::nvgimpl::Renderer,
         world: &World,
         resources: &Resources,
         soldier: &Soldier,
@@ -146,11 +148,18 @@ impl GameGraphics {
         if !debug_state.render.disable_scenery_front {
             context.draw(ctx, &mut self.map.scenery_front(), &transform);
         }
+        ctx.end_render_pass();
 
         if debug_state.visible {
-            // debug::debug_render(gl, debug_state, self, world, resources);
+            nona.attach_renderer(&mut nona_renderer.with_context(ctx), |canvas| {
+                canvas.begin_frame(None).unwrap();
+                debug::debug_render(canvas, debug_state, world, resources);
+                canvas.end_frame().unwrap();
+            });
         }
 
+        // UI pass
+        ctx.begin_default_pass(mq::PassAction::Nothing);
         self.render_cursor(context, ctx, &*state);
         ctx.end_render_pass();
     }
