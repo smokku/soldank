@@ -6,7 +6,30 @@ use gfx2d::{
     Texture,
     Transform,
 };
-use nona::{Align, Canvas, Color, Gradient};
+use nona::{Align, BlendFactor, Canvas, Color, CompositeOperation, Gradient, LineCap, Point};
+
+fn draw_line(
+    canvas: &mut Canvas<nonaquad::nvgimpl::RendererCtx>,
+    x1: f32,
+    y1: f32,
+    color1: MapColor,
+    x2: f32,
+    y2: f32,
+    color2: MapColor,
+) {
+    let point1 = Point::new(x1, y1);
+    let point2 = Point::new(x2, y2);
+    canvas.begin_path();
+    canvas.stroke_paint(Gradient::Linear {
+        start: point1,
+        end: point2,
+        start_color: Color::rgba_i(color1.r, color1.g, color1.b, color1.a),
+        end_color: Color::rgba_i(color2.r, color2.g, color2.b, color2.a),
+    });
+    canvas.move_to(point1);
+    canvas.line_to(point2);
+    canvas.stroke().unwrap();
+}
 
 pub fn debug_render(
     canvas: &mut Canvas<nonaquad::nvgimpl::RendererCtx>,
@@ -69,20 +92,7 @@ pub fn debug_render(
     canvas.stroke_width(3.0);
     canvas.stroke().unwrap();
 
-    if state.render_wireframe {
-        canvas.begin_path();
-        for poly in map.polygons.iter() {
-            canvas.move_to((poly.vertices[0].x, poly.vertices[0].y));
-            canvas.line_to((poly.vertices[1].x, poly.vertices[1].y));
-            canvas.line_to((poly.vertices[2].x, poly.vertices[2].y));
-            canvas.line_to((poly.vertices[0].x, poly.vertices[0].y));
-        }
-        canvas.stroke_paint(Color::rgb(1.0, 1.0, 0.0));
-        canvas.stroke_width(0.7 * zoom);
-        canvas.stroke().unwrap();
-    }
-
-    if state.render_wireframe || state.highlight_polygons {
+    if state.highlight_polygons {
         for poly in map.polygons.iter() {
             if match poly.polytype {
                 PolyType::Normal => state.hlt_poly_normal,
@@ -112,36 +122,27 @@ pub fn debug_render(
                 PolyType::Background => state.hlt_poly_background,
                 PolyType::BackgroundTransition => state.hlt_poly_background_transition,
             } {
-                // let vertices = poly
-                //     .vertices
-                //     .iter()
-                //     .map(|v| Vertex::new(v.x, v.y, 0., 0., 0., color_u8!(255, 255, 0, 128)))
-                //     .collect::<Vec<Vertex>>();
-                // assert!(vertices.len() == 3);
-                // let indices = [0, 1, 2];
-                // gl.texture(None);
-                // gl.draw_mode(DrawMode::Triangles);
-                // gl.geometry(&vertices, &indices);
+                canvas.begin_path();
+                canvas.fill_paint(Color::rgba_i(255, 255, 0, 128));
+                for poly in map.polygons.iter() {
+                    canvas.move_to((poly.vertices[0].x, poly.vertices[0].y));
+                    canvas.line_to((poly.vertices[1].x, poly.vertices[1].y));
+                    canvas.line_to((poly.vertices[2].x, poly.vertices[2].y));
+                    canvas.line_to((poly.vertices[0].x, poly.vertices[0].y));
+                }
+                canvas.fill().unwrap();
             }
+        }
+    }
 
-            if state.render_wireframe {
-                // let vertices = poly
-                //     .vertices
-                //     .iter()
-                //     .map(|v| {
-                //         let mut color = color_u8!(v.color.r, v.color.g, v.color.b, v.color.a);
-                //         if color.a < 0.5 {
-                //             color.a = 1. - color.a;
-                //         };
-                //         Vertex::new(v.x, v.y, 0., 0., 0., color)
-                //     })
-                //     .collect::<Vec<Vertex>>();
-                // assert!(vertices.len() == 3);
-                // let indices = [0, 1, 1, 2, 2, 0];
-                // gl.texture(None);
-                // gl.draw_mode(DrawMode::Lines);
-                // gl.geometry(&vertices, &indices);
-            }
+    if state.render_wireframe {
+        canvas.stroke_width(0.7 * zoom);
+        canvas.line_cap(LineCap::Round);
+        for poly in map.polygons.iter() {
+            let [v1, v2, v3] = &poly.vertices;
+            draw_line(canvas, v1.x, v1.y, v1.color, v2.x, v2.y, v2.color);
+            draw_line(canvas, v2.x, v2.y, v2.color, v3.x, v3.y, v3.color);
+            draw_line(canvas, v3.x, v3.y, v3.color, v1.x, v1.y, v1.color);
         }
     }
 
