@@ -6,9 +6,10 @@ use gfx2d::{
     Texture,
     Transform,
 };
+use nona::{Align, Canvas, Color, Gradient};
 
 pub fn debug_render(
-    canvas: &mut nona::Canvas<nonaquad::nvgimpl::RendererCtx>,
+    canvas: &mut Canvas<nonaquad::nvgimpl::RendererCtx>,
     state: &DebugState,
     world: &World,
     resources: &Resources,
@@ -16,6 +17,8 @@ pub fn debug_render(
     let state = &state.render;
     let game = resources.get::<MainState>().unwrap();
     let map = resources.get::<MapFile>().unwrap();
+
+    let zoom = f32::exp(game.zoom);
 
     // uncomment to draw a lot of circles - more than maximum GPU vertices on openGL ES 2/WebGL
     // note: performance is currently low, very CPU-bound. Something to fix in the future.
@@ -30,30 +33,30 @@ pub fn debug_render(
     canvas.begin_path();
     // canvas.rect((100.0, 100.0, 400.0, 300.0));
     canvas.rounded_rect((100.0, 100.0, 400.0, 300.0), 30.0);
-    canvas.fill_paint(nona::Gradient::Linear {
+    canvas.fill_paint(Gradient::Linear {
         start: (100, 100).into(),
-        end: (400, 400).into(),
-        start_color: nona::Color::rgb_i(0xAA, 0x6C, 0x39),
-        end_color: nona::Color::rgb_i(0x88, 0x2D, 0x60),
+        end: (300, 300).into(),
+        start_color: Color::rgb_i(0xAA, 0x6C, 0x39),
+        end_color: Color::rgb_i(0x88, 0x2D, 0x60),
     });
     canvas.fill().unwrap();
 
     canvas.begin_path();
     canvas.font("roboto");
     canvas.font_size(40.0);
-    canvas.text_align(nona::Align::TOP | nona::Align::LEFT);
-    canvas.fill_paint(nona::Color::rgb(1.0, 1.0, 1.0));
+    canvas.text_align(Align::TOP | Align::LEFT);
+    canvas.fill_paint(Color::rgb(1.0, 1.0, 1.0));
     canvas
-        .text((10, 10), format!("alpha texture font - working!!!"))
-        .unwrap();
+        .text((10, 10), "alpha texture font - working!!!")
+        .unwrap_or_else(|err| log::error!("{}", err.to_string()));
 
     // canvas.begin_path();
     // canvas.rect((100.0, 100.0, 300.0, 300.0));
-    // canvas.fill_paint(nona::Gradient::Linear {
+    // canvas.fill_paint(Gradient::Linear {
     //     start: (100, 100).into(),
     //     end: (400, 400).into(),
-    //     start_color: nona::Color::rgb_i(0xAA, 0x6C, 0x39),
-    //     end_color: nona::Color::rgb_i(0x88, 0x2D, 0x60),
+    //     start_color: Color::rgb_i(0xAA, 0x6C, 0x39),
+    //     end_color: Color::rgb_i(0x88, 0x2D, 0x60),
     // });
     // canvas.fill().unwrap();
 
@@ -62,74 +65,85 @@ pub fn debug_render(
     canvas.circle(origin, 64.0);
     canvas.move_to(origin);
     canvas.line_to((origin.0 + 300.0, origin.1 - 50.0));
-    canvas.stroke_paint(nona::Color::rgba(1.0, 1.0, 0.0, 1.0));
+    canvas.stroke_paint(Color::rgba(1.0, 1.0, 0.0, 1.0));
     canvas.stroke_width(3.0);
     canvas.stroke().unwrap();
 
-    // if state.render_wireframe || state.highlight_polygons {
-    //     // TODO: merge to single gl.geometry() calls for all vertices
+    if state.render_wireframe {
+        canvas.begin_path();
+        for poly in map.polygons.iter() {
+            canvas.move_to((poly.vertices[0].x, poly.vertices[0].y));
+            canvas.line_to((poly.vertices[1].x, poly.vertices[1].y));
+            canvas.line_to((poly.vertices[2].x, poly.vertices[2].y));
+            canvas.line_to((poly.vertices[0].x, poly.vertices[0].y));
+        }
+        canvas.stroke_paint(Color::rgb(1.0, 1.0, 0.0));
+        canvas.stroke_width(0.7 * zoom);
+        canvas.stroke().unwrap();
+    }
 
-    //     for poly in map.polygons.iter() {
-    //         if match poly.polytype {
-    //             PolyType::Normal => state.hlt_poly_normal,
-    //             PolyType::OnlyBulletsCollide => state.hlt_poly_only_bullets_coll,
-    //             PolyType::OnlyPlayersCollide => state.hlt_poly_only_players_coll,
-    //             PolyType::NoCollide => state.hlt_poly_no_coll,
-    //             PolyType::Ice => state.hlt_poly_ice,
-    //             PolyType::Deadly => state.hlt_poly_deadly,
-    //             PolyType::BloodyDeadly => state.hlt_poly_bloody_deadly,
-    //             PolyType::Hurts => state.hlt_poly_hurts,
-    //             PolyType::Regenerates => state.hlt_poly_regenerates,
-    //             PolyType::Lava => state.hlt_poly_lava,
-    //             PolyType::AlphaBullets => state.hlt_poly_alpha_bullets,
-    //             PolyType::AlphaPlayers => state.hlt_poly_alpha_players,
-    //             PolyType::BravoBullets => state.hlt_poly_bravo_bullets,
-    //             PolyType::BravoPlayers => state.hlt_poly_bravo_players,
-    //             PolyType::CharlieBullets => state.hlt_poly_charlie_bullets,
-    //             PolyType::CharliePlayers => state.hlt_poly_charlie_players,
-    //             PolyType::DeltaBullets => state.hlt_poly_delta_bullets,
-    //             PolyType::DeltaPlayers => state.hlt_poly_delta_players,
-    //             PolyType::Bouncy => state.hlt_poly_bouncy,
-    //             PolyType::Explosive => state.hlt_poly_explosive,
-    //             PolyType::HurtsFlaggers => state.hlt_poly_hurt_flaggers,
-    //             PolyType::OnlyFlaggers => state.hlt_poly_flagger_coll,
-    //             PolyType::NotFlaggers => state.hlt_poly_non_flagger_coll,
-    //             PolyType::FlagCollide => state.hlt_poly_flag_coll,
-    //             PolyType::Background => state.hlt_poly_background,
-    //             PolyType::BackgroundTransition => state.hlt_poly_background_transition,
-    //         } {
-    //             let vertices = poly
-    //                 .vertices
-    //                 .iter()
-    //                 .map(|v| Vertex::new(v.x, v.y, 0., 0., 0., color_u8!(255, 255, 0, 128)))
-    //                 .collect::<Vec<Vertex>>();
-    //             assert!(vertices.len() == 3);
-    //             let indices = [0, 1, 2];
-    //             gl.texture(None);
-    //             gl.draw_mode(DrawMode::Triangles);
-    //             gl.geometry(&vertices, &indices);
-    //         }
+    if state.render_wireframe || state.highlight_polygons {
+        for poly in map.polygons.iter() {
+            if match poly.polytype {
+                PolyType::Normal => state.hlt_poly_normal,
+                PolyType::OnlyBulletsCollide => state.hlt_poly_only_bullets_coll,
+                PolyType::OnlyPlayersCollide => state.hlt_poly_only_players_coll,
+                PolyType::NoCollide => state.hlt_poly_no_coll,
+                PolyType::Ice => state.hlt_poly_ice,
+                PolyType::Deadly => state.hlt_poly_deadly,
+                PolyType::BloodyDeadly => state.hlt_poly_bloody_deadly,
+                PolyType::Hurts => state.hlt_poly_hurts,
+                PolyType::Regenerates => state.hlt_poly_regenerates,
+                PolyType::Lava => state.hlt_poly_lava,
+                PolyType::AlphaBullets => state.hlt_poly_alpha_bullets,
+                PolyType::AlphaPlayers => state.hlt_poly_alpha_players,
+                PolyType::BravoBullets => state.hlt_poly_bravo_bullets,
+                PolyType::BravoPlayers => state.hlt_poly_bravo_players,
+                PolyType::CharlieBullets => state.hlt_poly_charlie_bullets,
+                PolyType::CharliePlayers => state.hlt_poly_charlie_players,
+                PolyType::DeltaBullets => state.hlt_poly_delta_bullets,
+                PolyType::DeltaPlayers => state.hlt_poly_delta_players,
+                PolyType::Bouncy => state.hlt_poly_bouncy,
+                PolyType::Explosive => state.hlt_poly_explosive,
+                PolyType::HurtsFlaggers => state.hlt_poly_hurt_flaggers,
+                PolyType::OnlyFlaggers => state.hlt_poly_flagger_coll,
+                PolyType::NotFlaggers => state.hlt_poly_non_flagger_coll,
+                PolyType::FlagCollide => state.hlt_poly_flag_coll,
+                PolyType::Background => state.hlt_poly_background,
+                PolyType::BackgroundTransition => state.hlt_poly_background_transition,
+            } {
+                // let vertices = poly
+                //     .vertices
+                //     .iter()
+                //     .map(|v| Vertex::new(v.x, v.y, 0., 0., 0., color_u8!(255, 255, 0, 128)))
+                //     .collect::<Vec<Vertex>>();
+                // assert!(vertices.len() == 3);
+                // let indices = [0, 1, 2];
+                // gl.texture(None);
+                // gl.draw_mode(DrawMode::Triangles);
+                // gl.geometry(&vertices, &indices);
+            }
 
-    //         if state.render_wireframe {
-    //             let vertices = poly
-    //                 .vertices
-    //                 .iter()
-    //                 .map(|v| {
-    //                     let mut color = color_u8!(v.color.r, v.color.g, v.color.b, v.color.a);
-    //                     if color.a < 0.5 {
-    //                         color.a = 1. - color.a;
-    //                     };
-    //                     Vertex::new(v.x, v.y, 0., 0., 0., color)
-    //                 })
-    //                 .collect::<Vec<Vertex>>();
-    //             assert!(vertices.len() == 3);
-    //             let indices = [0, 1, 1, 2, 2, 0];
-    //             gl.texture(None);
-    //             gl.draw_mode(DrawMode::Lines);
-    //             gl.geometry(&vertices, &indices);
-    //         }
-    //     }
-    // }
+            if state.render_wireframe {
+                // let vertices = poly
+                //     .vertices
+                //     .iter()
+                //     .map(|v| {
+                //         let mut color = color_u8!(v.color.r, v.color.g, v.color.b, v.color.a);
+                //         if color.a < 0.5 {
+                //             color.a = 1. - color.a;
+                //         };
+                //         Vertex::new(v.x, v.y, 0., 0., 0., color)
+                //     })
+                //     .collect::<Vec<Vertex>>();
+                // assert!(vertices.len() == 3);
+                // let indices = [0, 1, 1, 2, 2, 0];
+                // gl.texture(None);
+                // gl.draw_mode(DrawMode::Lines);
+                // gl.geometry(&vertices, &indices);
+            }
+        }
+    }
 
     // if state.render_spawns {
     //     for spawn in map.spawnpoints.iter() {

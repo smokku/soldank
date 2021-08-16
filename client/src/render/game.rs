@@ -151,8 +151,13 @@ impl GameGraphics {
         ctx.end_render_pass();
 
         if debug_state.visible {
-            nona.attach_renderer(&mut nona_renderer.with_context(ctx), |canvas| {
+            let zoom = 1. / zoom;
+            let screen_size = ctx.screen_size();
+            let zoom_x = zoom * (screen_size.0 / state.game_width);
+            let zoom_y = zoom * (screen_size.1 / state.game_height);
+            nona.attach_renderer(&mut nona_renderer.with_context(ctx), move |canvas| {
                 canvas.begin_frame(None).unwrap();
+                canvas.transform((zoom_x, 0.0, 0.0, zoom_y, -dx * zoom_x, -dy * zoom_y).into());
                 debug::debug_render(canvas, debug_state, world, resources);
                 canvas.end_frame().unwrap();
             });
