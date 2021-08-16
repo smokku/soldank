@@ -1,6 +1,5 @@
 use super::*;
 use cvar::{INode, IVisit};
-// use macroquad::ui::{hash, root_ui, widgets, Ui};
 
 // mod entities;
 mod cli;
@@ -97,8 +96,11 @@ pub fn build_ui(
             });
 
         // config.debug.cli.build_ui();
-        // config.debug.spawner.build_ui(world, x, y, scale);
-        // // config.debug.entities.build_ui();
+        config
+            .debug
+            .spawner
+            .build_ui(egui_ctx, world, &*game, x, y, scale);
+        // config.debug.entities.build_ui();
         config.debug.render.build_ui(egui_ctx);
     }
 }

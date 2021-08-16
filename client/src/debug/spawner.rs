@@ -7,10 +7,7 @@ use rand::Rng;
 pub struct SpawnerState {
     pub(crate) visible: bool,
 
-    spawn_gostek: bool,
-    spawn_ak74: bool,
-    spawn_particle: bool,
-    spawn_ball: bool,
+    spawn_entity: SpawnEntity,
 }
 
 impl IVisit for SpawnerState {
@@ -19,128 +16,144 @@ impl IVisit for SpawnerState {
     }
 }
 
-// impl SpawnerState {
-//     pub fn build_ui(&mut self, world: &mut World, x: f32, y: f32, scale: f32) {
-//         if self.visible {
-//             self.visible = widgets::Window::new(hash!(), vec2(10., 104.), vec2(200., 106.))
-//                 .label("Spawn Entity")
-//                 .close_button(true)
-//                 .ui(&mut *root_ui(), |ui| {
-//                     if ui.button(
-//                         None,
-//                         toggle_button_label(self.spawn_gostek, "Gostek").as_str(),
-//                     ) {
-//                         self.spawn_gostek = !self.spawn_gostek;
-//                     }
-//                     if ui.button(None, toggle_button_label(self.spawn_ak74, "AK74").as_str()) {
-//                         self.spawn_ak74 = !self.spawn_ak74;
-//                     }
-//                     if ui.button(
-//                         None,
-//                         toggle_button_label(self.spawn_particle, "Particle Emitter").as_str(),
-//                     ) {
-//                         self.spawn_particle = !self.spawn_particle;
-//                     }
-//                     if ui.button(None, toggle_button_label(self.spawn_ball, "Ball").as_str()) {
-//                         self.spawn_ball = !self.spawn_ball;
-//                     }
-//                 });
-//         }
+#[derive(Debug, PartialEq)]
+enum SpawnEntity {
+    Nothing,
+    Gostek,
+    AK47,
+    ParticleEmitter,
+    Ball,
+}
 
-//         if (mq::is_mouse_button_pressed(mq::MouseButton::Left)
-//             || mq::is_mouse_button_pressed(mq::MouseButton::Right))
-//             && !macroquad::ui::root_ui().is_mouse_over(Vec2::from(mq::mouse_position()))
-//         {
-//             let pos = calc::vec2(x.round() as f32, y.round() as f32);
+impl Default for SpawnEntity {
+    fn default() -> Self {
+        SpawnEntity::Nothing
+    }
+}
 
-//             if self.spawn_gostek {
-//                 log::debug!("Spawning Gostek");
-//                 // cmd.spawn(Soldier::new(&MapSpawnpoint {
-//                 //     active: false,
-//                 //     x: pos.x as i32,
-//                 //     y: pos.y as i32,
-//                 //     team: 0,
-//                 // }));
-//             }
-//             if self.spawn_ak74 {
-//                 log::debug!("Spawning AK74");
-//                 // cmd.spawn((
-//                 //     components::Position(pos),
-//                 //     components::Sprite {
-//                 //         sprite: Arc::new(gfx::Weapon::Ak74),
-//                 //         ..Default::default()
-//                 //     },
-//                 //     components::KineticBody {
-//                 //         pos,
-//                 //         old_pos: pos,
-//                 //         velocity: calc::vec2(-1.0, -4.0),
-//                 //         one_over_mass: 1.0,
-//                 //         timestep: 1.0,
-//                 //         gravity: constants::GRAV * 2.25,
-//                 //         e_damping: 0.99,
-//                 //         active: true,
-//                 //         ..Default::default()
-//                 //     },
-//                 //     components::Collider {
-//                 //         with: components::CollisionKind::Bullet(components::Team::None),
-//                 //     },
-//                 // ));
-//             }
-//             if self.spawn_particle {
-//                 log::debug!("Spawning Particle Emitter");
-//                 // cmd.spawn((
-//                 //     components::Position(pos),
-//                 //     components::ParticleEmitter {
-//                 //         active: true,
-//                 //         amount: 40,
-//                 //         initial_direction_spread: gfx2d::math::PI,
-//                 //         initial_velocity_randomness: 0.0,
-//                 //         explosiveness: 0.0,
-//                 //         body: components::KineticBody {
-//                 //             velocity: calc::vec2(0.0, -1.0),
-//                 //             e_damping: 1.0,
-//                 //             ..Default::default()
-//                 //         },
-//                 //         ..Default::default()
-//                 //     },
-//                 // ));
-//             }
-//             if self.spawn_ball {
-//                 log::debug!("Spawning Ball @{}", pos / scale);
-//                 /* Create the bouncing ball. */
-//                 let rigid_body = RigidBodyBundle {
-//                     position: (pos / scale).into(),
-//                     ..Default::default()
-//                 };
-//                 let collider = ColliderBundle {
-//                     shape: ColliderShape::ball(0.75), // TODO: compute this value from Sprite size
-//                     material: ColliderMaterial {
-//                         restitution: 0.7,
-//                         ..Default::default()
-//                     },
-//                     ..Default::default()
-//                 };
-//                 let ball = world.spawn(rigid_body);
-//                 world.insert(ball, collider).unwrap();
+impl SpawnerState {
+    pub fn build_ui(
+        &mut self,
+        egui_ctx: &egui::CtxRef,
+        world: &mut World,
+        game: &MainState,
+        x: f32,
+        y: f32,
+        scale: f32,
+    ) {
+        if self.visible {
+            let mut visible = self.visible;
+            egui::Window::new("Spawn Entity")
+                .open(&mut visible)
+                .resizable(false)
+                .show(egui_ctx, |ui| {
+                    ui.selectable_value(&mut self.spawn_entity, SpawnEntity::Nothing, " Nothing ");
+                    ui.selectable_value(&mut self.spawn_entity, SpawnEntity::Gostek, "Gostek");
+                    ui.selectable_value(&mut self.spawn_entity, SpawnEntity::AK47, "AK74");
+                    ui.selectable_value(
+                        &mut self.spawn_entity,
+                        SpawnEntity::ParticleEmitter,
+                        "Particle Emitter",
+                    );
+                    ui.selectable_value(&mut self.spawn_entity, SpawnEntity::Ball, "Ball");
+                });
+            self.visible = visible;
+        }
 
-//                 /* Ball that will be drawn */
-//                 let sprite_scale = 0.5; // make the sprite half size than the actual PNG image
-//                 world
-//                     .insert_one(
-//                         ball,
-//                         Sprite {
-//                             group: "Ball".into(),
-//                             name: format!("Ball{}", thread_rng().gen_range(1..=8)),
-//                             transform: gfx2d::Transform::origin(
-//                                 vec2(50., 50.) * (sprite_scale / -2.),
-//                                 vec2(1.0, 1.0) * sprite_scale,
-//                                 (0.0, vec2(50., 50.) * (sprite_scale / 2.)),
-//                             ),
-//                             ..Default::default()
-//                         },
-//                     )
-//                     .unwrap();
-//             }
-//         }
-//     }
-// }
+        if game.mouse_pressed && !game.mouse_over_ui {
+            let pos = calc::vec2(x.round() as f32, y.round() as f32);
+
+            match self.spawn_entity {
+                SpawnEntity::Nothing => {}
+                SpawnEntity::Gostek => {
+                    log::debug!("Spawning Gostek");
+                    // cmd.spawn(Soldier::new(&MapSpawnpoint {
+                    //     active: false,
+                    //     x: pos.x as i32,
+                    //     y: pos.y as i32,
+                    //     team: 0,
+                    // }));
+                }
+                SpawnEntity::AK47 => {
+                    log::debug!("Spawning AK74");
+                    // cmd.spawn((
+                    //     components::Position(pos),
+                    //     components::Sprite {
+                    //         sprite: Arc::new(gfx::Weapon::Ak74),
+                    //         ..Default::default()
+                    //     },
+                    //     components::KineticBody {
+                    //         pos,
+                    //         old_pos: pos,
+                    //         velocity: calc::vec2(-1.0, -4.0),
+                    //         one_over_mass: 1.0,
+                    //         timestep: 1.0,
+                    //         gravity: constants::GRAV * 2.25,
+                    //         e_damping: 0.99,
+                    //         active: true,
+                    //         ..Default::default()
+                    //     },
+                    //     components::Collider {
+                    //         with: components::CollisionKind::Bullet(components::Team::None),
+                    //     },
+                    // ));
+                }
+                SpawnEntity::ParticleEmitter => {
+                    log::debug!("Spawning Particle Emitter");
+                    // cmd.spawn((
+                    //     components::Position(pos),
+                    //     components::ParticleEmitter {
+                    //         active: true,
+                    //         amount: 40,
+                    //         initial_direction_spread: gfx2d::math::PI,
+                    //         initial_velocity_randomness: 0.0,
+                    //         explosiveness: 0.0,
+                    //         body: components::KineticBody {
+                    //             velocity: calc::vec2(0.0, -1.0),
+                    //             e_damping: 1.0,
+                    //             ..Default::default()
+                    //         },
+                    //         ..Default::default()
+                    //     },
+                    // ));
+                }
+                SpawnEntity::Ball => {
+                    log::debug!("Spawning Ball @{}", pos / scale);
+                    /* Create the bouncing ball. */
+                    let rigid_body = RigidBodyBundle {
+                        position: (pos / scale).into(),
+                        ..Default::default()
+                    };
+                    let collider = ColliderBundle {
+                        shape: ColliderShape::ball(0.75), // TODO: compute this value from Sprite size
+                        material: ColliderMaterial {
+                            restitution: 0.7,
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    };
+                    let ball = world.spawn(rigid_body);
+                    world.insert(ball, collider).unwrap();
+
+                    /* Ball that will be drawn */
+                    let sprite_scale = 0.5; // make the sprite half size than the actual PNG image
+                    world
+                        .insert_one(
+                            ball,
+                            Sprite {
+                                group: "Ball".into(),
+                                name: format!("Ball{}", thread_rng().gen_range(1..=8)),
+                                transform: gfx2d::Transform::origin(
+                                    vec2(50., 50.) * (sprite_scale / -2.),
+                                    vec2(1.0, 1.0) * sprite_scale,
+                                    (0.0, vec2(50., 50.) * (sprite_scale / 2.)),
+                                ),
+                                ..Default::default()
+                            },
+                        )
+                        .unwrap();
+                }
+            }
+        }
+    }
+}

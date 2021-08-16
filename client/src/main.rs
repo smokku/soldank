@@ -178,6 +178,7 @@ fn main() {
         mouse: Vec2::ZERO,
         mouse_prev: Vec2::ZERO,
         mouse_phys: Vec2::ZERO,
+        mouse_pressed: false,
         zoom: 0.0,
         mouse_over_ui: false,
     };
@@ -547,7 +548,8 @@ impl mq::EventHandler for GameStage {
     ) {
         self.egui_mq.mouse_button_down_event(ctx, button, x, y);
 
-        let state = self.resources.get::<MainState>().unwrap();
+        let mut state = self.resources.get_mut::<MainState>().unwrap();
+        state.mouse_pressed = true;
         if !state.mouse_over_ui {
             self.soldier.update_mouse_button(true, button);
         }
@@ -669,6 +671,7 @@ impl mq::EventHandler for GameStage {
                 state.mouse_over_ui = mouse_over_ui;
                 ctx.show_mouse(state.mouse_over_ui);
             }
+            state.mouse_pressed = false;
         }
         self.egui_mq.draw(ctx);
 
