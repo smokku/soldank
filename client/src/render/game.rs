@@ -66,6 +66,7 @@ impl GameGraphics {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn render_frame(
         &mut self,
         context: &mut Gfx2dContext,
@@ -73,7 +74,7 @@ impl GameGraphics {
         world: &World,
         resources: &Resources,
         soldier: &Soldier,
-        bullets: &Vec<Bullet>,
+        bullets: &[Bullet],
         elapsed: f64,
         frame_percent: f32,
     ) {

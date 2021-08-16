@@ -54,36 +54,18 @@ pub fn build_ui(
         let (dx, dy, _w, _h) = game.viewport(1.0);
         let (x, y) = game.mouse_to_world(1.0, game.mouse.x, game.mouse.y);
 
-        egui::Window::new("Egui Window")
+        egui::Window::new("Debugger")
             .title_bar(false)
             .resizable(false)
             .collapsible(false)
             .show(egui_ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    if ui
-                        .selectable_label(config.debug.cli.visible, "CLI")
-                        .clicked()
-                    {
-                        config.debug.cli.visible = !config.debug.cli.visible;
-                    }
-                    if ui
-                        .selectable_label(config.debug.spawner.visible, "Spawn")
-                        .clicked()
-                    {
-                        config.debug.spawner.visible = !config.debug.spawner.visible;
-                    }
-                    if ui
-                        .selectable_label(false, /*config.debug.entities.visible*/ "Entities")
-                        .clicked()
-                    {
-                        // config.debug.entities.visible = !config.debug.entities.visible;
-                    }
-                    if ui
-                        .selectable_label(config.debug.render.visible, "Render")
-                        .clicked()
-                    {
-                        config.debug.render.visible = !config.debug.render.visible;
-                    }
+                    toggle_state(ui, &mut config.debug.cli.visible, "CLI");
+                    toggle_state(ui, &mut config.debug.spawner.visible, "Spawn");
+                    toggle_state(
+                        ui, &mut false, /*config.debug.entities.visible*/ "Entities",
+                    );
+                    toggle_state(ui, &mut config.debug.render.visible, "Render");
                 });
 
                 ui.separator();
@@ -117,6 +99,18 @@ pub fn build_ui(
         // config.debug.cli.build_ui();
         // config.debug.spawner.build_ui(world, x, y, scale);
         // // config.debug.entities.build_ui();
-        // config.debug.render.build_ui();
+        config.debug.render.build_ui(egui_ctx);
+    }
+}
+
+fn toggle_state(ui: &mut egui::Ui, state: &mut bool, label: &str) {
+    if ui.selectable_label(*state, label).clicked() {
+        *state = !*state;
+    }
+}
+
+fn toggle_state_inv(ui: &mut egui::Ui, state: &mut bool, label: &str) {
+    if ui.selectable_label(!*state, label).clicked() {
+        *state = !*state;
     }
 }
