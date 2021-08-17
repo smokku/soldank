@@ -196,37 +196,23 @@ pub fn debug_render(
     //     }
     // }
 
-    // if state.render_colliders {
-    //     gl.texture(None);
-    //     gl.draw_mode(DrawMode::Triangles);
-    //     for collider in map.colliders.iter() {
-    //         const STEPS: usize = 16;
-    //         let pos = vec2(collider.x, collider.y);
-    //         let mut vertices = Vec::with_capacity(STEPS);
-    //         for step in 0..STEPS {
-    //             let m = Transform::FromOrigin {
-    //                 pos,
-    //                 scale: vec2(1.0, 1.0),
-    //                 rot: ((2. * PI / STEPS as f32) * step as f32, Vec2::ZERO),
-    //             }
-    //             .matrix();
-
-    //             vertices.push(m * vec2(collider.diameter / 2., 0.0));
-    //         }
-
-    //         for (i, &vert) in vertices.iter().enumerate() {
-    //             let next = vertices[(i + 1) % STEPS];
-    //             gl.geometry(
-    //                 &[
-    //                     Vertex::new(pos.x, pos.y, 0., 0., 0., color_u8!(255, 0, 0, 192)),
-    //                     Vertex::new(vert.x, vert.y, 0., 0., 0., color_u8!(255, 0, 0, 128)),
-    //                     Vertex::new(next.x, next.y, 0., 0., 0., color_u8!(255, 0, 0, 128)),
-    //                 ],
-    //                 &[0, 1, 2],
-    //             );
-    //         }
-    //     }
-    // }
+    if state.render_colliders {
+        for collider in map.colliders.iter() {
+            //         const STEPS: usize = 16;
+            let pos = Point::new(collider.x, collider.y);
+            let radius = collider.diameter / 2.;
+            canvas.begin_path();
+            canvas.fill_paint(Gradient::Radial {
+                center: pos,
+                in_radius: 0.,
+                out_radius: radius,
+                inner_color: Color::rgba_i(255, 0, 0, 192),
+                outer_color: Color::rgba_i(255, 0, 0, 128),
+            });
+            canvas.circle(pos, radius);
+            canvas.fill().unwrap();
+        }
+    }
 
     // if state.render_physics {
     //     physics(world, resources);
