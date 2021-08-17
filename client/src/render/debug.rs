@@ -43,55 +43,6 @@ pub fn debug_render(
 
     let zoom = f32::exp(game.zoom);
 
-    // uncomment to draw a lot of circles - more than maximum GPU vertices on openGL ES 2/WebGL
-    // note: performance is currently low, very CPU-bound. Something to fix in the future.
-    // for i in 0..405 {
-    //     canvas.begin_path();
-    //     // canvas.rect((100.0, 100.0, 400.0, 300.0));
-    //     canvas.circle(Point::new(i as f32, 110.), 32.);
-    //     canvas.fill_paint(Paint::from(Color::rgb_i(255, (i as u32 % 256 as u32) as u8, 0)));
-    //     canvas.fill().unwrap();
-    // }
-
-    canvas.begin_path();
-    // canvas.rect((100.0, 100.0, 400.0, 300.0));
-    canvas.rounded_rect((100.0, 100.0, 400.0, 300.0), 30.0);
-    canvas.fill_paint(Gradient::Linear {
-        start: (100, 100).into(),
-        end: (300, 300).into(),
-        start_color: Color::rgb_i(0xAA, 0x6C, 0x39),
-        end_color: Color::rgb_i(0x88, 0x2D, 0x60),
-    });
-    canvas.fill().unwrap();
-
-    canvas.begin_path();
-    canvas.font("roboto");
-    canvas.font_size(40.0);
-    canvas.text_align(Align::TOP | Align::LEFT);
-    canvas.fill_paint(Color::rgb(1.0, 1.0, 1.0));
-    canvas
-        .text((10, 10), "alpha texture font - working!!!")
-        .unwrap_or_else(|err| log::error!("{}", err.to_string()));
-
-    // canvas.begin_path();
-    // canvas.rect((100.0, 100.0, 300.0, 300.0));
-    // canvas.fill_paint(Gradient::Linear {
-    //     start: (100, 100).into(),
-    //     end: (400, 400).into(),
-    //     start_color: Color::rgb_i(0xAA, 0x6C, 0x39),
-    //     end_color: Color::rgb_i(0x88, 0x2D, 0x60),
-    // });
-    // canvas.fill().unwrap();
-
-    let origin = (150.0, 140.0);
-    canvas.begin_path();
-    canvas.circle(origin, 64.0);
-    canvas.move_to(origin);
-    canvas.line_to((origin.0 + 300.0, origin.1 - 50.0));
-    canvas.stroke_paint(Color::rgba(1.0, 1.0, 0.0, 1.0));
-    canvas.stroke_width(3.0);
-    canvas.stroke().unwrap();
-
     if state.highlight_polygons {
         for poly in map.polygons.iter() {
             if match poly.polytype {
@@ -202,6 +153,7 @@ pub fn debug_render(
             let pos = Point::new(collider.x, collider.y);
             let radius = collider.diameter / 2.;
             canvas.begin_path();
+            canvas.circle(pos, radius);
             canvas.fill_paint(Gradient::Radial {
                 center: pos,
                 in_radius: 0.,
@@ -209,89 +161,99 @@ pub fn debug_render(
                 inner_color: Color::rgba_i(255, 0, 0, 192),
                 outer_color: Color::rgba_i(255, 0, 0, 128),
             });
-            canvas.circle(pos, radius);
             canvas.fill().unwrap();
         }
     }
 
-    // if state.render_physics {
-    //     physics(world, resources);
-    // }
+    if state.render_physics {
+        physics(canvas, world, resources, zoom);
+    }
 }
 
-pub fn physics(world: &World, resources: &Resources) {
-    // use rapier2d::prelude::*;
+pub fn physics(
+    canvas: &mut Canvas<nonaquad::nvgimpl::RendererCtx>,
+    world: &World,
+    resources: &Resources,
+    zoom: f32,
+) {
+    use rapier2d::prelude::*;
 
-    // let scale = resources.get::<Config>().unwrap().phys.scale;
+    let scale = resources.get::<Config>().unwrap().phys.scale;
 
-    // for (_entity, rb) in world
-    //     .query::<crate::physics::RigidBodyComponentsQuery>()
-    //     .iter()
-    // {
-    //     let tr = rb.position.position.translation;
-    //     let center = vec2(tr.x, tr.y) * scale;
-    //     mq::draw_circle(center.x, center.y, 1.5, mq::YELLOW);
-    //     mq::draw_circle(center.x, center.y, 0.75, mq::BLACK);
-    // }
+    for (_entity, rb) in world
+        .query::<crate::physics::RigidBodyComponentsQuery>()
+        .iter()
+    {
+        let tr = rb.position.position.translation;
+        let center = nona::Point::new(tr.x * scale, tr.y * scale);
 
-    // for (_entity, coll) in world
-    //     .query::<crate::physics::ColliderComponentsQuery>()
-    //     .iter()
-    // {
-    //     const CL: Color = mq::GREEN;
-    //     const TH: f32 = 0.5;
+        canvas.begin_path();
+        canvas.circle(center, 1.5);
+        canvas.fill_paint(Color::rgb(1., 1., 0.));
+        canvas.fill().unwrap();
 
-    //     let Isometry {
-    //         translation: tr,
-    //         rotation: rot,
-    //     } = coll.position.0;
-    //     let center = vec2(tr.x, tr.y) * scale;
-    //     mq::draw_line(
-    //         center.x,
-    //         center.y,
-    //         center.x + rot.re * 10.,
-    //         center.y + rot.im * 10.,
-    //         0.5,
-    //         CL,
-    //     );
-    //     mq::draw_circle(center.x, center.y, 1.5, CL);
-    //     mq::draw_circle(center.x, center.y, 0.75, mq::BLACK);
+        canvas.begin_path();
+        canvas.circle(center, 0.75);
+        canvas.fill_paint(Color::rgb(0., 0., 0.));
+        canvas.fill().unwrap();
+    }
 
-    //     match coll.shape.as_typed_shape() {
-    //         TypedShape::Ball(ball) => {
-    //             let r = ball.radius * scale;
-    //             mq::draw_circle_lines(center.x, center.y, r, TH, CL);
-    //         }
-    //         TypedShape::Cuboid(cuboid) => {
-    //             let hw = cuboid.half_extents.x * scale;
-    //             let hh = cuboid.half_extents.y * scale;
-    //             mq::draw_rectangle_lines(
-    //                 center.x - hw,
-    //                 center.y - hh,
-    //                 hw * 2.,
-    //                 hh * 2.,
-    //                 TH * 2.,
-    //                 CL,
-    //             );
-    //         }
-    //         TypedShape::Capsule(_) => todo!(),
-    //         TypedShape::Segment(_) => todo!(),
-    //         TypedShape::Triangle(triangle) => {
-    //             let a: Vec2 = triangle.a.into();
-    //             let b: Vec2 = triangle.b.into();
-    //             let c: Vec2 = triangle.c.into();
-    //             mq::draw_triangle_lines(a * scale, b * scale, c * scale, TH, CL);
-    //         }
-    //         TypedShape::TriMesh(_) => todo!(),
-    //         TypedShape::Polyline(_) => todo!(),
-    //         TypedShape::HalfSpace(_) => todo!(),
-    //         TypedShape::HeightField(_) => todo!(),
-    //         TypedShape::Compound(_) => todo!(),
-    //         TypedShape::ConvexPolygon(_) => todo!(),
-    //         TypedShape::RoundCuboid(_) => todo!(),
-    //         TypedShape::RoundTriangle(_) => todo!(),
-    //         TypedShape::RoundConvexPolygon(_) => todo!(),
-    //         TypedShape::Custom(_) => todo!(),
-    //     }
-    // }
+    let cl: Color = Color::rgb(0., 1., 0.);
+    let th: f32 = 0.5 * zoom;
+    for (_entity, coll) in world
+        .query::<crate::physics::ColliderComponentsQuery>()
+        .iter()
+    {
+        let Isometry {
+            translation: tr,
+            rotation: rot,
+        } = coll.position.0;
+        let center = nona::Point::new(tr.x * scale, tr.y * scale);
+        canvas.begin_path();
+        canvas.move_to(center);
+        canvas.line_to((center.x + rot.re * 10., center.y + rot.im * 10.));
+        canvas.circle(center, 1.5);
+        canvas.stroke_width(th);
+        canvas.stroke_paint(cl);
+        canvas.stroke().unwrap();
+
+        canvas.begin_path();
+        canvas.fill_paint(Color::rgb(0., 0., 0.));
+        canvas.circle(center, 0.75);
+        canvas.fill().unwrap();
+
+        canvas.begin_path();
+        match coll.shape.as_typed_shape() {
+            TypedShape::Ball(ball) => {
+                let r = ball.radius * scale;
+                canvas.circle(center, r);
+            }
+            TypedShape::Cuboid(cuboid) => {
+                let hw = cuboid.half_extents.x * scale;
+                let hh = cuboid.half_extents.y * scale;
+                canvas.rect((center.x - hw, center.y - hh, hw * 2., hh * 2.));
+            }
+            TypedShape::Capsule(_) => todo!(),
+            TypedShape::Segment(_) => todo!(),
+            TypedShape::Triangle(triangle) => {
+                canvas.move_to((triangle.a.x * scale, triangle.a.y * scale));
+                canvas.line_to((triangle.b.x * scale, triangle.b.y * scale));
+                canvas.line_to((triangle.c.x * scale, triangle.c.y * scale));
+                canvas.line_to((triangle.a.x * scale, triangle.a.y * scale));
+            }
+            TypedShape::TriMesh(_) => todo!(),
+            TypedShape::Polyline(_) => todo!(),
+            TypedShape::HalfSpace(_) => todo!(),
+            TypedShape::HeightField(_) => todo!(),
+            TypedShape::Compound(_) => todo!(),
+            TypedShape::ConvexPolygon(_) => todo!(),
+            TypedShape::RoundCuboid(_) => todo!(),
+            TypedShape::RoundTriangle(_) => todo!(),
+            TypedShape::RoundConvexPolygon(_) => todo!(),
+            TypedShape::Custom(_) => todo!(),
+        }
+        canvas.stroke_width(th);
+        canvas.stroke_paint(Color::rgb(0., 1., 0.));
+        canvas.stroke().unwrap();
+    }
 }
