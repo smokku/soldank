@@ -56,24 +56,25 @@ pub fn debug_render<R: Renderer>(
 
     let zoom = f32::exp(game.zoom);
 
-    let mut path = femtovg::Path::new();
-    path.move_to(0., 0.);
-    path.line_to(-100., 100.);
-    canvas.stroke_path(
-        &mut path,
-        femtovg::Paint::color(femtovg::Color::rgb(0, 0, 255)),
-    );
+    // let mut path = femtovg::Path::new();
+    // path.move_to(0., 0.);
+    // path.line_to(-100., 100.);
+    // canvas.stroke_path(
+    //     &mut path,
+    //     femtovg::Paint::color(femtovg::Color::rgb(0, 0, 255)),
+    // );
 
-    let mut paint = Paint::color(Color::hex("B7410E"));
-    paint.set_font(&[*fonts.get("roboto").unwrap()]);
-    paint.set_font_size(40.0);
-    paint.set_text_baseline(Baseline::Top);
-    paint.set_text_align(Align::Right);
-    canvas
-        .fill_text(800.0, 10.0, "alpha texture font - working!!!", paint)
-        .unwrap();
+    // let mut paint = Paint::color(Color::hex("B7410E"));
+    // paint.set_font(&[*fonts.get("roboto").unwrap()]);
+    // paint.set_font_size(40.0);
+    // paint.set_text_baseline(Baseline::Top);
+    // paint.set_text_align(Align::Right);
+    // canvas
+    //     .fill_text(800.0, 10.0, "alpha texture font - working!!!", paint)
+    //     .unwrap();
 
     if state.highlight_polygons {
+        let mut path = Path::new();
         for poly in map.polygons.iter() {
             if match poly.polytype {
                 PolyType::Normal => state.hlt_poly_normal,
@@ -103,16 +104,13 @@ pub fn debug_render<R: Renderer>(
                 PolyType::Background => state.hlt_poly_background,
                 PolyType::BackgroundTransition => state.hlt_poly_background_transition,
             } {
-                let mut path = Path::new();
-                for poly in map.polygons.iter() {
-                    path.move_to(poly.vertices[0].x, poly.vertices[0].y);
-                    path.line_to(poly.vertices[1].x, poly.vertices[1].y);
-                    path.line_to(poly.vertices[2].x, poly.vertices[2].y);
-                    path.line_to(poly.vertices[0].x, poly.vertices[0].y);
-                }
-                canvas.fill_path(&mut path, Paint::color(Color::rgba(255, 255, 0, 128)));
+                path.move_to(poly.vertices[0].x, poly.vertices[0].y);
+                path.line_to(poly.vertices[1].x, poly.vertices[1].y);
+                path.line_to(poly.vertices[2].x, poly.vertices[2].y);
+                path.line_to(poly.vertices[0].x, poly.vertices[0].y);
             }
         }
+        canvas.fill_path(&mut path, Paint::color(Color::rgba(255, 255, 0, 128)));
     }
 
     if state.render_wireframe {
