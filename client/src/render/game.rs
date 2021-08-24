@@ -159,6 +159,7 @@ impl GameGraphics {
             let screen_scale_y = screen_size.1 / state.game_height;
             let zoom_x = zoom * screen_scale_x;
             let zoom_y = zoom * screen_scale_y;
+            let scale = state.game_width / screen_size.0;
             let graphics = &self;
             femtovg.draw(&mut femto_mq.with_context(ctx), move |canvas| {
                 canvas.save();
@@ -167,14 +168,7 @@ impl GameGraphics {
                 canvas.set_size(screen_size.0 as u32, screen_size.1 as u32, dpi_scale);
                 canvas.set_transform(zoom_x, 0.0, 0.0, zoom_y, -dx * zoom_x, -dy * zoom_y);
 
-                debug::debug_render(
-                    canvas,
-                    graphics,
-                    debug_state,
-                    world,
-                    resources,
-                    screen_scale_x,
-                );
+                debug::debug_render(canvas, graphics, debug_state, world, resources, scale);
 
                 canvas.restore();
 

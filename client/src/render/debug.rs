@@ -1,16 +1,6 @@
 use super::*;
 use crate::debug::DebugState;
-use femtovg::{
-    Align, Baseline, BlendFactor, Canvas, Color, CompositeOperation, FontId, ImageFlags, LineCap,
-    Paint, Path, Renderer,
-};
-use gfx2d::{
-    // macroquad::prelude::{color_u8, Color, DrawMode, QuadGl, Vertex},
-    math::PI,
-    Texture,
-    Transform,
-};
-use std::collections::HashMap;
+use femtovg::{Canvas, Color, LineCap, Paint, Path, Renderer};
 
 #[allow(clippy::too_many_arguments)]
 fn draw_line<R: Renderer>(
@@ -41,7 +31,7 @@ fn draw_line<R: Renderer>(
     canvas.stroke_path(&mut path, paint);
 }
 
-pub fn debug_render<R: Renderer>(
+pub fn debug_render<R: Renderer<Image = gfx2d::Texture>>(
     canvas: &mut Canvas<R>,
     graphics: &GameGraphics,
     state: &DebugState,
@@ -52,25 +42,17 @@ pub fn debug_render<R: Renderer>(
     let state = &state.render;
     let game = resources.get::<MainState>().unwrap();
     let map = resources.get::<MapFile>().unwrap();
-    let fonts = resources.get::<HashMap<&str, FontId>>().unwrap();
 
     let zoom = f32::exp(game.zoom);
 
-    // let mut path = femtovg::Path::new();
-    // path.move_to(0., 0.);
-    // path.line_to(-100., 100.);
-    // canvas.stroke_path(
-    //     &mut path,
-    //     femtovg::Paint::color(femtovg::Color::rgb(0, 0, 255)),
-    // );
-
+    // let fonts = resources.get::<HashMap<&str, FontId>>().unwrap();
     // let mut paint = Paint::color(Color::hex("B7410E"));
     // paint.set_font(&[*fonts.get("roboto").unwrap()]);
     // paint.set_font_size(40.0);
     // paint.set_text_baseline(Baseline::Top);
     // paint.set_text_align(Align::Right);
     // canvas
-    //     .fill_text(800.0, 10.0, "alpha texture font - working!!!", paint)
+    //     .fill_text(800.0, 10.0, "femtovg ❤ miniquad", paint)
     //     .unwrap();
 
     if state.highlight_polygons {
@@ -116,118 +98,98 @@ pub fn debug_render<R: Renderer>(
     if state.render_wireframe {
         for poly in map.polygons.iter() {
             let [v1, v2, v3] = &poly.vertices;
-            draw_line(
-                canvas,
-                v1.x,
-                v1.y,
-                v1.color,
-                v2.x,
-                v2.y,
-                v2.color,
-                0.7 * zoom,
-            );
-            draw_line(
-                canvas,
-                v2.x,
-                v2.y,
-                v2.color,
-                v3.x,
-                v3.y,
-                v3.color,
-                0.7 * zoom,
-            );
-            draw_line(
-                canvas,
-                v3.x,
-                v3.y,
-                v3.color,
-                v1.x,
-                v1.y,
-                v1.color,
-                0.7 * zoom,
-            );
+            let w = 0.7 * zoom;
+            draw_line(canvas, v1.x, v1.y, v1.color, v2.x, v2.y, v2.color, w);
+            draw_line(canvas, v2.x, v2.y, v2.color, v3.x, v3.y, v3.color, w);
+            draw_line(canvas, v3.x, v3.y, v3.color, v1.x, v1.y, v1.color, w);
         }
     }
 
     if state.render_spawns {
+        let scale = zoom * screen_scale;
+        let size = 8. * scale;
+        let empty_sprite = Sprite::new(0., 0., (0., 0.), (0., 0.), None);
+
         for spawn in map.spawnpoints.iter() {
             if state.render_spawns_team[spawn.team as usize] {
                 let x = spawn.x as f32;
                 let y = spawn.y as f32;
-                let scale = zoom * screen_scale;
-                let size = 8. * scale;
                 let sprite = match spawn.team {
-                    0 => Some(graphics.sprites.get("Marker", "SpawnGeneral")),
-                    1 => Some(graphics.sprites.get("Marker", "SpawnAlpha")),
-                    2 => Some(graphics.sprites.get("Marker", "SpawnBravo")),
-                    3 => Some(graphics.sprites.get("Marker", "SpawnCharlie")),
-                    4 => Some(graphics.sprites.get("Marker", "SpawnDelta")),
-                    5 => Some(graphics.sprites.get("Marker", "FlagAlpha")),
-                    6 => Some(graphics.sprites.get("Marker", "FlagBravo")),
-                    7 => Some(graphics.sprites.get("Marker", "Grenades")),
-                    8 => Some(graphics.sprites.get("Marker", "Medkits")),
-                    9 => Some(graphics.sprites.get("Marker", "Clusters")),
-                    10 => Some(graphics.sprites.get("Marker", "Vest")),
-                    11 => Some(graphics.sprites.get("Marker", "Flamer")),
-                    12 => Some(graphics.sprites.get("Marker", "Berserker")),
-                    13 => Some(graphics.sprites.get("Marker", "Predator")),
-                    14 => Some(graphics.sprites.get("Marker", "FlagYellow")),
-                    15 => Some(graphics.sprites.get("Marker", "RamboBow")),
-                    16 => Some(graphics.sprites.get("Marker", "StatGun")),
-                    _ => None,
+                    0 => graphics.sprites.get("Marker", "SpawnGeneral"),
+                    1 => graphics.sprites.get("Marker", "SpawnAlpha"),
+                    2 => graphics.sprites.get("Marker", "SpawnBravo"),
+                    3 => graphics.sprites.get("Marker", "SpawnCharlie"),
+                    4 => graphics.sprites.get("Marker", "SpawnDelta"),
+                    5 => graphics.sprites.get("Marker", "FlagAlpha"),
+                    6 => graphics.sprites.get("Marker", "FlagBravo"),
+                    7 => graphics.sprites.get("Marker", "Grenades"),
+                    8 => graphics.sprites.get("Marker", "Medkits"),
+                    9 => graphics.sprites.get("Marker", "Clusters"),
+                    10 => graphics.sprites.get("Marker", "Vest"),
+                    11 => graphics.sprites.get("Marker", "Flamer"),
+                    12 => graphics.sprites.get("Marker", "Berserker"),
+                    13 => graphics.sprites.get("Marker", "Predator"),
+                    14 => graphics.sprites.get("Marker", "FlagYellow"),
+                    15 => graphics.sprites.get("Marker", "RamboBow"),
+                    16 => graphics.sprites.get("Marker", "StatGun"),
+                    _ => &empty_sprite,
                 };
 
-                let (texture, tx, ty) = if let Some(sprite) = sprite {
-                    (sprite.texture, sprite.texcoords_x, sprite.texcoords_y)
+                let mut draw_path = Path::new();
+                draw_path.rect(x - size, y - size, size * 2., size * 2.);
+
+                if let Some(texture) = sprite.texture {
+                    if let Ok(image_id) = canvas.renderer().image_inject(texture) {
+                        if let Ok(image_size) = canvas.image_size(image_id) {
+                            let image_width = image_size.0 as f32;
+                            let image_height = image_size.1 as f32;
+                            let fragment_x = sprite.texcoords_x.0 * image_width;
+                            let fragment_y = sprite.texcoords_y.0 * image_height;
+                            let scale_x = (size * 2.) / sprite.width;
+                            let scale_y = (size * 2.) / sprite.height;
+
+                            // Position the image pattern so the sprite covers destination area
+                            let mut path = Path::new();
+                            path.rect(
+                                x - fragment_x * scale_x - size,
+                                y - fragment_y * scale_y - size,
+                                image_width * scale_x,
+                                image_height * scale_y,
+                            );
+
+                            // Get the bounding box of the path so that we can stretch
+                            // the paint to cover it exactly:
+                            let bbox = canvas.path_bbox(&mut path);
+
+                            // Now we need to apply the current canvas transform
+                            // to the path bbox:
+                            let a = canvas
+                                .transform()
+                                .inversed()
+                                .transform_point(bbox.minx, bbox.miny);
+                            let b = canvas
+                                .transform()
+                                .inversed()
+                                .transform_point(bbox.maxx, bbox.maxy);
+
+                            //
+                            let mut path = Path::new();
+                            path.rect(x - size, y - size, size * 2., size * 2.);
+
+                            // Finally cut only wanted part of the image at destination area
+                            canvas.fill_path(
+                                &mut draw_path,
+                                Paint::image(image_id, a.0, a.1, b.0 - a.0, b.1 - a.1, 0f32, 1f32),
+                            );
+                        }
+                    }
                 } else {
-                    (None, (0., 0.), (0., 0.))
-                };
-
-                // let image = state.spawns_images.entry(0).or_insert_with(|| {
-                //     canvas
-                //         .create_image_from_file(
-                //             ImageFlags::empty(),
-                //             "./client/resources/markers/1.png",
-                //         )
-                //         .unwrap()
-                // });
-
-                // let vertices = [
-                //     Vertex::new(x - size, y - size, 0., tx.0, ty.0, mq::WHITE),
-                //     Vertex::new(x + size, y - size, 0., tx.1, ty.0, mq::WHITE),
-                //     Vertex::new(x + size, y + size, 0., tx.1, ty.1, mq::WHITE),
-                //     Vertex::new(x - size, y + size, 0., tx.0, ty.1, mq::WHITE),
-                // ];
-                // let indices = [0, 1, 2, 0, 2, 3];
-
-                // let paint = Paint {
-                //     xform: (),
-                //     extent: (),
-                //     radius: (),
-                //     feather: (),
-                //     inner_color: (),
-                //     outer_color: (),
-                //     image: (),
-                // };
-
-                // let mut path = Path::new();
-                // canvas.rect((x - size, y - size, size * 2., size * 2.));
-                // canvas.stroke_paint(Color::rgb_i(255, 255, 255));
-                // canvas.stroke().unwrap();
-
-                // let mut paint: Paint = Color::rgb_i(255, 255, 255).into();
-                // paint.image = Some(*image);
-                // paint.inner_color.a *= 0.5;
-                // paint.outer_color.a *= 0.5;
-
-                // let mut path = Path::new();
-                // canvas.rect((x - size, y - size, size * 2., size * 2.));
-                // canvas.fill_paint(paint);
-                // canvas.fill().unwrap();
-
-                // gl.texture(texture.map(Texture2D::from_miniquad_texture));
-                // gl.draw_mode(DrawMode::Triangles);
-                // gl.geometry(&vertices, &indices);
+                    let cl = spawn.team as u8;
+                    canvas.fill_path(
+                        &mut draw_path,
+                        Paint::color(Color::rgb(cl * 4, cl * 8, cl * 16)),
+                    );
+                }
             }
         }
     }

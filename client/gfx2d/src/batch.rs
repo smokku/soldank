@@ -187,7 +187,7 @@ impl DrawBatch {
     }
 
     pub fn buffer(&self) -> VertexBuffer {
-        self.vbuf.clone().unwrap()
+        self.vbuf.unwrap()
     }
 
     pub fn commands(&self, range: Range<usize>) -> &[BatchCommand] {

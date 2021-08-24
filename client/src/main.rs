@@ -299,6 +299,9 @@ impl GameStage {
                 .add_font("client/resources/Roboto-Bold.ttf") // FIXME: use filesystem
                 .expect("Cannot add font"),
         );
+        femtovg
+            .add_font("client/resources/Symbola.ttf") // FIXME: use filesystem
+            .expect("Cannot add font");
         resources.insert(fonts);
 
         GameStage {
