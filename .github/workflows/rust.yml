@@ -1,4 +1,4 @@
-name: Rust
+name: Rust CI
 
 on:
   push:
@@ -28,10 +28,6 @@ jobs:
         uses: actions/checkout@v2
       - name: Annotate commit with clippy warnings
         uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Security audit
-        uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build
