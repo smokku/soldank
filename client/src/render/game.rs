@@ -71,8 +71,8 @@ impl GameGraphics {
         &mut self,
         context: &mut Gfx2dContext,
         ctx: &mut Context,
-        nona: &mut nona::Context,
-        nona_renderer: &mut nonaquad::nvgimpl::Renderer,
+        femtovg: &mut femtovg::Context,
+        femto_mq: &mut femtovg::renderer::Miniquad,
         world: &World,
         resources: &Resources,
         soldier: &Soldier,
@@ -89,6 +89,7 @@ impl GameGraphics {
         let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
         let transform_bg = Transform::ortho(0.0, 1.0, dy, dy + h).matrix();
+        let scale = config.phys.scale;
 
         let debug_state = &config.debug;
 
@@ -133,7 +134,7 @@ impl GameGraphics {
         if !debug_state.render.disable_scenery_back {
             context.draw(ctx, &mut self.map.scenery_back(), &transform);
         }
-        render::systems::render_sprites(world, &self.sprites, &mut self.batch, config.phys.scale);
+        render::systems::render_sprites(world, &self.sprites, &mut self.batch, scale);
         context.draw(ctx, &mut self.batch.all(), &transform);
         if !debug_state.render.disable_scenery_middle {
             context.draw(ctx, &mut self.map.scenery_mid(), &transform);
@@ -153,13 +154,31 @@ impl GameGraphics {
         if debug_state.visible {
             let zoom = 1. / zoom;
             let screen_size = ctx.screen_size();
-            let zoom_x = zoom * (screen_size.0 / state.game_width);
-            let zoom_y = zoom * (screen_size.1 / state.game_height);
-            nona.attach_renderer(&mut nona_renderer.with_context(ctx), move |canvas| {
-                canvas.begin_frame(None).unwrap();
-                canvas.transform((zoom_x, 0.0, 0.0, zoom_y, -dx * zoom_x, -dy * zoom_y).into());
-                debug::debug_render(canvas, debug_state, world, resources);
-                canvas.end_frame().unwrap();
+            let dpi_scale = ctx.dpi_scale();
+            let screen_scale_x = screen_size.0 / state.game_width;
+            let screen_scale_y = screen_size.1 / state.game_height;
+            let zoom_x = zoom * screen_scale_x;
+            let zoom_y = zoom * screen_scale_y;
+            let graphics = &self;
+            femtovg.draw(&mut femto_mq.with_context(ctx), move |canvas| {
+                canvas.save();
+                canvas.reset();
+
+                canvas.set_size(screen_size.0 as u32, screen_size.1 as u32, dpi_scale);
+                canvas.set_transform(zoom_x, 0.0, 0.0, zoom_y, -dx * zoom_x, -dy * zoom_y);
+
+                debug::debug_render(
+                    canvas,
+                    graphics,
+                    debug_state,
+                    world,
+                    resources,
+                    screen_scale_x,
+                );
+
+                canvas.restore();
+
+                canvas.flush();
             });
         }
 

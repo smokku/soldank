@@ -42,9 +42,9 @@ use cvars::{set_cli_cvars, Config, NetConfig};
 use gfx2d::{math, mq};
 use gvfs::filesystem::{File, Filesystem};
 use hecs::World;
-use nonaquad::nvgimpl;
 use resources::Resources;
 use std::{
+    collections::HashMap,
     env, path,
     sync::{Arc, RwLock},
 };
@@ -248,8 +248,8 @@ pub struct GameStage {
     last_frame: f64,
     timeacc: f64,
     egui_mq: egui_miniquad::EguiMq,
-    nona_renderer: nvgimpl::Renderer,
-    nona: nona::Context,
+    femtovg: femtovg::Context,
+    femto_mq: femtovg::renderer::Miniquad,
 
     soldier: Soldier,
     emitter: Vec<EmitterItem>,
@@ -263,7 +263,7 @@ impl GameStage {
     pub fn new(
         ctx: &mut mq::Context,
         world: World,
-        resources: Resources,
+        mut resources: Resources,
         mut filesystem: Filesystem,
         networking: Networking,
         client: orb::client::Client<GameWorld>,
@@ -289,12 +289,17 @@ impl GameStage {
         drop(state);
         drop(config);
 
-        let mut nona_renderer = nvgimpl::Renderer::create(ctx).unwrap();
-        let mut nona = nona::Context::create(&mut nona_renderer.with_context(ctx)).unwrap();
+        let femto_mq = femtovg::renderer::Miniquad::new(ctx).unwrap();
+        let mut femtovg = femtovg::Context::new().unwrap();
 
-        // for demo: load font by embedding into binary
-        let font_data: &'static [u8] = include_bytes!("../resources/Roboto-Bold.ttf");
-        nona.create_font("roboto", font_data).unwrap();
+        let mut fonts = HashMap::new();
+        fonts.insert(
+            "roboto",
+            femtovg
+                .add_font("client/resources/Roboto-Bold.ttf") // FIXME: use filesystem
+                .expect("Cannot add font"),
+        );
+        resources.insert(fonts);
 
         GameStage {
             world,
@@ -308,8 +313,8 @@ impl GameStage {
             last_frame: mq::date::now(),
             timeacc: 0.0,
             egui_mq: egui_miniquad::EguiMq::new(ctx),
-            nona_renderer,
-            nona,
+            femtovg,
+            femto_mq,
 
             soldier,
             emitter: Vec::new(),
@@ -600,8 +605,8 @@ impl mq::EventHandler for GameStage {
         self.graphics.render_frame(
             &mut self.context,
             ctx,
-            &mut self.nona,
-            &mut self.nona_renderer,
+            &mut self.femtovg,
+            &mut self.femto_mq,
             &self.world,
             &self.resources,
             &self.soldier,
