@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Update dependencies
+        run: sudo apt-get update
       - name: Install dependencies
         run: sudo apt-get install pkg-config libx11-dev libxi-dev libgl1-mesa-dev libasound2-dev
       - name: Install toolchain
