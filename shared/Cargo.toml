@@ -18,8 +18,8 @@ hecs = { version = "0.6", features = ["macros"] }
 resources = "1.1"
 cvar = "0.3"
 clap = "2.33"
-rapier2d = { version = "0.10", features = ["simd-stable"] }
-nalgebra = { version = "0.28", features = ["convert-glam014"] }
+rapier2d = { version = "0.11", features = ["simd-stable"] }
+nalgebra = { version = "0.29", features = ["convert-glam014"] }
 glam = "0.14" # bound to gfx2d's dependency
 hecs_rapier = "0.10.2"
 derive_deref = "1.1"

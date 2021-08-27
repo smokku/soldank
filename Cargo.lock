@@ -1132,7 +1132,7 @@ dependencies = [
 [[package]]
 name = "hecs_rapier"
 version = "0.10.2"
-source = "git+https://github.com/smokku/hecs_rapier.git#f083fe817e02815fcba3535b88b714e2e8ca848c"
+source = "git+https://github.com/smokku/hecs_rapier.git#50a4250fcc03ed1fd89ea33a21c8ace03510c7ff"
 dependencies = [
  "hecs",
  "rapier2d",
@@ -1482,9 +1482,9 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.28.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39fe9195887b501f296ac918ecbff4650b6935da164d4902ef73e140c46a0dce"
+checksum = "d506eb7e08d6329505faa8a3a00a5dcc6de9f76e0c77e4b75763ae3c770831ff"
 dependencies = [
  "approx",
  "glam",
@@ -1788,9 +1788,9 @@ dependencies = [
 
 [[package]]
 name = "parry2d"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a13a6c0ed1c89ad0350c61f42f967befff3912d4e1a209b4a051831e7211ae4"
+checksum = "e4399c1e027e181dab9fa32362279772d8e8ad787d87670bd078487d07a13ae3"
 dependencies = [
  "approx",
  "arrayvec 0.7.1",
@@ -2013,9 +2013,9 @@ dependencies = [
 
 [[package]]
 name = "rapier2d"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8414a31cd0d29ef1710efd52e1c4dd96a9439e276aa61c9b53c25c00e569db9f"
+checksum = "4e922bd6a0c765834ce190410286fe9e832dc8df452634e3b6e6db9172e65bd8"
 dependencies = [
  "approx",
  "arrayvec 0.7.1",
@@ -2184,9 +2184,9 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
 name = "safe_arch"
-version = "0.5.2"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1ff3d6d9696af502cc3110dacce942840fb06ff4514cad92236ecc455f2ce05"
+checksum = "794821e4ccb0d9f979512f9c1973480123f9bd62a90d74ab0f9426fcf8f4a529"
 dependencies = [
  "bytemuck",
 ]
@@ -2388,9 +2388,9 @@ dependencies = [
 
 [[package]]
 name = "simba"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e82063457853d00243beda9952e910b82593e4b07ae9f721b9278a99a0d3d5c"
+checksum = "f0b7840f121a46d63066ee7a99fc81dcabbc6105e437cae43528cea199b5a05f"
 dependencies = [
  "approx",
  "num-complex",
@@ -3167,9 +3167,9 @@ dependencies = [
 
 [[package]]
 name = "wide"
-version = "0.6.5"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46bbe7c604a27ca0b05c5503221e76da628225b568e6f1280b42dbad3b72d89b"
+checksum = "cd89cf484471f953ee84f07c0dff0ea20e9ddf976f03cabdf5dda48b221f22e7"
 dependencies = [
  "bytemuck",
  "safe_arch",

@@ -344,6 +344,14 @@ impl mq::EventHandler for GameStage {
         self.networking.tick += 1;
         self.networking.update();
 
+        {
+            let mut modifs_tracker = self
+                .resources
+                .get_mut::<physics::ModificationTracker>()
+                .unwrap();
+            physics::prepare_step(&mut self.world, &mut modifs_tracker);
+        }
+
         let time = mq::date::now();
         self.timeacc += time - self.last_frame;
         self.last_frame = time;
