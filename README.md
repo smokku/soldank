@@ -8,12 +8,12 @@
 
 ## Goals
 
-* Fully authentic look and feel
-* ~~bugs~~ feature-complete port of Soldat
+- Fully authentic look and feel
+- ~~bugs~~ feature-complete port of Soldat
 
 ## build and run
 
-This repository is configured to store `*.smod` and `*.smap` files in LFS. You will need to install https://git-lfs.github.com/ to handle these.
+This repository is configured to store `*.smod` and `*.smap` files in LFS. You will need to install <https://git-lfs.github.com/> to handle these.
 
 Alternatively you can build `soldat.smod` from [soldat-base](https://github.com/Soldat/base) and copy to `soldank/client/resources` directory
 
@@ -43,6 +43,7 @@ OPTIONS:
     -b, --bind <address:port>    IP address and port to bind [env: SOLDANK_SERVER_BIND=]
     -k, --key <key>              server connection key [env: SOLDANK_SERVER_KEY=]
     -m, --map <map name>         name of map to load [env: SOLDANK_USE_MAP=]  [default: ctf_Ash]
+        --set <cvar> <value>     set cvar value [multiple]
 ```
 
 ```
