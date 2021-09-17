@@ -213,7 +213,8 @@ impl Networking {
                     begin_tick: inputs[0].0,
                     control: inputs
                         .iter()
-                        .map(|&(_t, c, x, y)| (c, vec2(x as f32, y as f32)))
+                        // TODO: pack aim vector as two u8
+                        .map(|&(_t, c, x, y)| (c, vec2(x as f32, y as f32).normalize_or_zero()))
                         .collect(),
                 };
                 log::debug!("--> Sending {:?}", msg);

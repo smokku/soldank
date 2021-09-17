@@ -36,8 +36,6 @@ pub fn process_network_messages(
                 } else {
                     log::error!("Processing message from unknown connection: [{}]", addr);
                 }
-
-                // TODO: check constraints and update connection.cheats
                 control_updates.insert(addr, (begin_tick, control));
             }
             _ => {
@@ -51,6 +49,8 @@ pub fn process_network_messages(
         if let Some((tick, mut ctrl)) = control_updates.remove(addr) {
             if let Some(connection) = connections.get(addr) {
                 for (i, (c, v)) in ctrl.drain(..).enumerate() {
+                    // TODO: check constraints and update connection.cheats
+                    let v = v.normalize_or_zero();
                     let t = tick + i;
                     if t > connection.last_processed_tick {
                         control.insert(tick + i, (c, v));

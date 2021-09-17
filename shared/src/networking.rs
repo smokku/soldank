@@ -54,7 +54,7 @@ pub struct GameWorld {
 
 #[derive(Debug, Clone, SerBin, DeBin)]
 pub enum NetCommand {
-    Spawn,
+    Command(String),
 }
 
 #[derive(Debug, Default, Clone, SerBin, DeBin)]
@@ -69,7 +69,7 @@ impl OrbWorld for GameWorld {
     fn command_is_valid(command: &NetCommand, client_id: Self::ClientId) -> bool {
         // Only localhost has permission to spawn
         match command {
-            NetCommand::Spawn => {
+            NetCommand::Command(_) => {
                 client_id.ip() == "127.0.0.1:0".parse::<SocketAddr>().unwrap().ip()
             }
             _ => true,
@@ -78,7 +78,10 @@ impl OrbWorld for GameWorld {
 
     fn apply_command(&mut self, command: &NetCommand) {
         match command {
-            NetCommand::Spawn => self.spawn_object(),
+            NetCommand::Command(cmd) => match cmd.as_str() {
+                "spawn" => self.spawn_object(),
+                cmd => panic!("Unhandled command {}", cmd),
+            },
         }
     }
 
