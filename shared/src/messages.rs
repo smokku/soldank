@@ -112,7 +112,7 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
 
             msg.push(entities.len() as u8); // max 255 entities in packet
             for (entity, components) in entities {
-                msg.extend(entity.to_bits().to_be_bytes().to_vec());
+                msg.extend(entity.to_bits().get().to_be_bytes().to_vec());
                 msg.push(components.len() as u8);
                 for component in components {
                     match component {
@@ -220,7 +220,7 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                                     data[offset + 7],
                                 ];
                                 offset += size_of::<u64>();
-                                Entity::from_bits(u64::from_be_bytes(data))
+                                Entity::from_bits(u64::from_be_bytes(data)).unwrap()
                             } else {
                                 log::error!(
                                     "@{}: Cannot deserialize {} entity id",
