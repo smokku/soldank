@@ -834,28 +834,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "femtovg"
-version = "0.2.2"
-source = "git+https://github.com/smokku/femtovg.git#72e94424d88ad7c156ef3aec3709f37812aae7bb"
-dependencies = [
- "bitflags",
- "fnv",
- "generational-arena",
- "glow",
- "image",
- "imgref",
- "lru",
- "miniquad",
- "owned_ttf_parser",
- "rgb",
- "rustybuzz",
- "unicode-bidi",
- "unicode-segmentation",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -987,15 +965,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "generational-arena"
-version = "0.2.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e1d3b771574f62d0548cee0ad9057857e9fc25d7a3335f140c84f6acd0bf601"
-dependencies = [
- "cfg-if 0.1.10",
-]
-
-[[package]]
 name = "generic-array"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1066,18 +1035,6 @@ name = "glob"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
-
-[[package]]
-name = "glow"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "945be163fdb893227410c8b44c2412dade922585b262d1daa6a7e96135217d4c"
-dependencies = [
- "js-sys",
- "slotmap",
- "wasm-bindgen",
- "web-sys",
-]
 
 [[package]]
 name = "gvfs"
@@ -1206,12 +1163,6 @@ dependencies = [
  "scoped_threadpool",
  "tiff",
 ]
-
-[[package]]
-name = "imgref"
-version = "1.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41d0c0db6c932f8262e0ed8909f2e7f8c0e9b1cfb4da884267ce09a10be54365"
 
 [[package]]
 name = "indenter"
@@ -1350,12 +1301,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lru"
-version = "0.6.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ea2d928b485416e8908cff2d97d621db22b27f7b3b6729e438bcf42c671ba91"
-
-[[package]]
 name = "malloc_buf"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1406,7 +1351,7 @@ checksum = "0c835948974f68e0bd58636fc6c5b1fbff7b297e3046f11b3b3c18bbac012c6d"
 [[package]]
 name = "miniquad"
 version = "0.3.0-alpha.37"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 dependencies = [
  "sapp-android",
  "sapp-darwin",
@@ -1903,6 +1848,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "quad-rand"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "658fa1faf7a4cc5f057c9ee5ef560f717ad9d8dc66d975267f709624d6e1ab88"
+
+[[package]]
 name = "quad-url"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2161,22 +2112,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustybuzz"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44561062e583c4873162861261f16fd1d85fe927c4904d71329a4fe43dc355ef"
-dependencies = [
- "bitflags",
- "bytemuck",
- "smallvec",
- "ttf-parser",
- "unicode-bidi-mirroring",
- "unicode-ccc",
- "unicode-general-category",
- "unicode-script",
-]
-
-[[package]]
 name = "ryu"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2203,7 +2138,7 @@ dependencies = [
 [[package]]
 name = "sapp-android"
 version = "0.1.8"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 dependencies = [
  "libc",
  "ndk-sys",
@@ -2212,7 +2147,7 @@ dependencies = [
 [[package]]
 name = "sapp-darwin"
 version = "0.1.6"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 dependencies = [
  "cc",
 ]
@@ -2220,7 +2155,7 @@ dependencies = [
 [[package]]
 name = "sapp-dummy"
 version = "0.1.5"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 dependencies = [
  "libc",
 ]
@@ -2228,7 +2163,7 @@ dependencies = [
 [[package]]
 name = "sapp-ios"
 version = "0.1.2"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 dependencies = [
  "cc",
 ]
@@ -2242,7 +2177,7 @@ checksum = "bb8ababa867431fa6c0a178248bfe7e77b5d1de357c9848883ba8e3946bb21d4"
 [[package]]
 name = "sapp-linux"
 version = "0.1.13"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 dependencies = [
  "libc",
 ]
@@ -2250,12 +2185,12 @@ dependencies = [
 [[package]]
 name = "sapp-wasm"
 version = "0.1.26"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 
 [[package]]
 name = "sapp-windows"
 version = "0.2.18"
-source = "git+https://github.com/smokku/miniquad.git#e669b499ef06ff0ace25ad0c06e6b8a8ac6dacce"
+source = "git+https://github.com/not-fl3/miniquad.git#f39f10ec81cd43246fb4431cb032de282354ff62"
 dependencies = [
  "winapi",
 ]
@@ -2436,15 +2371,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c307a32c1c5c437f38c7fd45d753050587732ba8628319fbdf12a7e289ccc590"
 
 [[package]]
-name = "slotmap"
-version = "1.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e08e261d0e8f5c43123b7adf3e4ca1690d655377ac93a03b2c9d3e98de1342"
-dependencies = [
- "version_check 0.9.3",
-]
-
-[[package]]
 name = "smallvec"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2517,7 +2443,6 @@ dependencies = [
  "egui",
  "egui-miniquad",
  "env_logger",
- "femtovg",
  "gfx2d",
  "gvfs",
  "hecs",
@@ -2527,7 +2452,7 @@ dependencies = [
  "log",
  "naia-client-socket",
  "nalgebra",
- "rand 0.8.4",
+ "quad-rand",
  "rapier2d",
  "resources",
  "rust-ini",
@@ -2577,7 +2502,6 @@ dependencies = [
  "nanoserde",
  "num-traits",
  "rapier2d",
- "resources",
  "simple-error",
  "test-env-log",
 ]
@@ -2796,9 +2720,9 @@ dependencies = [
 
 [[package]]
 name = "tracing"
-version = "0.1.27"
+version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2ba9ab62b7d6497a8638dfda5e5c4fb3b2d5a7fca4118f2b96151c8ef1a437e"
+checksum = "84f96e095c0c82419687c20ddf5cb3eadb61f4e1405923c9dc8e53a1adacbda8"
 dependencies = [
  "cfg-if 1.0.0",
  "pin-project-lite",
@@ -2838,9 +2762,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-subscriber"
-version = "0.2.23"
+version = "0.2.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56c42e73a9d277d4d2b6a88389a137ccf3c58599660b17e8f5fc39305e490669"
+checksum = "fdd0568dbfe3baf7048b7908d2b32bca0d81cd56bec6d2a8f894b01d74f86be3"
 dependencies = [
  "sharded-slab",
  "thread_local",
@@ -2873,42 +2797,6 @@ checksum = "50f37be617794602aabbeee0be4f259dc1778fabe05e2d67ee8f79326d5cb4f6"
 dependencies = [
  "version_check 0.9.3",
 ]
-
-[[package]]
-name = "unicode-bidi"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "246f4c42e67e7a4e3c6106ff716a5d067d4132a642840b242e357e468a2a0085"
-
-[[package]]
-name = "unicode-bidi-mirroring"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56d12260fb92d52f9008be7e4bca09f584780eb2266dc8fecc6a192bec561694"
-
-[[package]]
-name = "unicode-ccc"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc2520efa644f8268dce4dcd3050eaa7fc044fca03961e9998ac7e2e92b77cf1"
-
-[[package]]
-name = "unicode-general-category"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07547e3ee45e28326cc23faac56d44f58f16ab23e413db526debce3b0bfd2742"
-
-[[package]]
-name = "unicode-script"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "098ec66172ce21cd55f8bcc786ee209dd20e04eff70acfca30cb79924d173ae9"
-
-[[package]]
-name = "unicode-segmentation"
-version = "1.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8895849a949e7845e06bd6dc1aa51731a103c42707010a5b591c0038fb73385b"
 
 [[package]]
 name = "unicode-width"

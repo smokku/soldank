@@ -42,9 +42,9 @@ use cvars::{set_cli_cvars, Config, NetConfig};
 use gfx2d::{math, mq};
 use gvfs::filesystem::{File, Filesystem};
 use hecs::World;
+use quad_rand as rand;
 use resources::Resources;
 use std::{
-    collections::HashMap,
     env, path,
     sync::{Arc, RwLock},
 };
@@ -248,8 +248,6 @@ pub struct GameStage {
     last_frame: f64,
     timeacc: f64,
     egui_mq: egui_miniquad::EguiMq,
-    femtovg: femtovg::Context,
-    femto_mq: femtovg::renderer::Miniquad,
 
     soldier: Soldier,
     emitter: Vec<EmitterItem>,
@@ -289,21 +287,6 @@ impl GameStage {
         drop(state);
         drop(config);
 
-        let femto_mq = femtovg::renderer::Miniquad::new(ctx).unwrap();
-        let mut femtovg = femtovg::Context::new().unwrap();
-
-        let mut fonts = HashMap::new();
-        fonts.insert(
-            "roboto",
-            femtovg
-                .add_font("client/resources/Roboto-Bold.ttf") // FIXME: use filesystem
-                .expect("Cannot add font"),
-        );
-        femtovg
-            .add_font("client/resources/Symbola.ttf") // FIXME: use filesystem
-            .expect("Cannot add font");
-        resources.insert(fonts);
-
         GameStage {
             world,
             resources,
@@ -316,8 +299,6 @@ impl GameStage {
             last_frame: mq::date::now(),
             timeacc: 0.0,
             egui_mq: egui_miniquad::EguiMq::new(ctx),
-            femtovg,
-            femto_mq,
 
             soldier,
             emitter: Vec::new(),
@@ -613,11 +594,11 @@ impl mq::EventHandler for GameStage {
         }
         self.egui_mq.end_frame(ctx);
 
+        render::debug::debug_render(ctx, &mut self.graphics, &self.world, &self.resources);
+
         self.graphics.render_frame(
             &mut self.context,
             ctx,
-            &mut self.femtovg,
-            &mut self.femto_mq,
             &self.world,
             &self.resources,
             &self.soldier,

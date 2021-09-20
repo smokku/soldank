@@ -1,7 +1,5 @@
 use super::*;
-use crate::{components::*, physics::*};
-use rand::thread_rng;
-use rand::Rng;
+use crate::physics::*;
 
 #[derive(Default)]
 pub struct SpawnerState {
@@ -140,9 +138,9 @@ impl SpawnerState {
                     world
                         .insert_one(
                             ball,
-                            Sprite {
+                            components::Sprite {
                                 group: "Ball".into(),
-                                name: format!("Ball{}", thread_rng().gen_range(1..=8)),
+                                name: format!("Ball{}", (rand::rand() % 8) + 1),
                                 transform: gfx2d::Transform::origin(
                                     vec2(50., 50.) * (sprite_scale / -2.),
                                     vec2(1.0, 1.0) * sprite_scale,

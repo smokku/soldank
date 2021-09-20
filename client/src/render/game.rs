@@ -2,7 +2,7 @@ use super::*;
 use gfx::SpriteData;
 use hocon::{Hocon, HoconLoader};
 use ini::Ini;
-use std::{collections::HashMap, io::Read, str::FromStr};
+use std::{collections::HashMap, convert::TryInto, io::Read, str::FromStr};
 
 #[derive(Default)]
 pub struct Sprites {
@@ -54,6 +54,7 @@ pub struct GameGraphics {
     soldier_graphics: SoldierGraphics,
     pub sprites: Sprites,
     batch: DrawBatch,
+    debug_batch: DrawBatch,
 }
 
 impl GameGraphics {
@@ -63,6 +64,7 @@ impl GameGraphics {
             soldier_graphics: SoldierGraphics::new(),
             sprites: Sprites::new(),
             batch: DrawBatch::new(),
+            debug_batch: DrawBatch::new(),
         }
     }
 
@@ -71,8 +73,6 @@ impl GameGraphics {
         &mut self,
         context: &mut Gfx2dContext,
         ctx: &mut Context,
-        femtovg: &mut femtovg::Context,
-        femto_mq: &mut femtovg::renderer::Miniquad,
         world: &World,
         resources: &Resources,
         soldier: &Soldier,
@@ -93,8 +93,6 @@ impl GameGraphics {
 
         let debug_state = &config.debug;
 
-        self.batch.clear();
-
         render_soldier(
             &*soldier,
             &self.soldier_graphics,
@@ -105,7 +103,7 @@ impl GameGraphics {
 
         if debug_state.render.render_skeleton {
             let px = h / ctx.screen_size().1;
-            render_skeleton(&*soldier, &mut self.batch, px, frame_percent);
+            render_skeleton(&*soldier, &mut self.debug_batch, px, frame_percent);
         }
 
         for bullet in bullets.iter() {
@@ -161,25 +159,30 @@ impl GameGraphics {
             let zoom_y = zoom * screen_scale_y;
             let scale = state.game_width / screen_size.0;
             let graphics = &self;
-            femtovg.draw(&mut femto_mq.with_context(ctx), move |canvas| {
-                canvas.save();
-                canvas.reset();
+            // femtovg.draw(&mut femto_mq.with_context(ctx), move |canvas| {
+            //     canvas.save();
+            //     canvas.reset();
 
-                canvas.set_size(screen_size.0 as u32, screen_size.1 as u32, dpi_scale);
-                canvas.set_transform(zoom_x, 0.0, 0.0, zoom_y, -dx * zoom_x, -dy * zoom_y);
+            //     canvas.set_size(screen_size.0 as u32, screen_size.1 as u32, dpi_scale);
+            //     canvas.set_transform(zoom_x, 0.0, 0.0, zoom_y, -dx * zoom_x, -dy * zoom_y);
 
-                debug::debug_render(canvas, graphics, debug_state, world, resources, scale);
+            //     debug::debug_render(canvas, graphics, debug_state, world, resources, scale);
 
-                canvas.restore();
+            //     canvas.restore();
 
-                canvas.flush();
-            });
+            //     canvas.flush();
+            // });
+
+            context.draw(ctx, &mut self.debug_batch.all(), &transform);
         }
 
         // UI pass
         ctx.begin_default_pass(mq::PassAction::Nothing);
         self.render_cursor(context, ctx, &*state);
         ctx.end_render_pass();
+
+        self.batch.clear();
+        self.debug_batch.clear();
     }
 
     fn render_cursor(&mut self, context: &mut Gfx2dContext, ctx: &mut Context, state: &MainState) {
@@ -413,6 +416,24 @@ impl GameGraphics {
                     .or_default()
                     .insert((*sprite).clone(), main.sprites[index].clone());
             }
+        }
+    }
+
+    pub fn add_debug_geometry(&mut self, texture: Option<&Texture>, vertices: &[Vertex]) {
+        if vertices.len() % 4 == 0 {
+            for chunk in vertices.chunks_exact(4) {
+                self.debug_batch
+                    .add_quad(texture, chunk.try_into().unwrap());
+            }
+        } else if vertices.len() % 3 == 0 {
+            for chunk in vertices.chunks_exact(3) {
+                self.debug_batch.add(texture, chunk.try_into().unwrap());
+            }
+        } else {
+            panic!(
+                "cannot render debug geometry vertices count {}",
+                vertices.len()
+            );
         }
     }
 }
