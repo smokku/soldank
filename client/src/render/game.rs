@@ -436,4 +436,126 @@ impl GameGraphics {
             );
         }
     }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_debug_line<C: Into<Color>>(
+        &mut self,
+        x1: f32,
+        y1: f32,
+        color1: C,
+        x2: f32,
+        y2: f32,
+        color2: C,
+        thickness: f32,
+    ) {
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+
+        // https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
+
+        let nx = -dy;
+        let ny = dx;
+
+        let tlen = (nx * nx + ny * ny).sqrt() / (thickness * 0.5);
+        if tlen < std::f32::EPSILON {
+            return;
+        }
+        let tx = nx / tlen;
+        let ty = ny / tlen;
+
+        let color1 = color1.into();
+        let color2 = color2.into();
+
+        self.add_debug_geometry(
+            None,
+            &[
+                vertex(vec2(x1 + tx, y1 + ty), vec2(0., 0.), color1),
+                vertex(vec2(x1 - tx, y1 - ty), vec2(0., 0.), color1),
+                vertex(vec2(x2 + tx, y2 + ty), vec2(0., 0.), color2),
+                vertex(vec2(x2 - tx, y2 - ty), vec2(0., 0.), color2),
+            ],
+        );
+    }
+
+    pub fn draw_debug_sprite<S: Into<String>>(
+        &mut self,
+        group: S,
+        sprite: S,
+        x: f32,
+        y: f32,
+        hwidth: f32,
+        hheight: f32,
+    ) {
+        let group = group.into();
+        let sprite = sprite.into();
+        let (texture, tx, ty) = if group.is_empty() || sprite.is_empty() {
+            (None, (0., 0.), (0., 0.))
+        } else {
+            let sprite = self.sprites.get(group, sprite);
+            (sprite.texture, sprite.texcoords_x, sprite.texcoords_y)
+        };
+
+        self.add_debug_geometry(
+            texture.as_ref(),
+            &[
+                vertex(
+                    vec2(x - hwidth, y - hheight),
+                    vec2(tx.0, ty.0),
+                    rgb(255, 255, 255),
+                ),
+                vertex(
+                    vec2(x + hwidth, y - hheight),
+                    vec2(tx.1, ty.0),
+                    rgb(255, 255, 255),
+                ),
+                vertex(
+                    vec2(x + hwidth, y + hheight),
+                    vec2(tx.1, ty.1),
+                    rgb(255, 255, 255),
+                ),
+                vertex(
+                    vec2(x - hwidth, y + hheight),
+                    vec2(tx.0, ty.1),
+                    rgb(255, 255, 255),
+                ),
+            ],
+        );
+    }
+
+    pub fn draw_debug_disk<C: Into<Color>>(
+        &mut self,
+        x: f32,
+        y: f32,
+        radius: f32,
+        color_c: C,
+        color_r: C,
+    ) {
+        const STEPS: usize = 16;
+        let color_c = color_c.into();
+        let color_r = color_r.into();
+        let pos = vec2(x, y);
+        let mut vertices = Vec::with_capacity(STEPS);
+        for step in 0..STEPS {
+            let m = Transform::FromOrigin {
+                pos,
+                scale: vec2(1.0, 1.0),
+                rot: ((2. * PI / STEPS as f32) * step as f32, Vec2::ZERO),
+            }
+            .matrix();
+
+            vertices.push(m * vec2(radius, 0.0));
+        }
+
+        for (i, &vert) in vertices.iter().enumerate() {
+            let next = vertices[(i + 1) % STEPS];
+            self.add_debug_geometry(
+                None,
+                &[
+                    vertex(pos, Vec2::ZERO, color_c),
+                    vertex(vert, Vec2::ZERO, color_r),
+                    vertex(next, Vec2::ZERO, color_r),
+                ],
+            );
+        }
+    }
 }

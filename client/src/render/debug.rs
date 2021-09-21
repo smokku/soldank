@@ -1,34 +1,5 @@
 use super::*;
 
-#[allow(clippy::too_many_arguments)]
-fn draw_line(
-    graphics: &mut GameGraphics,
-    x1: f32,
-    y1: f32,
-    color1: MapColor,
-    x2: f32,
-    y2: f32,
-    color2: MapColor,
-    line_width: f32,
-) {
-    // let mut paint = Paint::linear_gradient(
-    //     x1,
-    //     y1,
-    //     x2,
-    //     y2,
-    //     Color::rgba(color1.r, color1.g, color1.b, color1.a),
-    //     Color::rgba(color2.r, color2.g, color2.b, color2.a),
-    // );
-    // paint.set_line_width(line_width);
-    // paint.set_line_cap(LineCap::Round);
-
-    // let mut path = Path::new();
-    // path.move_to(x1, y1);
-    // path.line_to(x2, y2);
-
-    // canvas.stroke_path(&mut path, paint);
-}
-
 pub fn debug_render(
     ctx: &mut Context,
     graphics: &mut GameGraphics,
@@ -87,7 +58,7 @@ pub fn debug_render(
                 let vertices = poly
                     .vertices
                     .iter()
-                    .map(|v| vertex(vec2(v.x, v.y), Vec2::zero(), rgba(255, 255, 0, 128)))
+                    .map(|v| vertex(vec2(v.x, v.y), Vec2::ZERO, rgba(255, 255, 0, 128)))
                     .collect::<Vec<Vertex>>();
                 graphics.add_debug_geometry(None, vertices.as_slice());
             }
@@ -98,71 +69,45 @@ pub fn debug_render(
         for poly in map.polygons.iter() {
             let [v1, v2, v3] = &poly.vertices;
             let w = 0.7 * zoom;
-            draw_line(graphics, v1.x, v1.y, v1.color, v2.x, v2.y, v2.color, w);
-            draw_line(graphics, v2.x, v2.y, v2.color, v3.x, v3.y, v3.color, w);
-            draw_line(graphics, v3.x, v3.y, v3.color, v1.x, v1.y, v1.color, w);
+            graphics.draw_debug_line(v1.x, v1.y, v1.color, v2.x, v2.y, v2.color, w);
+            graphics.draw_debug_line(v2.x, v2.y, v2.color, v3.x, v3.y, v3.color, w);
+            graphics.draw_debug_line(v3.x, v3.y, v3.color, v1.x, v1.y, v1.color, w);
         }
     }
 
     if state.render_spawns {
         let scale = zoom * screen_scale;
         let size = 8. * scale;
-        let empty_sprite = Sprite::new(0., 0., (0., 0.), (0., 0.), None);
 
         for spawn in map.spawnpoints.iter() {
             if state.render_spawns_team[spawn.team as usize] {
-                let x = spawn.x as f32;
-                let y = spawn.y as f32;
-
-                let (texture, tx, ty) = {
-                    let sprite = match spawn.team {
-                        0 => graphics.sprites.get("Marker", "SpawnGeneral"),
-                        1 => graphics.sprites.get("Marker", "SpawnAlpha"),
-                        2 => graphics.sprites.get("Marker", "SpawnBravo"),
-                        3 => graphics.sprites.get("Marker", "SpawnCharlie"),
-                        4 => graphics.sprites.get("Marker", "SpawnDelta"),
-                        5 => graphics.sprites.get("Marker", "FlagAlpha"),
-                        6 => graphics.sprites.get("Marker", "FlagBravo"),
-                        7 => graphics.sprites.get("Marker", "Grenades"),
-                        8 => graphics.sprites.get("Marker", "Medkits"),
-                        9 => graphics.sprites.get("Marker", "Clusters"),
-                        10 => graphics.sprites.get("Marker", "Vest"),
-                        11 => graphics.sprites.get("Marker", "Flamer"),
-                        12 => graphics.sprites.get("Marker", "Berserker"),
-                        13 => graphics.sprites.get("Marker", "Predator"),
-                        14 => graphics.sprites.get("Marker", "FlagYellow"),
-                        15 => graphics.sprites.get("Marker", "RamboBow"),
-                        16 => graphics.sprites.get("Marker", "StatGun"),
-                        _ => &empty_sprite,
-                    };
-
-                    (sprite.texture, sprite.texcoords_x, sprite.texcoords_y)
+                let (group, sprite) = match spawn.team {
+                    0 => ("Marker", "SpawnGeneral"),
+                    1 => ("Marker", "SpawnAlpha"),
+                    2 => ("Marker", "SpawnBravo"),
+                    3 => ("Marker", "SpawnCharlie"),
+                    4 => ("Marker", "SpawnDelta"),
+                    5 => ("Marker", "FlagAlpha"),
+                    6 => ("Marker", "FlagBravo"),
+                    7 => ("Marker", "Grenades"),
+                    8 => ("Marker", "Medkits"),
+                    9 => ("Marker", "Clusters"),
+                    10 => ("Marker", "Vest"),
+                    11 => ("Marker", "Flamer"),
+                    12 => ("Marker", "Berserker"),
+                    13 => ("Marker", "Predator"),
+                    14 => ("Marker", "FlagYellow"),
+                    15 => ("Marker", "RamboBow"),
+                    16 => ("Marker", "StatGun"),
+                    _ => ("", ""),
                 };
-
-                graphics.add_debug_geometry(
-                    texture.as_ref(),
-                    &[
-                        vertex(
-                            vec2(x - size, y - size),
-                            vec2(tx.0, ty.0),
-                            rgb(255, 255, 255),
-                        ),
-                        vertex(
-                            vec2(x + size, y - size),
-                            vec2(tx.1, ty.0),
-                            rgb(255, 255, 255),
-                        ),
-                        vertex(
-                            vec2(x + size, y + size),
-                            vec2(tx.1, ty.1),
-                            rgb(255, 255, 255),
-                        ),
-                        vertex(
-                            vec2(x - size, y + size),
-                            vec2(tx.0, ty.1),
-                            rgb(255, 255, 255),
-                        ),
-                    ],
+                graphics.draw_debug_sprite(
+                    group,
+                    sprite,
+                    spawn.x as f32,
+                    spawn.y as f32,
+                    size,
+                    size,
                 );
             }
         }
@@ -170,31 +115,13 @@ pub fn debug_render(
 
     if state.render_colliders {
         for collider in map.colliders.iter() {
-            const STEPS: usize = 16;
-            let pos = vec2(collider.x, collider.y);
-            let mut vertices = Vec::with_capacity(STEPS);
-            for step in 0..STEPS {
-                let m = Transform::FromOrigin {
-                    pos,
-                    scale: vec2(1.0, 1.0),
-                    rot: ((2. * PI / STEPS as f32) * step as f32, Vec2::zero()),
-                }
-                .matrix();
-
-                vertices.push(m * vec2(collider.diameter / 2., 0.0));
-            }
-
-            for (i, &vert) in vertices.iter().enumerate() {
-                let next = vertices[(i + 1) % STEPS];
-                graphics.add_debug_geometry(
-                    None,
-                    &[
-                        vertex(pos, Vec2::zero(), rgba(255, 0, 0, 192)),
-                        vertex(vert, Vec2::zero(), rgba(255, 0, 0, 128)),
-                        vertex(next, Vec2::zero(), rgba(255, 0, 0, 128)),
-                    ],
-                );
-            }
+            graphics.draw_debug_disk(
+                collider.x,
+                collider.y,
+                collider.diameter / 2.,
+                rgba(255, 0, 0, 192),
+                rgba(255, 0, 0, 128),
+            );
         }
     }
 

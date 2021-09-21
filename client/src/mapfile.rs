@@ -55,6 +55,17 @@ pub struct MapColor {
     pub a: u8,
 }
 
+impl From<MapColor> for gfx2d::Color {
+    fn from(color: MapColor) -> Self {
+        Self {
+            r: color.r,
+            g: color.g,
+            b: color.b,
+            a: color.a,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct MapVertex {
     pub x: f32,
