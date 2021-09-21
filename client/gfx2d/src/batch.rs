@@ -167,7 +167,9 @@ impl DrawBatch {
                     let size = n * std::mem::size_of::<Vertex>();
                     if self.vbuf.is_none() || self.vbuf.as_ref().unwrap().size() < size {
                         let vbuf = mq::Buffer::stream(ctx, mq::BufferType::VertexBuffer, size);
-                        self.vbuf = Some(vbuf);
+                        if let Some(old_vbuf) = self.vbuf.replace(vbuf) {
+                            old_vbuf.delete();
+                        };
                     }
 
                     let vbuf = self.vbuf.as_ref().unwrap();

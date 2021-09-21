@@ -1,6 +1,6 @@
 use super::*;
 use miniquad::*;
-use std::str;
+use std::{mem, str};
 
 mod pipeline;
 
@@ -22,6 +22,7 @@ pub fn vertex(pos: glam::Vec2, uv: glam::Vec2, color: Color) -> Vertex {
 
 pub struct Gfx2dContext {
     pipeline: Pipeline,
+    bindings: Bindings,
     white_texture: Texture,
 }
 
@@ -46,17 +47,25 @@ impl Gfx2dContext {
             shader,
             pipeline::params(),
         );
+        let bindings = Bindings {
+            vertex_buffers: vec![],
+            index_buffer: Buffer::stream(ctx, BufferType::IndexBuffer, 0),
+            images: vec![],
+        };
 
         Gfx2dContext {
             pipeline,
+            bindings,
             white_texture: Texture::from_rgba8(ctx, 1, 1, &[255, 255, 255, 255]),
         }
     }
 
     pub fn draw(&mut self, ctx: &mut Context, slice: &mut DrawSlice, transform: &Mat2d) {
-        slice.batch.update(ctx);
+        ctx.apply_pipeline(&self.pipeline);
 
+        slice.batch.update(ctx);
         let buffer = slice.buffer();
+        self.bindings.vertex_buffers = vec![buffer];
 
         let uniforms = pipeline::Uniforms {
             transform: glam::Mat4::from_cols_array_2d(&[
@@ -66,28 +75,45 @@ impl Gfx2dContext {
                 [(transform.0).2, (transform.1).2, 0.0, 1.0],
             ]),
         };
-
-        ctx.apply_pipeline(&self.pipeline);
         ctx.apply_uniforms(&uniforms);
 
+        let mut draws: Vec<(Texture, Vec<u16>)> = Vec::new();
         for cmd in slice.commands() {
             let indices = cmd
                 .vertex_range
                 .clone()
                 .map(|i| i as u16)
                 .collect::<Vec<u16>>();
-            let bindings = Bindings {
-                vertex_buffers: vec![buffer],
-                index_buffer: Buffer::immutable(ctx, BufferType::IndexBuffer, indices.as_slice()),
-                images: vec![match cmd.texture {
-                    None => self.white_texture,
-                    Some(t) => t,
-                }],
+            let texture = match cmd.texture {
+                None => self.white_texture,
+                Some(t) => t,
             };
+            if let Some(found) = draws
+                .iter_mut()
+                .find(|(tex, _)| tex.gl_internal_id() == texture.gl_internal_id())
+            {
+                found.1.extend(indices);
+            } else {
+                draws.push((texture, indices));
+            };
+        }
 
-            ctx.apply_bindings(&bindings);
+        for (texture, indices) in draws.iter() {
+            let size = indices.len() * mem::size_of::<u16>();
+            let mut delete_buffer = None;
+            if self.bindings.index_buffer.size() < size {
+                delete_buffer.replace(self.bindings.index_buffer);
+                self.bindings.index_buffer = Buffer::stream(ctx, BufferType::IndexBuffer, size);
+            };
+            self.bindings.index_buffer.update(ctx, indices.as_slice());
+            self.bindings.images = vec![*texture];
 
+            ctx.apply_bindings(&self.bindings);
             ctx.draw(0, indices.len() as i32, 1);
+
+            if let Some(buffer) = delete_buffer {
+                buffer.delete();
+            }
         }
     }
 }
