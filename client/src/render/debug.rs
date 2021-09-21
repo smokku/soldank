@@ -126,92 +126,90 @@ pub fn debug_render(
     }
 
     if state.render_physics {
-        // physics(canvas, world, resources, zoom);
+        physics(graphics, world, resources, zoom);
     }
 }
 
-// pub fn physics<R: Renderer>(
-//     canvas: &mut Canvas<R>,
-//     world: &World,
-//     resources: &Resources,
-//     zoom: f32,
-// ) {
-//     use rapier2d::prelude::*;
+pub fn physics(graphics: &mut GameGraphics, world: &World, resources: &Resources, zoom: f32) {
+    use rapier2d::prelude::*;
 
-//     let scale = resources.get::<Config>().unwrap().phys.scale;
+    let scale = resources.get::<Config>().unwrap().phys.scale;
 
-//     for (_entity, rb) in world
-//         .query::<crate::physics::RigidBodyComponentsQuery>()
-//         .iter()
-//     {
-//         let tr = rb.position.position.translation;
-//         let center = (tr.x * scale, tr.y * scale);
+    for (_entity, rb) in world
+        .query::<crate::physics::RigidBodyComponentsQuery>()
+        .iter()
+    {
+        let tr = rb.position.position.translation;
+        let center = (tr.x * scale, tr.y * scale);
 
-//         let mut path = Path::new();
-//         path.circle(center.0, center.1, 1.5);
-//         canvas.fill_path(&mut path, Paint::color(Color::rgbf(1., 1., 0.)));
+        graphics.draw_debug_disk(center.0, center.1, 1.5, rgb(255, 255, 0), rgb(255, 255, 0));
+        graphics.draw_debug_disk(center.0, center.1, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
+    }
 
-//         let mut path = Path::new();
-//         path.circle(center.0, center.1, 0.75);
-//         canvas.fill_path(&mut path, Paint::color(Color::black()));
-//     }
+    let cl = rgb(0, 255, 0);
+    let th = 0.5 * zoom;
 
-//     let cl: Color = Color::rgbf(0., 1., 0.);
-//     let th: f32 = 0.5 * zoom;
+    for (_entity, coll) in world
+        .query::<crate::physics::ColliderComponentsQuery>()
+        .iter()
+    {
+        let Isometry {
+            translation: tr,
+            rotation: rot,
+        } = coll.position.0;
+        let center = (tr.x * scale, tr.y * scale);
+        graphics.draw_debug_line(
+            center.0,
+            center.1,
+            cl,
+            center.0 + rot.re * 10.,
+            center.1 + rot.im * 10.,
+            cl,
+            th,
+        );
+        graphics.draw_debug_circle(center.0, center.1, 1.5, cl, th);
+        graphics.draw_debug_disk(center.0, center.1, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
 
-//     for (_entity, coll) in world
-//         .query::<crate::physics::ColliderComponentsQuery>()
-//         .iter()
-//     {
-//         let Isometry {
-//             translation: tr,
-//             rotation: rot,
-//         } = coll.position.0;
-//         let center = (tr.x * scale, tr.y * scale);
-//         let mut path = Path::new();
-//         path.move_to(center.0, center.1);
-//         path.line_to(center.0 + rot.re * 10., center.1 + rot.im * 10.);
-//         path.circle(center.0, center.1, 1.5);
-//         let mut paint = Paint::color(cl);
-//         paint.set_line_width(th);
-//         canvas.stroke_path(&mut path, paint);
-
-//         let mut path = Path::new();
-//         path.circle(center.0, center.1, 0.75);
-//         canvas.fill_path(&mut path, Paint::color(Color::black()));
-
-//         let mut path = Path::new();
-//         match coll.shape.as_typed_shape() {
-//             TypedShape::Ball(ball) => {
-//                 let r = ball.radius * scale;
-//                 path.circle(center.0, center.1, r);
-//             }
-//             TypedShape::Cuboid(cuboid) => {
-//                 let hw = cuboid.half_extents.x * scale;
-//                 let hh = cuboid.half_extents.y * scale;
-//                 path.rect(center.0 - hw, center.1 - hh, hw * 2., hh * 2.);
-//             }
-//             TypedShape::Capsule(_) => todo!(),
-//             TypedShape::Segment(_) => todo!(),
-//             TypedShape::Triangle(triangle) => {
-//                 path.move_to(triangle.a.x * scale, triangle.a.y * scale);
-//                 path.line_to(triangle.b.x * scale, triangle.b.y * scale);
-//                 path.line_to(triangle.c.x * scale, triangle.c.y * scale);
-//                 path.line_to(triangle.a.x * scale, triangle.a.y * scale);
-//             }
-//             TypedShape::TriMesh(_) => todo!(),
-//             TypedShape::Polyline(_) => todo!(),
-//             TypedShape::HalfSpace(_) => todo!(),
-//             TypedShape::HeightField(_) => todo!(),
-//             TypedShape::Compound(_) => todo!(),
-//             TypedShape::ConvexPolygon(_) => todo!(),
-//             TypedShape::RoundCuboid(_) => todo!(),
-//             TypedShape::RoundTriangle(_) => todo!(),
-//             TypedShape::RoundConvexPolygon(_) => todo!(),
-//             TypedShape::Custom(_) => todo!(),
-//         }
-//         let mut paint = Paint::color(cl);
-//         paint.set_line_width(th);
-//         canvas.stroke_path(&mut path, paint);
-//     }
-// }
+        match coll.shape.as_typed_shape() {
+            TypedShape::Ball(ball) => {
+                let r = ball.radius * scale;
+                graphics.draw_debug_circle(center.0, center.1, r, cl, th);
+            }
+            TypedShape::Cuboid(cuboid) => {
+                let hw = cuboid.half_extents.x * scale;
+                let hh = cuboid.half_extents.y * scale;
+                graphics.draw_debug_polyline(
+                    &[
+                        (center.0 - hw, center.1 - hh, cl),
+                        (center.0 + hw, center.1 - hh, cl),
+                        (center.0 + hw, center.1 + hh, cl),
+                        (center.0 - hw, center.1 + hh, cl),
+                    ],
+                    th,
+                );
+            }
+            TypedShape::Capsule(_) => todo!(),
+            TypedShape::Segment(_) => todo!(),
+            TypedShape::Triangle(triangle) => {
+                graphics.draw_debug_polyline(
+                    &[
+                        (triangle.a.x * scale, triangle.a.y * scale, cl),
+                        (triangle.b.x * scale, triangle.b.y * scale, cl),
+                        (triangle.c.x * scale, triangle.c.y * scale, cl),
+                    ],
+                    th,
+                );
+            }
+            TypedShape::TriMesh(_) => todo!(),
+            TypedShape::Polyline(_) => todo!(),
+            TypedShape::HalfSpace(_) => todo!(),
+            TypedShape::HeightField(_) => todo!(),
+            TypedShape::Compound(_) => todo!(),
+            TypedShape::ConvexPolygon(_) => todo!(),
+            TypedShape::RoundCuboid(_) => todo!(),
+            TypedShape::RoundTriangle(_) => todo!(),
+            TypedShape::RoundConvexPolygon(_) => todo!(),
+            TypedShape::Custom(_) => todo!(),
+        }
+    }
+}

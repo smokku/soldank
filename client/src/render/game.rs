@@ -477,6 +477,17 @@ impl GameGraphics {
         );
     }
 
+    pub fn draw_debug_polyline<C: Into<Color> + Copy>(
+        &mut self,
+        vertices: &[(f32, f32, C)],
+        thickness: f32,
+    ) {
+        for (i, &vert) in vertices.iter().enumerate() {
+            let next = &vertices[(i + 1) % vertices.len()];
+            self.draw_debug_line(vert.0, vert.1, vert.2, next.0, next.1, next.2, thickness);
+        }
+    }
+
     pub fn draw_debug_sprite<S: Into<String>>(
         &mut self,
         group: S,
@@ -522,17 +533,8 @@ impl GameGraphics {
         );
     }
 
-    pub fn draw_debug_disk<C: Into<Color>>(
-        &mut self,
-        x: f32,
-        y: f32,
-        radius: f32,
-        color_c: C,
-        color_r: C,
-    ) {
+    fn get_circle_vertices(x: f32, y: f32, radius: f32) -> Vec<Vec2> {
         const STEPS: usize = 16;
-        let color_c = color_c.into();
-        let color_r = color_r.into();
         let pos = vec2(x, y);
         let mut vertices = Vec::with_capacity(STEPS);
         for step in 0..STEPS {
@@ -545,17 +547,45 @@ impl GameGraphics {
 
             vertices.push(m * vec2(radius, 0.0));
         }
+        vertices
+    }
 
+    pub fn draw_debug_disk<C: Into<Color>>(
+        &mut self,
+        x: f32,
+        y: f32,
+        radius: f32,
+        color_c: C,
+        color_r: C,
+    ) {
+        let color_c = color_c.into();
+        let color_r = color_r.into();
+        let vertices = Self::get_circle_vertices(x, y, radius);
         for (i, &vert) in vertices.iter().enumerate() {
-            let next = vertices[(i + 1) % STEPS];
+            let next = vertices[(i + 1) % vertices.len()];
             self.add_debug_geometry(
                 None,
                 &[
-                    vertex(pos, Vec2::ZERO, color_c),
+                    vertex(vec2(x, y), Vec2::ZERO, color_c),
                     vertex(vert, Vec2::ZERO, color_r),
                     vertex(next, Vec2::ZERO, color_r),
                 ],
             );
         }
+    }
+
+    pub fn draw_debug_circle<C: Into<Color> + Copy>(
+        &mut self,
+        x: f32,
+        y: f32,
+        radius: f32,
+        color: C,
+        thickness: f32,
+    ) {
+        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(x, y, radius)
+            .iter()
+            .map(|vertex| (vertex.x, vertex.y, color))
+            .collect();
+        self.draw_debug_polyline(vertices.as_slice(), thickness);
     }
 }
