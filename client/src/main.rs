@@ -13,6 +13,7 @@ mod constants;
 mod control;
 mod cvars;
 mod debug;
+mod engine;
 mod events;
 mod mapfile;
 mod networking;
@@ -229,12 +230,19 @@ fn main() {
         ..Default::default()
     };
     mq::start(conf, |mut ctx| {
-        mq::UserData::owning(
-            GameStage::new(&mut ctx, world, resources, filesystem, networking, client),
-            ctx,
-        )
+        mq::UserData::owning(engine::Runner::new(&mut ctx, GameState::new()), ctx)
     });
 }
+
+pub struct GameState {}
+
+impl GameState {
+    fn new() -> Self {
+        GameState {}
+    }
+}
+
+impl engine::Game for GameState {}
 
 pub struct GameStage {
     world: World,
@@ -247,7 +255,6 @@ pub struct GameStage {
     graphics: GameGraphics,
     last_frame: f64,
     timeacc: f64,
-    egui_mq: egui_miniquad::EguiMq,
 
     soldier: Soldier,
     emitter: Vec<EmitterItem>,
@@ -298,7 +305,6 @@ impl GameStage {
             graphics,
             last_frame: mq::date::now(),
             timeacc: 0.0,
-            egui_mq: egui_miniquad::EguiMq::new(ctx),
 
             soldier,
             emitter: Vec::new(),
@@ -467,16 +473,6 @@ impl mq::EventHandler for GameStage {
         self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 
-    fn char_event(
-        &mut self,
-        _ctx: &mut mq::Context,
-        character: char,
-        _keymods: mq::KeyMods,
-        _repeat: bool,
-    ) {
-        self.egui_mq.char_event(character);
-    }
-
     fn key_down_event(
         &mut self,
         ctx: &mut mq::Context,
@@ -484,8 +480,6 @@ impl mq::EventHandler for GameStage {
         keymods: mq::KeyMods,
         _repeat: bool,
     ) {
-        self.egui_mq.key_down_event(ctx, keycode, keymods);
-
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
             mq::KeyCode::Equal => {
@@ -517,8 +511,6 @@ impl mq::EventHandler for GameStage {
         keycode: mq::KeyCode,
         keymods: mq::KeyMods,
     ) {
-        self.egui_mq.key_up_event(keycode, keymods);
-
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
             mq::KeyCode::Equal => {
@@ -543,8 +535,6 @@ impl mq::EventHandler for GameStage {
         x: f32,
         y: f32,
     ) {
-        self.egui_mq.mouse_button_down_event(ctx, button, x, y);
-
         let mut state = self.resources.get_mut::<MainState>().unwrap();
         state.mouse_pressed = true;
         if !state.mouse_over_ui {
@@ -559,14 +549,10 @@ impl mq::EventHandler for GameStage {
         x: f32,
         y: f32,
     ) {
-        self.egui_mq.mouse_button_up_event(ctx, button, x, y);
-
         self.soldier.update_mouse_button(false, button);
     }
 
     fn mouse_motion_event(&mut self, ctx: &mut mq::Context, x: f32, y: f32) {
-        self.egui_mq.mouse_motion_event(ctx, x, y);
-
         let mut state = self.resources.get_mut::<MainState>().unwrap();
         state.mouse.x = x * state.game_width / WINDOW_WIDTH as f32;
         state.mouse.y = y * state.game_height / WINDOW_HEIGHT as f32;
@@ -574,25 +560,23 @@ impl mq::EventHandler for GameStage {
         state.mouse_phys.y = y;
     }
 
-    fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {
-        self.egui_mq.mouse_wheel_event(ctx, dx, dy);
-    }
+    fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {}
 
     fn draw(&mut self, ctx: &mut mq::Context) {
         let p = f64::min(1.0, f64::max(0.0, self.timeacc / TIMESTEP_RATE));
 
-        self.egui_mq.begin_frame(ctx);
-        if cfg!(debug_assertions) {
-            debug::build_ui(
-                ctx,
-                self.egui_mq.egui_ctx(),
-                &mut self.world,
-                &self.resources,
-                self.last_frame as u64,
-                p as f32,
-            );
-        }
-        self.egui_mq.end_frame(ctx);
+        // self.egui_mq.begin_frame(ctx);
+        // if cfg!(debug_assertions) {
+        //     debug::build_ui(
+        //         ctx,
+        //         self.egui_mq.egui_ctx(),
+        //         &mut self.world,
+        //         &self.resources,
+        //         self.last_frame as u64,
+        //         p as f32,
+        //     );
+        // }
+        // self.egui_mq.end_frame(ctx);
 
         render::debug::debug_render(ctx, &mut self.graphics, &self.world, &self.resources);
 
@@ -606,17 +590,6 @@ impl mq::EventHandler for GameStage {
             self.last_frame - TIMESTEP_RATE * (1.0 - p),
             p as f32,
         );
-
-        {
-            let mut state = self.resources.get_mut::<MainState>().unwrap();
-            let mouse_over_ui = self.egui_mq.egui_ctx().wants_pointer_input();
-            if state.mouse_over_ui != mouse_over_ui {
-                state.mouse_over_ui = mouse_over_ui;
-                ctx.show_mouse(state.mouse_over_ui);
-            }
-            state.mouse_pressed = false;
-        }
-        self.egui_mq.draw(ctx);
 
         ctx.commit_frame();
     }
