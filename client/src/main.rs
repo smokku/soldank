@@ -290,6 +290,10 @@ impl engine::Game for GameState {
                 eng.overstep_percentage,
             );
         }
+
+        for _event in eng.input.drain_events() {
+            // just drop it for now
+        }
     }
 
     fn draw(&mut self, eng: engine::Engine<'_>) {

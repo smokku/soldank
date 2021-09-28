@@ -9,7 +9,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         assert_eq!(
             self.input.queue.len(),
             0,
-            "Undrained input events after update"
+            "Undrained Engine::input.events after Game::update()"
         );
     }
 
@@ -43,12 +43,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
 
     fn mouse_motion_event(&mut self, ctx: &mut mq::Context, x: f32, y: f32) {
         self.egui_mq.mouse_motion_event(ctx, x, y);
-        self.input.set_mouse_position(x, y)
+        self.input.set_mouse_position(x, y);
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {
         self.egui_mq.mouse_wheel_event(ctx, dx, dy);
-        self.input.add_event(input::Input::Wheel { dx, dy });
+        if !self.mouse_over_ui {
+            self.input.add_event(input::Input::Wheel { dx, dy });
+        }
     }
 
     fn mouse_button_down_event(
@@ -59,12 +61,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         y: f32,
     ) {
         self.egui_mq.mouse_button_down_event(ctx, button, x, y);
-        self.input.add_event(input::Input::Mouse {
-            down: true,
-            button,
-            x,
-            y,
-        });
+        if !self.mouse_over_ui {
+            self.input.add_event(input::Input::Mouse {
+                down: true,
+                button,
+                x,
+                y,
+            });
+        }
     }
 
     fn mouse_button_up_event(
@@ -75,12 +79,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         y: f32,
     ) {
         self.egui_mq.mouse_button_up_event(ctx, button, x, y);
-        self.input.add_event(input::Input::Mouse {
-            down: false,
-            button,
-            x,
-            y,
-        });
+        if !self.mouse_over_ui {
+            self.input.add_event(input::Input::Mouse {
+                down: false,
+                button,
+                x,
+                y,
+            });
+        }
     }
 
     fn char_event(
@@ -101,12 +107,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         repeat: bool,
     ) {
         self.egui_mq.key_down_event(ctx, keycode, keymods);
-        self.input.add_event(input::Input::Key {
-            down: true,
-            keycode,
-            keymods,
-            repeat,
-        });
+        if !self.mouse_over_ui {
+            self.input.add_event(input::Input::Key {
+                down: true,
+                keycode,
+                keymods,
+                repeat,
+            });
+        }
 
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
@@ -121,12 +129,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         keymods: mq::KeyMods,
     ) {
         self.egui_mq.key_up_event(keycode, keymods);
-        self.input.add_event(input::Input::Key {
-            down: false,
-            keycode,
-            keymods,
-            repeat: false,
-        });
+        if !self.mouse_over_ui {
+            self.input.add_event(input::Input::Key {
+                down: false,
+                keycode,
+                keymods,
+                repeat: false,
+            });
+        }
 
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
