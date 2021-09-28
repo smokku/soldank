@@ -1,7 +1,8 @@
 use crate::{
     constants::*,
+    cvars::Config,
     debug,
-    engine::{input::Input, Engine, Game},
+    engine::{Engine, Game},
     mapfile::MapFile,
     render::{self as render, GameGraphics},
 };
@@ -52,6 +53,54 @@ impl GameState {
         let zoom = f32::exp(self.zoom);
         (dx + x * zoom, dy + y * zoom)
     }
+
+    fn step_physics(&mut self) {
+        use crate::physics::*;
+        let gravity = vector![0.0, 9.81];
+
+        // let configuration = resources.get::<RapierConfiguration>().unwrap();
+        let integration_parameters = self.resources.get::<IntegrationParameters>().unwrap();
+        let mut modifs_tracker = self.resources.get_mut::<ModificationTracker>().unwrap();
+
+        let mut physics_pipeline = self.resources.get_mut::<PhysicsPipeline>().unwrap();
+        // let mut query_pipeline = self.resources.get_mut::<QueryPipeline>().unwrap();
+        let mut island_manager = self.resources.get_mut::<IslandManager>().unwrap();
+        let mut broad_phase = self.resources.get_mut::<BroadPhase>().unwrap();
+        let mut narrow_phase = self.resources.get_mut::<NarrowPhase>().unwrap();
+        let mut ccd_solver = self.resources.get_mut::<CCDSolver>().unwrap();
+        let mut joint_set = self.resources.get_mut::<JointSet>().unwrap();
+        // let mut joints_entity_map = self.resources.get_mut::<JointsEntityMap>().unwrap();
+        // let physics_hooks = ();
+        let event_handler = ();
+
+        attach_bodies_and_colliders(&mut self.world);
+        // create_joints_system();
+        finalize_collider_attach_to_bodies(&mut self.world, &mut modifs_tracker);
+
+        prepare_step(&mut self.world, &mut modifs_tracker);
+
+        step_world(
+            &mut self.world,
+            &gravity,
+            &integration_parameters,
+            &mut physics_pipeline,
+            &mut modifs_tracker,
+            &mut island_manager,
+            &mut broad_phase,
+            &mut narrow_phase,
+            &mut joint_set,
+            &mut ccd_solver,
+            &event_handler,
+        );
+
+        despawn_outliers(
+            &mut self.world,
+            2500.,
+            self.resources.get::<Config>().unwrap().phys.scale,
+        );
+        collect_removals(&mut self.world, &mut modifs_tracker);
+        config_update(&self.resources);
+    }
 }
 
 impl Game for GameState {
@@ -78,6 +127,11 @@ impl Game for GameState {
         for _event in eng.input.drain_events() {
             // just drop it for now
         }
+
+        self.step_physics();
+
+        self.world.clear_trackers();
+        // self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 
     fn draw(&mut self, eng: Engine<'_>) {
