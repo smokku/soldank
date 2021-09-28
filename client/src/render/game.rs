@@ -75,9 +75,9 @@ impl GameGraphics {
         ctx: &mut Context,
         world: &World,
         resources: &Resources,
-        soldier: &Soldier,
-        bullets: &[Bullet],
-        elapsed: f64,
+        // soldier: &Soldier,
+        // bullets: &[Bullet],
+        // elapsed: f64,
         frame_percent: f32,
     ) {
         let state = resources.get::<MainState>().unwrap();
@@ -93,30 +93,30 @@ impl GameGraphics {
 
         let debug_state = &config.debug;
 
-        render_soldier(
-            &*soldier,
-            &self.soldier_graphics,
-            &self.sprites.stat,
-            &mut self.batch,
-            frame_percent,
-        );
+        // render_soldier(
+        //     &*soldier,
+        //     &self.soldier_graphics,
+        //     &self.sprites.stat,
+        //     &mut self.batch,
+        //     frame_percent,
+        // );
 
-        if debug_state.render.render_skeleton {
-            let px = h / ctx.screen_size().1;
-            render_skeleton(&*soldier, &mut self.debug_batch, px, frame_percent);
-        }
+        // if debug_state.render.render_skeleton {
+        //     let px = h / ctx.screen_size().1;
+        //     render_skeleton(&*soldier, &mut self.debug_batch, px, frame_percent);
+        // }
 
-        for bullet in bullets.iter() {
-            render_bullet(
-                bullet,
-                &self.sprites.stat,
-                &mut self.batch,
-                elapsed,
-                frame_percent,
-            );
-        }
+        // for bullet in bullets.iter() {
+        //     render_bullet(
+        //         bullet,
+        //         &self.sprites.stat,
+        //         &mut self.batch,
+        //         elapsed,
+        //         frame_percent,
+        //     );
+        // }
 
-        ctx.begin_default_pass(mq::PassAction::clear_color(0.5, 0.1, 0.7, 1.0));
+        ctx.begin_default_pass(mq::PassAction::clear_color(0.392, 0.584, 0.929, 1.0));
 
         if !debug_state.render.disable_background {
             context.draw(ctx, &mut self.map.background(), &transform_bg);
@@ -150,29 +150,6 @@ impl GameGraphics {
         ctx.end_render_pass();
 
         if debug_state.visible {
-            let zoom = 1. / zoom;
-            let screen_size = ctx.screen_size();
-            let dpi_scale = ctx.dpi_scale();
-            let screen_scale_x = screen_size.0 / state.game_width;
-            let screen_scale_y = screen_size.1 / state.game_height;
-            let zoom_x = zoom * screen_scale_x;
-            let zoom_y = zoom * screen_scale_y;
-            let scale = state.game_width / screen_size.0;
-            let graphics = &self;
-            // femtovg.draw(&mut femto_mq.with_context(ctx), move |canvas| {
-            //     canvas.save();
-            //     canvas.reset();
-
-            //     canvas.set_size(screen_size.0 as u32, screen_size.1 as u32, dpi_scale);
-            //     canvas.set_transform(zoom_x, 0.0, 0.0, zoom_y, -dx * zoom_x, -dy * zoom_y);
-
-            //     debug::debug_render(canvas, graphics, debug_state, world, resources, scale);
-
-            //     canvas.restore();
-
-            //     canvas.flush();
-            // });
-
             context.draw(ctx, &mut self.debug_batch.all(), &transform);
         }
 

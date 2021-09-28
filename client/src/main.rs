@@ -15,6 +15,7 @@ mod cvars;
 mod debug;
 mod engine;
 mod events;
+mod game;
 mod mapfile;
 mod networking;
 mod particles;
@@ -234,76 +235,11 @@ fn main() {
         mq::UserData::owning(
             engine::Runner::new(
                 &mut ctx,
-                GameState::new(context, world, resources, filesystem),
+                game::GameState::new(context, world, resources, filesystem),
             ),
             ctx,
         )
     });
-}
-
-pub struct GameState {
-    world: World,
-    resources: Resources,
-    filesystem: Filesystem,
-
-    context: gfx2d::Gfx2dContext,
-    graphics: GameGraphics,
-}
-
-impl GameState {
-    fn new(
-        context: gfx2d::Gfx2dContext,
-        world: World,
-        resources: Resources,
-        filesystem: Filesystem,
-    ) -> Self {
-        GameState {
-            context,
-            graphics: GameGraphics::new(),
-            world,
-            resources,
-            filesystem,
-        }
-    }
-}
-
-impl engine::Game for GameState {
-    fn initialize(&mut self, eng: engine::Engine<'_>) {
-        eng.quad_ctx.show_mouse(false);
-        eng.quad_ctx.set_cursor_grab(true);
-
-        let map = self.resources.get::<MapFile>().unwrap();
-        self.graphics
-            .load_sprites(eng.quad_ctx, &mut self.filesystem);
-        self.graphics
-            .load_map(eng.quad_ctx, &mut self.filesystem, &*map);
-    }
-
-    fn update(&mut self, eng: engine::Engine<'_>) {
-        if cfg!(debug_assertions) {
-            debug::build_ui(
-                eng.quad_ctx,
-                eng.egui_ctx,
-                &mut self.world,
-                &self.resources,
-                eng.fps,
-                eng.overstep_percentage,
-            );
-        }
-
-        for _event in eng.input.drain_events() {
-            // just drop it for now
-        }
-    }
-
-    fn draw(&mut self, eng: engine::Engine<'_>) {
-        render::debug::debug_render(
-            eng.quad_ctx,
-            &mut self.graphics,
-            &self.world,
-            &self.resources,
-        );
-    }
 }
 
 pub struct GameStage {

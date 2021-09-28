@@ -19,7 +19,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
             fps: self.fps,
             overstep_percentage: self.overstep_percentage,
             quad_ctx: ctx,
-            egui_ctx: &mut self.egui_mq.egui_ctx().clone(),
+            egui_ctx: self.egui_mq.egui_ctx(),
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
         };

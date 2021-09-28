@@ -49,9 +49,23 @@ pub struct Runner<G: Game> {
 }
 
 impl<G: Game> Runner<G> {
-    pub fn new(ctx: &mut mq::Context, game: G) -> Self {
+    pub fn new(ctx: &mut mq::Context, mut game: G) -> Self {
         let mut time_averager = VecDeque::with_capacity(TIME_HISTORY_COUNT);
         time_averager.resize(TIME_HISTORY_COUNT, DESIRED_FRAMETIME);
+
+        let egui_mq = egui_miniquad::EguiMq::new(ctx);
+        let mut input = InputEngine::new();
+
+        let eng = Engine {
+            delta: 0.,
+            fps: 0.0,
+            overstep_percentage: 0.,
+            quad_ctx: ctx,
+            egui_ctx: egui_mq.egui_ctx(),
+            mouse_over_ui: false,
+            input: &mut input,
+        };
+        game.initialize(eng);
 
         Runner {
             game,
@@ -65,9 +79,9 @@ impl<G: Game> Runner<G> {
 
             fps: 0.0,
 
-            input: InputEngine::new(),
+            input,
 
-            egui_mq: egui_miniquad::EguiMq::new(ctx),
+            egui_mq,
             mouse_over_ui: false,
         }
     }
