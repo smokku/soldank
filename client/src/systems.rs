@@ -17,3 +17,10 @@ pub fn kinetic_movement(world: &mut World) {
         }
     }
 }
+
+pub fn update_cursor(world: &mut World, x: f32, y: f32) {
+    for (_entity, mut cursor) in world.query::<&mut Cursor>().iter() {
+        cursor.x = x;
+        cursor.y = y;
+    }
+}

@@ -1,10 +1,12 @@
 use crate::{
+    components,
     constants::*,
     cvars::Config,
     debug,
     engine::{Engine, Game},
     mapfile::MapFile,
     render::{self as render, GameGraphics},
+    systems,
 };
 use gfx2d::math::Vec2;
 use gvfs::filesystem::Filesystem;
@@ -131,6 +133,12 @@ impl Game for GameState {
             .load_sprites(eng.quad_ctx, &mut self.filesystem);
         self.graphics
             .load_map(eng.quad_ctx, &mut self.filesystem, &*map);
+
+        // spawn cursor sprite
+        self.world.spawn((
+            components::Cursor::default(),
+            components::Sprite::new("Crosshair", "38"),
+        ));
     }
 
     fn update(&mut self, eng: Engine<'_>) {
@@ -141,6 +149,8 @@ impl Game for GameState {
         let screen_size = eng.quad_ctx.screen_size();
         self.mouse.x = eng.input.mouse_x * GAME_WIDTH / screen_size.0;
         self.mouse.y = eng.input.mouse_y * GAME_HEIGHT / screen_size.1;
+
+        systems::update_cursor(&mut self.world, self.mouse.x, self.mouse.y);
 
         for _event in eng.input.drain_events() {
             // just drop it for now
@@ -169,6 +179,7 @@ impl Game for GameState {
             &self.resources,
             // self.last_frame - TIMESTEP_RATE * (1.0 - p),
             eng.overstep_percentage,
+            self.zoom,
         );
     }
 }

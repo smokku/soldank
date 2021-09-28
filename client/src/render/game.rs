@@ -1,4 +1,5 @@
 use super::*;
+use crate::constants::*;
 use gfx::SpriteData;
 use hocon::{Hocon, HoconLoader};
 use ini::Ini;
@@ -79,13 +80,14 @@ impl GameGraphics {
         // bullets: &[Bullet],
         // elapsed: f64,
         frame_percent: f32,
+        zoom: f32,
     ) {
         let state = resources.get::<MainState>().unwrap();
         let config = resources.get::<Config>().unwrap();
 
-        let zoom = f32::exp(state.zoom);
+        let zoom = f32::exp(zoom);
         let cam = lerp(state.camera_prev, state.camera, frame_percent);
-        let (w, h) = (zoom * state.game_width, zoom * state.game_height);
+        let (w, h) = (zoom * GAME_WIDTH, zoom * GAME_HEIGHT);
         let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
         let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
         let transform_bg = Transform::ortho(0.0, 1.0, dy, dy + h).matrix();
@@ -148,51 +150,20 @@ impl GameGraphics {
             context.draw(ctx, &mut self.map.scenery_front(), &transform);
         }
         ctx.end_render_pass();
+        self.batch.clear();
 
         if debug_state.visible {
             context.draw(ctx, &mut self.debug_batch.all(), &transform);
         }
+        self.debug_batch.clear();
 
         // UI pass
+        let screen = Transform::ortho(0.0, GAME_WIDTH, 0.0, GAME_HEIGHT).matrix();
         ctx.begin_default_pass(mq::PassAction::Nothing);
-        self.render_cursor(context, ctx, &*state);
-        ctx.end_render_pass();
-
-        self.batch.clear();
-        self.debug_batch.clear();
-    }
-
-    fn render_cursor(&mut self, context: &mut Gfx2dContext, ctx: &mut Context, state: &MainState) {
-        let zoom = f32::exp(state.zoom);
-        let (w, h) = (zoom * state.game_width, zoom * state.game_height);
-        let size: Vec2 = ctx.screen_size().into();
-        let x = zoom * f32::floor(state.mouse.x * size.x / w);
-        let y = zoom * f32::floor(state.mouse.y * size.y / h);
-        let screen = Transform::ortho(0.0, size.x, 0.0, size.y).matrix();
-
-        self.batch.clear();
-
-        self.batch.add_quad(
-            None,
-            &[
-                vertex(vec2(x, y) + vec2(0.0, -8.0), Vec2::ZERO, rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(1.0, -8.0), Vec2::ZERO, rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(1.0, 9.0), Vec2::ZERO, rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(0.0, 9.0), Vec2::ZERO, rgb(0, 0, 0)),
-            ],
-        );
-
-        self.batch.add_quad(
-            None,
-            &[
-                vertex(vec2(x, y) + vec2(-8.0, 0.0), Vec2::ZERO, rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(9.0, 0.0), Vec2::ZERO, rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(9.0, 1.0), Vec2::ZERO, rgb(0, 0, 0)),
-                vertex(vec2(x, y) + vec2(-8.0, 1.0), Vec2::ZERO, rgb(0, 0, 0)),
-            ],
-        );
-
+        render::systems::render_cursor(world, &self.sprites, &mut self.batch);
         context.draw(ctx, &mut self.batch.all(), &screen);
+        ctx.end_render_pass();
+        self.batch.clear();
     }
 
     pub fn load_map(&mut self, ctx: &mut Context, fs: &mut Filesystem, map: &MapFile) {
@@ -292,7 +263,7 @@ impl GameGraphics {
         };
         log::trace!("Parsed sprites.conf: {:#?}", sprites_config);
 
-        let groups = match sprites_config {
+        let groups = match &sprites_config {
             Hocon::Hash(groups) => groups,
             _ => {
                 log::error!("Error parsing sprites.conf groups: not a Hash");
@@ -386,12 +357,21 @@ impl GameGraphics {
         }
 
         for group in dynamic_sprites.keys() {
-            for (sprite, &index) in dynamic_sprites[group].iter() {
+            for (spr, &index) in dynamic_sprites[group].iter() {
+                let mut sprite = main.sprites[index].clone();
+                if let Hocon::Hash(spr) = &sprites_config[group.as_str()][spr.as_str()] {
+                    if let Hocon::Integer(width) = spr["width"] {
+                        sprite.width = width as f32;
+                    }
+                    if let Hocon::Integer(height) = spr["height"] {
+                        sprite.height = height as f32;
+                    }
+                }
                 self.sprites
                     .dynamic
                     .entry((*group).clone())
                     .or_default()
-                    .insert((*sprite).clone(), main.sprites[index].clone());
+                    .insert((*spr).clone(), sprite);
             }
         }
     }

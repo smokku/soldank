@@ -57,7 +57,7 @@ impl SpawnerState {
             self.visible = visible;
         }
 
-        if egui_ctx.input().pointer.any_click() && !egui_ctx.wants_pointer_input() {
+        if egui_ctx.input().pointer.any_pressed() && !egui_ctx.wants_pointer_input() {
             let pos = vec2(x.round() as f32, y.round() as f32);
 
             match self.spawn_entity {

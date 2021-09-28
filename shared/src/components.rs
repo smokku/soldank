@@ -8,8 +8,8 @@ pub struct Nick(pub String);
 #[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Soldier;
 
-#[derive(Debug, Clone, Deref, DerefMut)]
-pub struct Position(Vec2);
+#[derive(Default, Debug, Clone, Deref, DerefMut)]
+pub struct Position(pub Vec2);
 
 impl Position {
     pub fn new<P: Into<f32>>(x: P, y: P) -> Self {
