@@ -9,26 +9,6 @@ use crate::{
 use ::resources::Resources;
 use hecs::World;
 
-pub fn config_update(resources: &Resources) {
-    let app_events = resources.get::<AppEventsQueue>().unwrap();
-    if app_events
-        .iter()
-        .any(|event| matches!(event, AppEvent::CvarsChanged))
-    {
-        let dt = resources
-            .get::<Config>()
-            .unwrap()
-            .net
-            .orb
-            .read()
-            .unwrap()
-            .timestep_seconds as f32;
-        let mut integration_parameters = resources.get_mut::<IntegrationParameters>().unwrap();
-        integration_parameters.dt = dt;
-        log::debug!("IntegrationParameters updated: {}", dt);
-    }
-}
-
 pub fn create_map_colliders(world: &mut World, resources: &Resources) {
     let map = resources.get::<MapFile>().unwrap();
     let scale = resources.get::<Config>().unwrap().phys.scale;

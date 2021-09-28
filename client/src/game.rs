@@ -41,6 +41,24 @@ impl GameState {
         }
     }
 
+    pub fn config_update(&self) {
+        // let app_events = self.resources.get::<AppEventsQueue>().unwrap();
+        // if app_events
+        //     .iter()
+        //     .any(|event| matches!(event, AppEvent::CvarsChanged))
+        // {
+        //     let dt = self
+        //         .resources
+        //         .get::<Config>()
+        //         .unwrap()
+        //         .net
+        //         .orb
+        //         .read()
+        //         .unwrap()
+        //         .timestep_seconds as f32;
+        // }
+    }
+
     pub fn viewport(&self, camera: Vec2) -> (f32, f32, f32, f32) {
         let zoom = f32::exp(self.zoom);
         let (w, h) = (zoom * GAME_WIDTH, zoom * GAME_HEIGHT);
@@ -54,12 +72,13 @@ impl GameState {
         (dx + x * zoom, dy + y * zoom)
     }
 
-    fn step_physics(&mut self) {
+    fn step_physics(&mut self, delta: f64) {
         use crate::physics::*;
         let gravity = vector![0.0, 9.81];
 
         // let configuration = resources.get::<RapierConfiguration>().unwrap();
-        let integration_parameters = self.resources.get::<IntegrationParameters>().unwrap();
+        let mut integration_parameters = self.resources.get_mut::<IntegrationParameters>().unwrap();
+        integration_parameters.dt = delta as f32;
         let mut modifs_tracker = self.resources.get_mut::<ModificationTracker>().unwrap();
 
         let mut physics_pipeline = self.resources.get_mut::<PhysicsPipeline>().unwrap();
@@ -99,7 +118,6 @@ impl GameState {
             self.resources.get::<Config>().unwrap().phys.scale,
         );
         collect_removals(&mut self.world, &mut modifs_tracker);
-        config_update(&self.resources);
     }
 }
 
@@ -128,7 +146,9 @@ impl Game for GameState {
             // just drop it for now
         }
 
-        self.step_physics();
+        self.step_physics(eng.delta);
+
+        self.config_update();
 
         self.world.clear_trackers();
         // self.resources.get_mut::<AppEventsQueue>().unwrap().clear();

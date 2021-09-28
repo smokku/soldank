@@ -455,7 +455,7 @@ impl mq::EventHandler for GameStage {
                 .get_mut::<physics::ModificationTracker>()
                 .unwrap(),
         );
-        physics::config_update(&self.resources);
+        // physics::config_update(&self.resources);
 
         self.world.clear_trackers();
         self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
