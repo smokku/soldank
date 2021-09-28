@@ -1,20 +1,25 @@
 use crate::{
+    constants::*,
     debug,
-    engine::{Engine, Game},
+    engine::{input::Input, Engine, Game},
     mapfile::MapFile,
     render::{self as render, GameGraphics},
 };
+use gfx2d::math::Vec2;
 use gvfs::filesystem::Filesystem;
 use hecs::World;
 use resources::Resources;
 
 pub struct GameState {
-    world: World,
-    resources: Resources,
-    filesystem: Filesystem,
+    pub world: World,
+    pub resources: Resources,
+    pub filesystem: Filesystem,
 
     context: gfx2d::Gfx2dContext,
     graphics: GameGraphics,
+
+    pub zoom: f32,
+    pub mouse: Vec2,
 }
 
 impl GameState {
@@ -30,7 +35,22 @@ impl GameState {
             world,
             resources,
             filesystem,
+            zoom: 0.0,
+            mouse: Vec2::default(),
         }
+    }
+
+    pub fn viewport(&self, camera: Vec2) -> (f32, f32, f32, f32) {
+        let zoom = f32::exp(self.zoom);
+        let (w, h) = (zoom * GAME_WIDTH, zoom * GAME_HEIGHT);
+        let (dx, dy) = (camera.x - w / 2.0, camera.y - h / 2.0);
+        (dx, dy, w, h)
+    }
+
+    pub fn mouse_to_world(&self, camera: Vec2, x: f32, y: f32) -> (f32, f32) {
+        let (dx, dy, _w, _h) = self.viewport(camera);
+        let zoom = f32::exp(self.zoom);
+        (dx + x * zoom, dy + y * zoom)
     }
 }
 
@@ -48,15 +68,12 @@ impl Game for GameState {
 
     fn update(&mut self, eng: Engine<'_>) {
         if cfg!(debug_assertions) {
-            debug::build_ui(
-                eng.quad_ctx,
-                eng.egui_ctx,
-                &mut self.world,
-                &self.resources,
-                eng.fps,
-                eng.overstep_percentage,
-            );
+            debug::build_ui(&eng, self);
         }
+
+        let screen_size = eng.quad_ctx.screen_size();
+        self.mouse.x = eng.input.mouse_x * GAME_WIDTH / screen_size.0;
+        self.mouse.y = eng.input.mouse_y * GAME_HEIGHT / screen_size.1;
 
         for _event in eng.input.drain_events() {
             // just drop it for now

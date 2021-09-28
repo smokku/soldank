@@ -3,7 +3,7 @@ use crate::mq;
 use std::collections::VecDeque;
 
 mod frame_timer;
-mod input;
+pub mod input;
 mod miniquad;
 
 use input::InputEngine;

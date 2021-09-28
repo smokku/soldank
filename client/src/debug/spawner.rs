@@ -1,5 +1,5 @@
 use super::*;
-use crate::physics::*;
+use crate::{components, physics::*, rand};
 
 #[derive(Default)]
 pub struct SpawnerState {
@@ -34,7 +34,6 @@ impl SpawnerState {
         &mut self,
         egui_ctx: &egui::CtxRef,
         world: &mut World,
-        game: &MainState,
         x: f32,
         y: f32,
         scale: f32,
@@ -58,8 +57,8 @@ impl SpawnerState {
             self.visible = visible;
         }
 
-        if game.mouse_pressed && !game.mouse_over_ui {
-            let pos = calc::vec2(x.round() as f32, y.round() as f32);
+        if egui_ctx.input().pointer.any_click() && !egui_ctx.wants_pointer_input() {
+            let pos = vec2(x.round() as f32, y.round() as f32);
 
             match self.spawn_entity {
                 SpawnEntity::Nothing => {}

@@ -1,5 +1,7 @@
-use super::*;
+use crate::{cvars::Config, engine::Engine, game::GameState};
 use cvar::{INode, IVisit};
+pub use gfx2d::math::*;
+use hecs::World;
 
 // mod entities;
 mod cli;
@@ -25,16 +27,8 @@ impl IVisit for DebugState {
     }
 }
 
-pub fn build_ui(
-    quad_ctx: &mut mq::Context,
-    egui_ctx: &egui::CtxRef,
-    world: &mut World,
-    resources: &Resources,
-    fps: f32,
-    overstep_percentage: f32,
-) {
-    let game = resources.get::<MainState>().unwrap();
-    let mut config = resources.get_mut::<Config>().unwrap();
+pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
+    let mut config = game.resources.get_mut::<Config>().unwrap();
     let scale = config.phys.scale;
 
     // if config.debug.fps_second != seconds_since_startup {
@@ -45,14 +39,14 @@ pub fn build_ui(
     // config.debug.fps_count += 1;
 
     if config.debug.visible {
-        let (dx, dy, _w, _h) = game.viewport(1.0);
-        let (x, y) = game.mouse_to_world(1.0, game.mouse.x, game.mouse.y);
+        let (dx, dy, _w, _h) = game.viewport(Vec2::ZERO);
+        let (x, y) = game.mouse_to_world(Vec2::ZERO, game.mouse.x, game.mouse.y);
 
         egui::Window::new("Debugger")
             .title_bar(false)
             .resizable(false)
             .collapsible(false)
-            .show(egui_ctx, |ui| {
+            .show(eng.egui_ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     toggle_state(ui, &mut config.debug.cli.visible, "CLI");
                     toggle_state(ui, &mut config.debug.spawner.visible, "Spawn");
@@ -66,18 +60,18 @@ pub fn build_ui(
                 ui.scope(|ui| {
                     ui.style_mut().override_text_style = Some(egui::TextStyle::Monospace);
 
-                    ui.label(format!("{:4}FPS \u{B1}{}", fps, overstep_percentage));
+                    ui.label(format!(
+                        "{:4}FPS \u{B1}{}",
+                        eng.fps, eng.overstep_percentage
+                    ));
 
                     ui.horizontal_wrapped(|ui| {
                         if ui.button("\u{2196}").clicked() {
-                            quad_ctx.set_cursor_grab(false);
+                            eng.quad_ctx.set_cursor_grab(false);
                         }
                         ui.label(format!(
                             "{:4} {:3} [{:.3} {:.3}]",
-                            game.mouse_phys.x as u32,
-                            game.mouse_phys.y as u32,
-                            game.mouse.x,
-                            game.mouse.y
+                            eng.input.mouse_x, eng.input.mouse_y, game.mouse.x, game.mouse.y
                         ));
                     });
                     ui.label(format!(
@@ -91,9 +85,9 @@ pub fn build_ui(
         config
             .debug
             .spawner
-            .build_ui(egui_ctx, world, &*game, x, y, scale);
+            .build_ui(eng.egui_ctx, &mut game.world, x, y, scale);
         // config.debug.entities.build_ui();
-        config.debug.render.build_ui(egui_ctx);
+        config.debug.render.build_ui(eng.egui_ctx);
     }
 }
 

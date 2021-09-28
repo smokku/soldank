@@ -32,19 +32,3 @@ pub struct MainState {
     pub zoom: f32,
     pub mouse_over_ui: bool,
 }
-
-impl MainState {
-    pub fn viewport(&self, frame_percent: f32) -> (f32, f32, f32, f32) {
-        let zoom = f32::exp(self.zoom);
-        let cam = lerp(self.camera_prev, self.camera, frame_percent);
-        let (w, h) = (zoom * constants::GAME_WIDTH, zoom * constants::GAME_HEIGHT);
-        let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
-        (dx, dy, w, h)
-    }
-
-    pub fn mouse_to_world(&self, frame_percent: f32, x: f32, y: f32) -> (f32, f32) {
-        let (dx, dy, _w, _h) = self.viewport(frame_percent);
-        let zoom = f32::exp(self.zoom);
-        (dx + x * zoom, dy + y * zoom)
-    }
-}
