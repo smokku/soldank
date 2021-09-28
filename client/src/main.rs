@@ -230,19 +230,77 @@ fn main() {
         ..Default::default()
     };
     mq::start(conf, |mut ctx| {
-        mq::UserData::owning(engine::Runner::new(&mut ctx, GameState::new()), ctx)
+        let context = gfx2d::Gfx2dContext::new(&mut ctx);
+        mq::UserData::owning(
+            engine::Runner::new(
+                &mut ctx,
+                GameState::new(context, world, resources, filesystem),
+            ),
+            ctx,
+        )
     });
 }
 
-pub struct GameState {}
+pub struct GameState {
+    world: World,
+    resources: Resources,
+    filesystem: Filesystem,
+
+    context: gfx2d::Gfx2dContext,
+    graphics: GameGraphics,
+}
 
 impl GameState {
-    fn new() -> Self {
-        GameState {}
+    fn new(
+        context: gfx2d::Gfx2dContext,
+        world: World,
+        resources: Resources,
+        filesystem: Filesystem,
+    ) -> Self {
+        GameState {
+            context,
+            graphics: GameGraphics::new(),
+            world,
+            resources,
+            filesystem,
+        }
     }
 }
 
-impl engine::Game for GameState {}
+impl engine::Game for GameState {
+    fn initialize(&mut self, eng: &mut engine::Engine<'_>) {
+        eng.quad_ctx.show_mouse(false);
+        eng.quad_ctx.set_cursor_grab(true);
+
+        let map = self.resources.get::<MapFile>().unwrap();
+        self.graphics
+            .load_sprites(eng.quad_ctx, &mut self.filesystem);
+        self.graphics
+            .load_map(eng.quad_ctx, &mut self.filesystem, &*map);
+    }
+
+    fn update(&mut self, eng: &mut engine::Engine<'_>) {
+        if cfg!(debug_assertions) {
+            debug::build_ui(
+                eng.quad_ctx,
+                eng.egui_ctx,
+                &mut self.world,
+                &self.resources,
+                eng.fps,
+                eng.overstep_percentage,
+            );
+        }
+    }
+
+    fn draw(&mut self, eng: &mut engine::Engine<'_>) {
+        render::debug::debug_render(
+            eng.quad_ctx,
+            &mut self.graphics,
+            &self.world,
+            &self.resources,
+        );
+    }
+}
 
 pub struct GameStage {
     world: World,
@@ -251,8 +309,8 @@ pub struct GameStage {
     networking: Networking,
     client: orb::client::Client<GameWorld>,
 
-    context: gfx2d::Gfx2dContext,
-    graphics: GameGraphics,
+    // context: gfx2d::Gfx2dContext,
+    // graphics: GameGraphics,
     last_frame: f64,
     timeacc: f64,
 
@@ -274,18 +332,10 @@ impl GameStage {
         client: orb::client::Client<GameWorld>,
     ) -> Self {
         // setup window, renderer & main loop
-        let context = gfx2d::Gfx2dContext::new(ctx);
-
-        ctx.show_mouse(false);
-        ctx.set_cursor_grab(true);
-
-        let map = resources.get::<MapFile>().unwrap();
-        let mut graphics = GameGraphics::new();
-        graphics.load_sprites(ctx, &mut filesystem);
-        graphics.load_map(ctx, &mut filesystem, &*map);
 
         let mut state = resources.get_mut::<MainState>().unwrap();
         let config = resources.get::<Config>().unwrap();
+        let map = resources.get::<MapFile>().unwrap();
         let soldier = Soldier::new(&map.spawnpoints[0], &config);
         state.camera = soldier.particle.pos;
         state.camera_prev = state.camera;
@@ -301,8 +351,6 @@ impl GameStage {
             networking,
             client,
 
-            context,
-            graphics,
             last_frame: mq::date::now(),
             timeacc: 0.0,
 
@@ -578,18 +626,18 @@ impl mq::EventHandler for GameStage {
         // }
         // self.egui_mq.end_frame(ctx);
 
-        render::debug::debug_render(ctx, &mut self.graphics, &self.world, &self.resources);
+        // render::debug::debug_render(ctx, &mut self.graphics, &self.world, &self.resources);
 
-        self.graphics.render_frame(
-            &mut self.context,
-            ctx,
-            &self.world,
-            &self.resources,
-            &self.soldier,
-            &self.bullets,
-            self.last_frame - TIMESTEP_RATE * (1.0 - p),
-            p as f32,
-        );
+        // self.graphics.render_frame(
+        //     &mut self.context,
+        //     ctx,
+        //     &self.world,
+        //     &self.resources,
+        //     &self.soldier,
+        //     &self.bullets,
+        //     self.last_frame - TIMESTEP_RATE * (1.0 - p),
+        //     p as f32,
+        // );
 
         ctx.commit_frame();
     }

@@ -6,21 +6,23 @@ impl<G: Game> mq::EventHandler for Runner<G> {
 
         let mut eng = Engine {
             delta: 0.,
+            fps: self.fps,
+            overstep_percentage: self.overstep_percentage,
             quad_ctx: ctx,
-            egui_ctx: &self.egui_mq.egui_ctx().clone(),
+            egui_ctx: &mut self.egui_mq.egui_ctx().clone(),
             mouse_over_ui: self.mouse_over_ui,
         };
 
-        self.frame_percentage = self.frame_timer(&mut eng);
+        self.overstep_percentage = self.frame_timer(&mut eng) as f32;
     }
 
     fn draw(&mut self, ctx: &mut mq::Context) {
-        let egui_ctx = self.egui_mq.egui_ctx();
-
         let mut eng = Engine {
-            delta: self.frame_percentage,
+            delta: 0.,
+            fps: self.fps,
+            overstep_percentage: self.overstep_percentage,
             quad_ctx: ctx,
-            egui_ctx,
+            egui_ctx: &mut self.egui_mq.egui_ctx().clone(),
             mouse_over_ui: self.mouse_over_ui,
         };
 

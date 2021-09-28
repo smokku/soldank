@@ -9,7 +9,7 @@ const FIXED_DELTATIME: f64 = 1.0 / UPDATE_RATE;
 pub(crate) const DESIRED_FRAMETIME: f64 = 1.0 / UPDATE_RATE;
 
 //these are to snap deltaTime to vsync values if it's close enough
-const VSYNC_MAXERROR: f64 = 0.0002;
+const VSYNC_MAXERROR: f64 = 0.02;
 const TIME_60HZ: f64 = 1.0 / 60.; //since this is about snapping to common vsync values
 const SNAP_FREQUENCIES: [f64; 5] = [
     TIME_60HZ,      //60fps
@@ -22,7 +22,7 @@ const SNAP_FREQUENCIES: [f64; 5] = [
 ];
 
 impl<G: Game> Runner<G> {
-    pub(crate) fn frame_timer(&mut self, engine: &mut Engine) -> f64 {
+    pub(crate) fn frame_timer(&mut self, eng: &mut Engine) -> f64 {
         //frame timer
         let current_frame_time: f64 = mq::date::now();
         let mut delta_time = current_frame_time - self.prev_frame_time;
@@ -70,15 +70,15 @@ impl<G: Game> Runner<G> {
         while self.frame_accumulator >= DESIRED_FRAMETIME {
             if consumed_delta_time > DESIRED_FRAMETIME {
                 //cap variable update's dt to not be larger than fixed update, and interleave it (so game state can always get animation frames it needs)
-                engine.delta = FIXED_DELTATIME;
-                self.game.update(engine);
+                eng.delta = FIXED_DELTATIME;
+                self.game.update(eng);
                 consumed_delta_time -= DESIRED_FRAMETIME;
             }
             self.frame_accumulator -= DESIRED_FRAMETIME;
         }
 
-        engine.delta = consumed_delta_time;
-        self.game.update(engine);
+        eng.delta = consumed_delta_time;
+        self.game.update(eng);
 
         // store frame_percentage to be used later by render
         self.frame_accumulator / DESIRED_FRAMETIME

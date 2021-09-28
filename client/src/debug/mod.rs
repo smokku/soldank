@@ -14,10 +14,6 @@ pub struct DebugState {
     cli: cli::CliState,
     spawner: spawner::SpawnerState,
     pub render: RenderState,
-
-    pub fps: u16,
-    fps_second: u64,
-    fps_count: u16,
 }
 
 impl IVisit for DebugState {
@@ -26,28 +22,27 @@ impl IVisit for DebugState {
         f(&mut cvar::List("cli", &mut self.cli));
         f(&mut cvar::List("spawner", &mut self.spawner));
         f(&mut cvar::List("render", &mut self.render));
-        f(&mut cvar::ReadOnlyProp("fps", &self.fps, 0));
     }
 }
 
 pub fn build_ui(
-    ctx: &mut mq::Context,
+    quad_ctx: &mut mq::Context,
     egui_ctx: &egui::CtxRef,
     world: &mut World,
     resources: &Resources,
-    seconds_since_startup: u64,
+    fps: f32,
     overstep_percentage: f32,
 ) {
     let game = resources.get::<MainState>().unwrap();
     let mut config = resources.get_mut::<Config>().unwrap();
     let scale = config.phys.scale;
 
-    if config.debug.fps_second != seconds_since_startup {
-        config.debug.fps = config.debug.fps_count;
-        config.debug.fps_second = seconds_since_startup;
-        config.debug.fps_count = 0;
-    }
-    config.debug.fps_count += 1;
+    // if config.debug.fps_second != seconds_since_startup {
+    //     config.debug.fps = config.debug.fps_count;
+    //     config.debug.fps_second = seconds_since_startup;
+    //     config.debug.fps_count = 0;
+    // }
+    // config.debug.fps_count += 1;
 
     if config.debug.visible {
         let (dx, dy, _w, _h) = game.viewport(1.0);
@@ -71,14 +66,11 @@ pub fn build_ui(
                 ui.scope(|ui| {
                     ui.style_mut().override_text_style = Some(egui::TextStyle::Monospace);
 
-                    ui.label(format!(
-                        "{:4}FPS \u{B1}{}",
-                        config.debug.fps, overstep_percentage
-                    ));
+                    ui.label(format!("{:4}FPS \u{B1}{}", fps, overstep_percentage));
 
                     ui.horizontal_wrapped(|ui| {
                         if ui.button("\u{2196}").clicked() {
-                            ctx.set_cursor_grab(false);
+                            quad_ctx.set_cursor_grab(false);
                         }
                         ui.label(format!(
                             "{:4} {:3} [{:.3} {:.3}]",
