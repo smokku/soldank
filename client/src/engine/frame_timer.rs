@@ -22,7 +22,7 @@ const SNAP_FREQUENCIES: [f64; 5] = [
 ];
 
 impl<G: Game> Runner<G> {
-    pub(crate) fn frame_timer(&mut self, eng: &mut Engine) -> f64 {
+    pub(crate) fn frame_timer(&mut self, ctx: &mut mq::Context) -> f64 {
         //frame timer
         let current_frame_time: f64 = mq::date::now();
         let mut delta_time = current_frame_time - self.prev_frame_time;
@@ -69,15 +69,31 @@ impl<G: Game> Runner<G> {
 
         while self.frame_accumulator >= DESIRED_FRAMETIME {
             if consumed_delta_time > DESIRED_FRAMETIME {
-                //cap variable update's dt to not be larger than fixed update, and interleave it (so game state can always get animation frames it needs)
-                eng.delta = FIXED_DELTATIME;
+                //cap variable update's dt to not be larger than fixed update
+                let eng = Engine {
+                    delta: FIXED_DELTATIME,
+                    fps: self.fps,
+                    overstep_percentage: self.overstep_percentage,
+                    quad_ctx: ctx,
+                    egui_ctx: &mut self.egui_mq.egui_ctx().clone(),
+                    mouse_over_ui: self.mouse_over_ui,
+                    input: &mut self.input,
+                };
                 self.game.update(eng);
                 consumed_delta_time -= DESIRED_FRAMETIME;
             }
             self.frame_accumulator -= DESIRED_FRAMETIME;
         }
 
-        eng.delta = consumed_delta_time;
+        let eng = Engine {
+            delta: consumed_delta_time,
+            fps: self.fps,
+            overstep_percentage: self.overstep_percentage,
+            quad_ctx: ctx,
+            egui_ctx: &mut self.egui_mq.egui_ctx().clone(),
+            mouse_over_ui: self.mouse_over_ui,
+            input: &mut self.input,
+        };
         self.game.update(eng);
 
         // store frame_percentage to be used later by render

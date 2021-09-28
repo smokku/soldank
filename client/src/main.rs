@@ -268,7 +268,7 @@ impl GameState {
 }
 
 impl engine::Game for GameState {
-    fn initialize(&mut self, eng: &mut engine::Engine<'_>) {
+    fn initialize(&mut self, eng: engine::Engine<'_>) {
         eng.quad_ctx.show_mouse(false);
         eng.quad_ctx.set_cursor_grab(true);
 
@@ -279,7 +279,7 @@ impl engine::Game for GameState {
             .load_map(eng.quad_ctx, &mut self.filesystem, &*map);
     }
 
-    fn update(&mut self, eng: &mut engine::Engine<'_>) {
+    fn update(&mut self, eng: engine::Engine<'_>) {
         if cfg!(debug_assertions) {
             debug::build_ui(
                 eng.quad_ctx,
@@ -292,7 +292,7 @@ impl engine::Game for GameState {
         }
     }
 
-    fn draw(&mut self, eng: &mut engine::Engine<'_>) {
+    fn draw(&mut self, eng: engine::Engine<'_>) {
         render::debug::debug_render(
             eng.quad_ctx,
             &mut self.graphics,
