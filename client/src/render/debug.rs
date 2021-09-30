@@ -69,9 +69,17 @@ pub fn debug_render(
         for poly in map.polygons.iter() {
             let [v1, v2, v3] = &poly.vertices;
             let w = 0.7 * zoom;
-            graphics.draw_debug_line(v1.x, v1.y, v1.color, v2.x, v2.y, v2.color, w);
-            graphics.draw_debug_line(v2.x, v2.y, v2.color, v3.x, v3.y, v3.color, w);
-            graphics.draw_debug_line(v3.x, v3.y, v3.color, v1.x, v1.y, v1.color, w);
+            let a = |mc: MapColor| {
+                let mut c: Color = mc.into();
+                if c.a < u8::MAX / 2 {
+                    c.a = u8::MAX - c.a
+                }
+                c
+            };
+
+            graphics.draw_debug_line(v1.x, v1.y, a(v1.color), v2.x, v2.y, a(v2.color), w);
+            graphics.draw_debug_line(v2.x, v2.y, a(v2.color), v3.x, v3.y, a(v3.color), w);
+            graphics.draw_debug_line(v3.x, v3.y, a(v3.color), v1.x, v1.y, a(v1.color), w);
         }
     }
 
