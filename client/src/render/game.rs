@@ -80,7 +80,6 @@ impl GameGraphics {
         // bullets: &[Bullet],
         // elapsed: f64,
         frame_percent: f32,
-        zoom: f32,
     ) {
         let config = resources.get::<Config>().unwrap();
         let (camera, camera_position) = world.get_camera_and_camera_position();

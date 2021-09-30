@@ -1,5 +1,5 @@
+use crate::constants::*;
 use gfx2d::{math::*, rgba, Color, Transform};
-
 pub use soldank_shared::components::Position;
 
 #[derive(Debug)]
@@ -65,5 +65,21 @@ impl Default for Camera {
             zoom: 0.0,
             is_active: false,
         }
+    }
+}
+
+impl Camera {
+    pub fn viewport(&self, position: Vec2) -> (f32, f32, f32, f32) {
+        let zoom = f32::exp(self.zoom);
+        let pos = position + self.offset;
+        let (w, h) = (zoom * GAME_WIDTH, zoom * GAME_HEIGHT);
+        let (dx, dy) = (pos.x - w / 2.0, pos.y - h / 2.0);
+        (dx, dy, w, h)
+    }
+
+    pub fn mouse_to_world(&self, position: Vec2, x: f32, y: f32) -> (f32, f32) {
+        let (dx, dy, _w, _h) = self.viewport(position);
+        let zoom = f32::exp(self.zoom);
+        (dx + x * zoom, dy + y * zoom)
     }
 }

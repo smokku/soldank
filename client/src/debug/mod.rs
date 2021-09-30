@@ -1,4 +1,7 @@
-use crate::{cvars::Config, engine::Engine, game::GameState};
+use crate::{
+    cvars::Config, engine::world::WorldCameraExt, engine::Engine, game::GameState,
+    render::components::Cursor,
+};
 use cvar::{INode, IVisit};
 pub use gfx2d::math::*;
 use hecs::World;
@@ -29,7 +32,6 @@ impl IVisit for DebugState {
 
 pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
     let mut config = game.resources.get_mut::<Config>().unwrap();
-    let scale = config.phys.scale;
 
     // if config.debug.fps_second != seconds_since_startup {
     //     config.debug.fps = config.debug.fps_count;
@@ -39,8 +41,15 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
     // config.debug.fps_count += 1;
 
     if config.debug.visible {
-        let (dx, dy, _w, _h) = game.viewport(Vec2::ZERO);
-        let (x, y) = game.mouse_to_world(Vec2::ZERO, game.mouse.x, game.mouse.y);
+        let mouse = if let Some((_entity, cursor)) = game.world.query::<&Cursor>().iter().next() {
+            **cursor
+        } else {
+            Vec2::ZERO
+        };
+        let scale = config.phys.scale;
+        let (camera, camera_position) = game.world.get_camera_and_camera_position();
+        let (dx, dy, _w, _h) = camera.viewport(*camera_position);
+        let (x, y) = camera.mouse_to_world(*camera_position, mouse.x, mouse.y);
 
         egui::Window::new("Debugger")
             .title_bar(false)
@@ -71,7 +80,7 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
                         }
                         ui.label(format!(
                             "{:4} {:3} [{:.3} {:.3}]",
-                            eng.input.mouse_x, eng.input.mouse_y, game.mouse.x, game.mouse.y
+                            eng.input.mouse_x, eng.input.mouse_y, mouse.x, mouse.y
                         ));
                     });
                     ui.label(format!(
