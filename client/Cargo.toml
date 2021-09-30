@@ -34,6 +34,7 @@ cvar = "0.3"
 log = "0.4"
 env_logger = "0.9"
 color-eyre = "0.5"
+simple-error = "0.2"
 rapier2d = { version = "0.11", features = ["simd-stable"] }
 nalgebra = { version = "0.29", features = ["convert-glam014"] }
 quad-rand = "0.2"

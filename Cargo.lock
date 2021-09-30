@@ -2456,6 +2456,7 @@ dependencies = [
  "rapier2d",
  "resources",
  "rust-ini",
+ "simple-error",
  "smol",
  "soldank-shared",
  "typenum",

@@ -8,7 +8,7 @@ pub struct Nick(pub String);
 #[derive(Debug, Clone, DeBin, SerBin)]
 pub struct Soldier;
 
-#[derive(Default, Debug, Clone, Deref, DerefMut)]
+#[derive(Default, Debug, Copy, Clone, Deref, DerefMut)]
 pub struct Position(pub Vec2);
 
 impl Position {
@@ -17,7 +17,7 @@ impl Position {
     }
 }
 
-#[derive(Debug, Clone, DeBin, SerBin)]
+#[derive(Debug, Copy, Clone, DeBin, SerBin)]
 struct PositionTuple(f32, f32);
 
 impl SerBin for Position {

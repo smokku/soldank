@@ -1,5 +1,5 @@
 use super::*;
-use crate::constants::*;
+use crate::{constants::*, engine::world::WorldCameraExt};
 use gfx::SpriteData;
 use hocon::{Hocon, HoconLoader};
 use ini::Ini;
@@ -82,15 +82,20 @@ impl GameGraphics {
         frame_percent: f32,
         zoom: f32,
     ) {
-        let state = resources.get::<MainState>().unwrap();
         let config = resources.get::<Config>().unwrap();
+        let (camera, camera_position) = world.get_camera_and_camera_position();
 
-        let zoom = f32::exp(zoom);
-        let cam = lerp(state.camera_prev, state.camera, frame_percent);
+        let zoom = f32::exp(camera.zoom);
         let (w, h) = (zoom * GAME_WIDTH, zoom * GAME_HEIGHT);
-        let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
-        let transform = Transform::ortho(dx, dx + w, dy, dy + h).matrix();
-        let transform_bg = Transform::ortho(0.0, 1.0, dy, dy + h).matrix();
+        let mut cam = *camera_position;
+        cam += camera.offset;
+        if camera.centered {
+            cam -= vec2(w / 2.0, h / 2.0);
+        }
+        // let cam = lerp(state.camera_prev, state.camera, frame_percent);
+        // let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
+        let transform = Transform::ortho(cam.x, cam.x + w, cam.y, cam.y + h).matrix();
+        let transform_bg = Transform::ortho(0.0, 1.0, cam.y, cam.y + h).matrix();
         let scale = config.phys.scale;
 
         let debug_state = &config.debug;

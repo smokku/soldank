@@ -3,7 +3,7 @@ use crate::{
     constants::*,
     cvars::Config,
     debug,
-    engine::{Engine, Game},
+    engine::{world::WorldCameraExt, Engine, Game},
     mapfile::MapFile,
     render::{self as render, systems, GameGraphics},
 };
@@ -138,6 +138,13 @@ impl Game for GameState {
             components::Cursor::default(),
             components::Sprite::new("Crosshair", "38"),
         ));
+
+        // spawn camera
+        let camera = self.world.spawn((
+            components::Camera::default(),
+            components::Position::default(),
+        ));
+        self.world.make_active_camera(camera).unwrap();
     }
 
     fn update(&mut self, eng: Engine<'_>) {

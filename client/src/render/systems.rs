@@ -5,7 +5,7 @@ use gfx2d::{
 use hecs::World;
 
 use super::components::*;
-use crate::{physics::RigidBodyPosition, render::Sprites};
+use crate::{constants::*, physics::RigidBodyPosition, render::Sprites};
 
 fn draw_sprite_in_batch(
     batch: &mut DrawBatch,
@@ -81,6 +81,23 @@ pub fn update_cursor(world: &mut World, x: f32, y: f32) {
     for (_entity, mut cursor) in world.query::<&mut Cursor>().iter() {
         cursor.x = x;
         cursor.y = y;
+    }
+
+    for (_entity, (mut camera, pos)) in world.query::<(&mut Camera, &Position)>().iter() {
+        if camera.is_active && camera.centered {
+            let zoom = f32::exp(camera.zoom);
+            let mut m = Vec2::ZERO;
+
+            m.x = zoom * (x - GAME_WIDTH / 2.0) / 7.0
+                * ((2.0 * 640.0 / GAME_WIDTH - 1.0)
+                    + (GAME_WIDTH - 640.0) / GAME_WIDTH * 0.0 / 6.8);
+            m.y = zoom * (y - GAME_HEIGHT / 2.0) / 7.0;
+
+            let norm = **pos - camera.offset;
+            let s = norm * 0.14;
+            camera.offset += s;
+            camera.offset += m;
+        }
     }
 }
 

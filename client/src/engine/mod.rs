@@ -5,6 +5,7 @@ use std::collections::VecDeque;
 mod frame_timer;
 pub mod input;
 mod miniquad;
+pub mod world;
 
 use input::InputEngine;
 
