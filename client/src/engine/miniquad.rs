@@ -107,14 +107,12 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         repeat: bool,
     ) {
         self.egui_mq.key_down_event(ctx, keycode, keymods);
-        if !self.mouse_over_ui {
-            self.input.add_event(input::Input::Key {
-                down: true,
-                keycode,
-                keymods,
-                repeat,
-            });
-        }
+        self.input.add_event(input::Input::Key {
+            down: true,
+            keycode,
+            keymods,
+            repeat,
+        });
 
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
@@ -129,14 +127,12 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         keymods: mq::KeyMods,
     ) {
         self.egui_mq.key_up_event(keycode, keymods);
-        if !self.mouse_over_ui {
-            self.input.add_event(input::Input::Key {
-                down: false,
-                keycode,
-                keymods,
-                repeat: false,
-            });
-        }
+        self.input.add_event(input::Input::Key {
+            down: false,
+            keycode,
+            keymods,
+            repeat: false,
+        });
 
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
