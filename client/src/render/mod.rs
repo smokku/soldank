@@ -1,6 +1,7 @@
 use super::*;
 
 pub mod bullets;
+pub mod components;
 pub mod debug;
 pub mod game;
 pub mod gfx;

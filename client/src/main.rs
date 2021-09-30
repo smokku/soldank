@@ -8,7 +8,6 @@ macro_rules! iif(
 mod anims;
 mod bullet;
 mod calc;
-mod components;
 mod constants;
 mod control;
 mod cvars;

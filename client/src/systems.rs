@@ -1,4 +1,4 @@
-use crate::{components::*, math::*, particles::Particle};
+use crate::{math::*, particles::Particle, render::components::*};
 use gfx2d::Transform;
 use hecs::World;
 
@@ -15,12 +15,5 @@ pub fn kinetic_movement(world: &mut World) {
         if body.active {
             body.euler();
         }
-    }
-}
-
-pub fn update_cursor(world: &mut World, x: f32, y: f32) {
-    for (_entity, mut cursor) in world.query::<&mut Cursor>().iter() {
-        cursor.x = x;
-        cursor.y = y;
     }
 }

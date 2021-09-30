@@ -5,8 +5,7 @@ use crate::{
     debug,
     engine::{Engine, Game},
     mapfile::MapFile,
-    render::{self as render, GameGraphics},
-    systems,
+    render::{self as render, systems, GameGraphics},
 };
 use gfx2d::math::Vec2;
 use gvfs::filesystem::Filesystem;

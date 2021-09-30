@@ -4,7 +4,8 @@ use gfx2d::{
 };
 use hecs::World;
 
-use crate::{components::*, physics::RigidBodyPosition, render::Sprites};
+use super::components::*;
+use crate::{physics::RigidBodyPosition, render::Sprites};
 
 fn draw_sprite_in_batch(
     batch: &mut DrawBatch,
@@ -73,6 +74,13 @@ pub fn render_sprites(world: &World, sprites: &Sprites, batch: &mut DrawBatch, p
         if let Some((pos, rot)) = params {
             draw_sprite_in_batch(batch, sprites, &mut *sprite, pos, rot);
         }
+    }
+}
+
+pub fn update_cursor(world: &mut World, x: f32, y: f32) {
+    for (_entity, mut cursor) in world.query::<&mut Cursor>().iter() {
+        cursor.x = x;
+        cursor.y = y;
     }
 }
 
