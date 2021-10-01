@@ -49,7 +49,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
     fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {
         self.egui_mq.mouse_wheel_event(ctx, dx, dy);
         if !self.mouse_over_ui {
-            self.input.add_event(input::Input::Wheel { dx, dy });
+            self.input.add_event(input::InputEvent::Wheel { dx, dy });
         }
     }
 
@@ -62,7 +62,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
     ) {
         self.egui_mq.mouse_button_down_event(ctx, button, x, y);
         if !self.mouse_over_ui {
-            self.input.add_event(input::Input::Mouse {
+            self.input.add_event(input::InputEvent::Mouse {
                 down: true,
                 button,
                 x,
@@ -80,7 +80,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
     ) {
         self.egui_mq.mouse_button_up_event(ctx, button, x, y);
         if !self.mouse_over_ui {
-            self.input.add_event(input::Input::Mouse {
+            self.input.add_event(input::InputEvent::Mouse {
                 down: false,
                 button,
                 x,
@@ -107,12 +107,15 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         repeat: bool,
     ) {
         self.egui_mq.key_down_event(ctx, keycode, keymods);
-        self.input.add_event(input::Input::Key {
+        self.input.add_event(input::InputEvent::Key {
             down: true,
             keycode,
             keymods,
             repeat,
         });
+        if let Some(bind) = self.input.binds.get(&keycode) {
+            self.input.state.insert(*bind);
+        }
 
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),
@@ -127,12 +130,15 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         keymods: mq::KeyMods,
     ) {
         self.egui_mq.key_up_event(keycode, keymods);
-        self.input.add_event(input::Input::Key {
+        self.input.add_event(input::InputEvent::Key {
             down: false,
             keycode,
             keymods,
             repeat: false,
         });
+        if let Some(bind) = self.input.binds.get(&keycode) {
+            self.input.state.remove(*bind);
+        }
 
         match keycode {
             mq::KeyCode::Escape => ctx.request_quit(),

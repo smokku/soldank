@@ -1,16 +1,18 @@
 use crate::{
-    components,
     constants::*,
     cvars::Config,
     debug,
-    engine::{world::WorldCameraExt, Engine, Game},
+    engine::{input::InputState, world::WorldCameraExt, Engine, Game},
     mapfile::MapFile,
-    render::{self as render, systems, GameGraphics},
+    mq,
+    render::{self as render, GameGraphics},
+    systems,
 };
-use gfx2d::math::Vec2;
 use gvfs::filesystem::Filesystem;
 use hecs::World;
 use resources::Resources;
+
+pub mod components;
 
 pub struct GameState {
     pub world: World,
@@ -117,16 +119,26 @@ impl Game for GameState {
 
         // spawn cursor sprite
         self.world.spawn((
-            components::Cursor::default(),
-            components::Sprite::new("Crosshair", "38"),
+            render::components::Cursor::default(),
+            render::components::Sprite::new("Crosshair", "38"),
         ));
 
         // spawn camera
         let camera = self.world.spawn((
-            components::Camera::default(),
-            components::Position::default(),
+            render::components::Camera::default(),
+            render::components::Position::default(),
         ));
         self.world.make_active_camera(camera).unwrap();
+        // control camera
+        self.world.insert(camera, (components::Pawn,)).unwrap();
+
+        // bind some keys
+        eng.input.bind_key(mq::KeyCode::A, InputState::MoveLeft);
+        eng.input.bind_key(mq::KeyCode::D, InputState::MoveRight);
+        eng.input.bind_key(mq::KeyCode::W, InputState::Jump);
+        eng.input.bind_key(mq::KeyCode::S, InputState::Crouch);
+        eng.input.bind_key(mq::KeyCode::X, InputState::Prone);
+        eng.input.unbind_key(mq::KeyCode::F3);
     }
 
     fn update(&mut self, eng: Engine<'_>) {
@@ -138,11 +150,12 @@ impl Game for GameState {
         let mouse_x = eng.input.mouse_x * GAME_WIDTH / screen_size.0;
         let mouse_y = eng.input.mouse_y * GAME_HEIGHT / screen_size.1;
 
-        systems::update_cursor(&mut self.world, mouse_x, mouse_y);
+        render::systems::update_cursor(&mut self.world, mouse_x, mouse_y);
 
         for _event in eng.input.drain_events() {
             // just drop it for now
         }
+        systems::primitive_movement(&mut self.world, &eng);
 
         self.step_physics(eng.delta);
 
