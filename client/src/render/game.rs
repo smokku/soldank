@@ -76,12 +76,12 @@ impl GameGraphics {
         ctx: &mut Context,
         world: &World,
         resources: &Resources,
+        config: &Config,
         // soldier: &Soldier,
         // bullets: &[Bullet],
         // elapsed: f64,
         frame_percent: f32,
     ) {
-        let config = resources.get::<Config>().unwrap();
         let (camera, camera_position) = world.get_camera_and_camera_position();
 
         let zoom = f32::exp(camera.zoom);

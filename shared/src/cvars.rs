@@ -25,7 +25,9 @@ pub fn set_cli_cvars(config: &mut dyn IVisit, cmd: &clap::ArgMatches) {
             }
         }
     }
+}
 
+pub fn dump_cvars(config: &mut dyn IVisit) {
     log::info!("--- cvars:");
     cvar::console::walk(config, |path, node| {
         if let cvar::Node::Prop(prop) = node.as_node() {

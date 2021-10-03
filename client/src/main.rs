@@ -202,7 +202,7 @@ fn main() {
 
     resources.insert(app_events);
     resources.insert(map);
-    resources.insert(config);
+    // resources.insert(config);
     resources.insert(state);
     resources.insert(weapons);
 
@@ -220,7 +220,7 @@ fn main() {
     // resources.insert(physics::SimulationToRenderTime::default());
     // resources.insert(physics::JointsEntityMap::default());
     resources.insert(physics::ModificationTracker::default());
-    physics::create_map_colliders(&mut world, &resources);
+    physics::create_map_colliders(&mut world, &resources, &config);
 
     let conf = mq::conf::Conf {
         sample_count: 4,
@@ -234,7 +234,7 @@ fn main() {
         mq::UserData::owning(
             engine::Runner::new(
                 &mut ctx,
-                game::GameState::new(context, world, resources, filesystem),
+                game::GameState::new(context, world, resources, filesystem, config),
             ),
             ctx,
         )
@@ -268,12 +268,12 @@ impl GameStage {
         mut resources: Resources,
         mut filesystem: Filesystem,
         networking: Networking,
+        config: &Config,
         client: orb::client::Client<GameWorld>,
     ) -> Self {
         // setup window, renderer & main loop
 
         let mut state = resources.get_mut::<MainState>().unwrap();
-        let config = resources.get::<Config>().unwrap();
         let map = resources.get::<MapFile>().unwrap();
         let soldier = Soldier::new(&map.spawnpoints[0], &config);
         state.camera = soldier.particle.pos;
@@ -281,7 +281,7 @@ impl GameStage {
 
         drop(map);
         drop(state);
-        drop(config);
+        // drop(config);
 
         GameStage {
             world,
@@ -378,7 +378,11 @@ impl mq::EventHandler for GameStage {
             }
 
             // update soldiers
-            self.soldier.update(&self.resources, &mut self.emitter);
+            self.soldier.update(
+                &self.resources,
+                &mut self.emitter,
+                &*self.resources.get::<Config>().unwrap(),
+            );
 
             // update bullets
             for bullet in self.bullets.iter_mut() {

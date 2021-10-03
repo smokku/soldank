@@ -31,7 +31,7 @@ impl IVisit for DebugState {
 }
 
 pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
-    let mut config = game.resources.get_mut::<Config>().unwrap();
+    let mut debug = &mut game.config.debug;
 
     // if config.debug.fps_second != seconds_since_startup {
     //     config.debug.fps = config.debug.fps_count;
@@ -40,13 +40,13 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
     // }
     // config.debug.fps_count += 1;
 
-    if config.debug.visible {
+    if debug.visible {
         let mouse = if let Some((_entity, cursor)) = game.world.query::<&Cursor>().iter().next() {
             **cursor
         } else {
             Vec2::ZERO
         };
-        let scale = config.phys.scale;
+        let scale = game.config.phys.scale;
         let (camera, camera_position) = game.world.get_camera_and_camera_position();
         let (dx, dy, _w, _h) = camera.viewport(*camera_position);
         let (x, y) = camera.mouse_to_world(*camera_position, mouse.x, mouse.y);
@@ -57,12 +57,10 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
             .collapsible(false)
             .show(eng.egui_ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    toggle_state(ui, &mut config.debug.cli.visible, "CLI");
-                    toggle_state(ui, &mut config.debug.spawner.visible, "Spawn");
-                    toggle_state(
-                        ui, &mut false, /*config.debug.entities.visible*/ "Entities",
-                    );
-                    toggle_state(ui, &mut config.debug.render.visible, "Render");
+                    toggle_state(ui, &mut debug.cli.visible, "CLI");
+                    toggle_state(ui, &mut debug.spawner.visible, "Spawn");
+                    toggle_state(ui, &mut false, /*debug.entities.visible*/ "Entities");
+                    toggle_state(ui, &mut debug.render.visible, "Render");
                 });
 
                 ui.separator();
@@ -90,13 +88,12 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
                 });
             });
 
-        // config.debug.cli.build_ui();
-        config
-            .debug
+        // debug.cli.build_ui();
+        debug
             .spawner
             .build_ui(eng.egui_ctx, &mut game.world, x, y, scale);
-        // config.debug.entities.build_ui();
-        config.debug.render.build_ui(eng.egui_ctx);
+        // debug.entities.build_ui();
+        debug.render.build_ui(eng.egui_ctx);
     }
 }
 

@@ -190,15 +190,19 @@ impl Soldier {
     }
 
     #[allow(clippy::manual_range_contains)]
-    pub fn update(&mut self, resources: &Resources, emitter: &mut Vec<EmitterItem>) {
+    pub fn update(
+        &mut self,
+        resources: &Resources,
+        emitter: &mut Vec<EmitterItem>,
+        config: &Config,
+    ) {
         let map = &*resources.get::<MapFile>().unwrap();
-        let config = &*resources.get::<Config>().unwrap();
 
         let mut body_y = 0.0;
         let mut arm_s;
 
         self.particle.euler();
-        self.control(resources, emitter);
+        self.control(resources, emitter, config.phys.gravity);
 
         *self.skeleton.old_pos_mut(21) = self.skeleton.pos(21);
         *self.skeleton.old_pos_mut(23) = self.skeleton.pos(23);

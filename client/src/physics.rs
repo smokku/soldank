@@ -9,9 +9,9 @@ use crate::{
 use ::resources::Resources;
 use hecs::World;
 
-pub fn create_map_colliders(world: &mut World, resources: &Resources) {
+pub fn create_map_colliders(world: &mut World, resources: &Resources, config: &Config) {
     let map = resources.get::<MapFile>().unwrap();
-    let scale = resources.get::<Config>().unwrap().phys.scale;
+    let scale = config.phys.scale;
 
     for polygon in map.polygons.iter() {
         match polygon.polytype {

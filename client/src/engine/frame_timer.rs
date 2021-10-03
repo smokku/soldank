@@ -78,6 +78,7 @@ impl<G: Game> Runner<G> {
                     egui_ctx: self.egui_mq.egui_ctx(),
                     mouse_over_ui: self.mouse_over_ui,
                     input: &mut self.input,
+                    script: &mut self.script,
                 };
                 self.game.update(eng);
                 consumed_delta_time -= DESIRED_FRAMETIME;
@@ -93,6 +94,7 @@ impl<G: Game> Runner<G> {
             egui_ctx: self.egui_mq.egui_ctx(),
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
+            script: &mut self.script,
         };
         self.game.update(eng);
 

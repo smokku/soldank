@@ -1,13 +1,15 @@
 // https://github.com/Bombfuse/emerald/blob/master/src/core/engine.rs
 use crate::mq;
-use std::collections::VecDeque;
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 mod frame_timer;
 pub mod input;
 mod miniquad;
+mod script;
 pub mod world;
 
 use input::InputEngine;
+use script::ScriptEngine;
 
 use frame_timer::DESIRED_FRAMETIME;
 const TIME_HISTORY_COUNT: usize = 4;
@@ -20,6 +22,7 @@ pub struct Engine<'a> {
     pub egui_ctx: &'a egui::CtxRef,
     pub mouse_over_ui: bool,
     pub input: &'a mut InputEngine,
+    pub script: &'a mut ScriptEngine,
 }
 
 pub trait Game {
@@ -43,6 +46,7 @@ pub struct Runner<G: Game> {
 
     // engines
     pub(crate) input: InputEngine,
+    pub(crate) script: ScriptEngine,
 
     // dependencies
     egui_mq: egui_miniquad::EguiMq,
@@ -56,6 +60,7 @@ impl<G: Game> Runner<G> {
 
         let egui_mq = egui_miniquad::EguiMq::new(ctx);
         let mut input = InputEngine::new();
+        let mut script = ScriptEngine::new();
 
         let eng = Engine {
             delta: 0.,
@@ -65,6 +70,7 @@ impl<G: Game> Runner<G> {
             egui_ctx: egui_mq.egui_ctx(),
             mouse_over_ui: false,
             input: &mut input,
+            script: &mut script,
         };
         game.initialize(eng);
 
@@ -81,27 +87,10 @@ impl<G: Game> Runner<G> {
             fps: 0.0,
 
             input,
+            script,
 
             egui_mq,
             mouse_over_ui: false,
-        }
-    }
-}
-
-impl<'a> Engine<'a> {
-    pub(crate) fn new<G: Game>(
-        runner: &'a mut Runner<G>,
-        delta: f64,
-        quad_ctx: &'a mut mq::Context,
-    ) -> Self {
-        Engine {
-            delta,
-            fps: runner.fps,
-            overstep_percentage: runner.overstep_percentage,
-            quad_ctx,
-            egui_ctx: runner.egui_mq.egui_ctx(),
-            mouse_over_ui: runner.mouse_over_ui,
-            input: &mut runner.input,
         }
     }
 }

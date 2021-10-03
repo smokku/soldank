@@ -22,6 +22,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
             egui_ctx: self.egui_mq.egui_ctx(),
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
+            script: &mut self.script,
         };
 
         self.game.draw(eng);

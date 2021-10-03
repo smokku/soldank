@@ -5,8 +5,9 @@ pub fn debug_render(
     graphics: &mut GameGraphics,
     world: &World,
     resources: &Resources,
+    config: &Config,
 ) {
-    let state = &resources.get::<Config>().unwrap().debug.render;
+    let state = &config.debug.render;
     let game = resources.get::<MainState>().unwrap();
     let map = resources.get::<MapFile>().unwrap();
 
@@ -134,14 +135,18 @@ pub fn debug_render(
     }
 
     if state.render_physics {
-        physics(graphics, world, resources, zoom);
+        physics(graphics, world, resources, zoom, config.phys.scale);
     }
 }
 
-pub fn physics(graphics: &mut GameGraphics, world: &World, resources: &Resources, zoom: f32) {
+pub fn physics(
+    graphics: &mut GameGraphics,
+    world: &World,
+    resources: &Resources,
+    zoom: f32,
+    scale: f32,
+) {
     use rapier2d::prelude::*;
-
-    let scale = resources.get::<Config>().unwrap().phys.scale;
 
     for (_entity, rb) in world
         .query::<crate::physics::RigidBodyComponentsQuery>()

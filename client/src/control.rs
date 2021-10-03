@@ -45,9 +45,13 @@ pub struct Control {
 
 impl Soldier {
     #[allow(clippy::collapsible_if)]
-    pub fn control(&mut self, resources: &resources::Resources, emitter: &mut Vec<EmitterItem>) {
+    pub fn control(
+        &mut self,
+        resources: &resources::Resources,
+        emitter: &mut Vec<EmitterItem>,
+        gravity: f32,
+    ) {
         let state = resources.get::<MainState>().unwrap();
-        let config = resources.get::<Config>().unwrap();
 
         let mut player_pressed_left_right = false;
 
@@ -148,25 +152,12 @@ impl Soldier {
             self.legs_apply_animation(Anim::RollBack, 1);
         } else if self.control.jets && (self.jets_count > 0) {
             if self.on_ground {
-                self.particle.force.y = -2.5
-                    * iif!(
-                        config.phys.gravity > 0.05,
-                        JETSPEED,
-                        config.phys.gravity * 2.0
-                    );
+                self.particle.force.y = -2.5 * iif!(gravity > 0.05, JETSPEED, gravity * 2.0);
             } else if self.position != POS_PRONE {
-                self.particle.force.y -= iif!(
-                    config.phys.gravity > 0.05,
-                    JETSPEED,
-                    config.phys.gravity * 2.0
-                );
+                self.particle.force.y -= iif!(gravity > 0.05, JETSPEED, gravity * 2.0);
             } else {
-                self.particle.force.x += f32::from(self.direction)
-                    * iif!(
-                        config.phys.gravity > 0.05,
-                        JETSPEED / 2.0,
-                        config.phys.gravity
-                    );
+                self.particle.force.x +=
+                    f32::from(self.direction) * iif!(gravity > 0.05, JETSPEED / 2.0, gravity);
             }
 
             if (self.legs_animation.id != Anim::GetUp)

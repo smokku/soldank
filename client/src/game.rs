@@ -1,8 +1,12 @@
 use crate::{
     constants::*,
-    cvars::Config,
+    cvars::{dump_cvars, Config},
     debug,
-    engine::{input::InputState, world::WorldCameraExt, Engine, Game},
+    engine::{
+        input::{InputEvent, InputState},
+        world::WorldCameraExt,
+        Engine, Game,
+    },
     mapfile::MapFile,
     mq,
     render::{self as render, GameGraphics},
@@ -18,6 +22,7 @@ pub struct GameState {
     pub world: World,
     pub resources: Resources,
     pub filesystem: Filesystem,
+    pub config: Config,
 
     context: gfx2d::Gfx2dContext,
     graphics: GameGraphics,
@@ -29,6 +34,7 @@ impl GameState {
         world: World,
         resources: Resources,
         filesystem: Filesystem,
+        config: Config,
     ) -> Self {
         GameState {
             context,
@@ -36,6 +42,7 @@ impl GameState {
             world,
             resources,
             filesystem,
+            config,
         }
     }
 
@@ -97,11 +104,7 @@ impl GameState {
             &event_handler,
         );
 
-        despawn_outliers(
-            &mut self.world,
-            2500.,
-            self.resources.get::<Config>().unwrap().phys.scale,
-        );
+        despawn_outliers(&mut self.world, 2500., self.config.phys.scale);
         collect_removals(&mut self.world, &mut modifs_tracker);
     }
 }
@@ -132,13 +135,17 @@ impl Game for GameState {
         // control camera
         self.world.insert(camera, (components::Pawn,)).unwrap();
 
-        // bind some keys
-        eng.input.bind_key(mq::KeyCode::A, InputState::MoveLeft);
-        eng.input.bind_key(mq::KeyCode::D, InputState::MoveRight);
-        eng.input.bind_key(mq::KeyCode::W, InputState::Jump);
-        eng.input.bind_key(mq::KeyCode::S, InputState::Crouch);
-        eng.input.bind_key(mq::KeyCode::X, InputState::Prone);
-        eng.input.unbind_key(mq::KeyCode::F3);
+        // run startup scripts
+        for config in ["/config.cfg"] {
+            match self.filesystem.open(config) {
+                Ok(file) => match eng.script.evaluate_file(file, eng.input, &mut self.config) {
+                    Ok(_ctx) => log::debug!("Loaded {}", config),
+                    Err(error) => log::error!("Error loading {}: {}", config, error),
+                },
+                Err(error) => log::error!("Error opening {}: {}", config, error),
+            }
+        }
+        dump_cvars(&mut self.config);
     }
 
     fn update(&mut self, eng: Engine<'_>) {
@@ -152,8 +159,24 @@ impl Game for GameState {
 
         render::systems::update_cursor(&mut self.world, mouse_x, mouse_y);
 
-        for _event in eng.input.drain_events() {
-            // just drop it for now
+        for event in eng.input.drain_events() {
+            #[allow(clippy::single_match)]
+            match event {
+                InputEvent::Key {
+                    down,
+                    keycode,
+                    keymods,
+                    repeat,
+                } => match keycode {
+                    mq::KeyCode::GraveAccent if down && !repeat && keymods.ctrl => {
+                        self.config.debug.visible = !self.config.debug.visible;
+                    }
+                    _ => {}
+                },
+                _ => {
+                    // just drop it for now
+                }
+            }
         }
         systems::primitive_movement(&mut self.world, &eng);
 
@@ -171,6 +194,7 @@ impl Game for GameState {
             &mut self.graphics,
             &self.world,
             &self.resources,
+            &self.config,
         );
 
         self.graphics.render_frame(
@@ -178,6 +202,7 @@ impl Game for GameState {
             eng.quad_ctx,
             &self.world,
             &self.resources,
+            &self.config,
             // self.last_frame - TIMESTEP_RATE * (1.0 - p),
             eng.overstep_percentage,
         );
