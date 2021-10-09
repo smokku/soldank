@@ -1,6 +1,9 @@
 use super::*;
 use enumflags2::{bitflags, BitFlags};
-use std::collections::{vec_deque::Drain, HashMap, VecDeque};
+use std::{
+    collections::{vec_deque::Drain, HashMap, VecDeque},
+    str::FromStr,
+};
 
 #[derive(Debug)]
 pub enum InputEvent {
@@ -74,4 +77,19 @@ pub enum InputState {
     Jump,
     Crouch,
     Prone,
+}
+
+impl FromStr for InputState {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "moveleft" => Ok(InputState::MoveLeft),
+            "moveright" => Ok(InputState::MoveRight),
+            "jump" => Ok(InputState::Jump),
+            "crouch" => Ok(InputState::Crouch),
+            "prone" => Ok(InputState::Prone),
+            _ => Err(()),
+        }
+    }
 }

@@ -2,11 +2,7 @@ use crate::{
     constants::*,
     cvars::{dump_cvars, Config},
     debug,
-    engine::{
-        input::{InputEvent, InputState},
-        world::WorldCameraExt,
-        Engine, Game,
-    },
+    engine::{input::InputEvent, world::WorldCameraExt, Engine, Game},
     mapfile::MapFile,
     mq,
     render::{self as render, GameGraphics},

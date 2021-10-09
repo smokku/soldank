@@ -1,11 +1,12 @@
 // https://github.com/Bombfuse/emerald/blob/master/src/core/engine.rs
 use crate::mq;
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::collections::VecDeque;
 
 mod frame_timer;
 pub mod input;
 mod miniquad;
 mod script;
+pub mod utils;
 pub mod world;
 
 use input::InputEngine;
