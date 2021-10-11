@@ -2,6 +2,8 @@
 
 🚧 open source clone of [Soldat](http://soldat.pl/) engine written in Rust
 
+[![Discord](https://img.shields.io/discord/897218149034917959?logo=discord&style=for-the-badge)](https://discord.gg/cTaC4UtqE6)
+
 ## 🚧 Screenshot
 
 ![WIP screenshot](sshot.png)
