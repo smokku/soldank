@@ -133,15 +133,17 @@ impl Game for GameState {
 
         // run startup scripts
         for config in ["/config.cfg"] {
-            match self.filesystem.open(config) {
-                Ok(file) => match eng.script.evaluate_file(file, eng.input, &mut self.config) {
-                    Ok(_ctx) => log::debug!("Loaded {}", config),
-                    Err(error) => log::error!("Error loading {}: {}", config, error),
-                },
-                Err(error) => log::error!("Error opening {}: {}", config, error),
+            match eng.script.evaluate_file(
+                config,
+                eng.input,
+                &mut self.config,
+                &mut self.filesystem,
+            ) {
+                Ok(_ctx) => log::debug!("Loaded {}", config),
+                Err(error) => log::error!("Error loading {}: {}", config, error),
             }
         }
-        dump_cvars(&mut self.config);
+        // dump_cvars(&mut self.config);
     }
 
     fn update(&mut self, eng: Engine<'_>) {
