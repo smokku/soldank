@@ -132,7 +132,28 @@ impl Game for GameState {
         self.world.insert(camera, (components::Pawn,)).unwrap();
 
         // run startup scripts
-        for config in ["/config.cfg", "/autoexec.cfg"] {
+        let mut configs = Vec::new();
+        let mut autoexecs = Vec::new();
+        for file in self.filesystem.read_dir("/").unwrap() {
+            if let Some(ext) = file.extension() {
+                if ext == "cfg" {
+                    if let Some(stem) = file.file_stem() {
+                        let stem = stem.to_string_lossy();
+                        if stem.starts_with("config") {
+                            configs.push(file.to_string_lossy().to_string());
+                        }
+                        if stem.starts_with("autoexec") {
+                            autoexecs.push(file.to_string_lossy().to_string());
+                        }
+                    }
+                }
+            }
+        }
+        let mut configs = configs.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        let mut autoexecs = autoexecs.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        human_sort::sort(&mut configs);
+        human_sort::sort(&mut autoexecs);
+        for config in configs.iter().chain(autoexecs.iter()) {
             if self.filesystem.is_file(config) {
                 log::info!("Loading {}", config);
                 match eng.script.evaluate_file(

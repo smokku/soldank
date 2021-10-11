@@ -11,24 +11,26 @@ pub mod systems;
 
 pub use self::game::{GameGraphics, Sprites};
 
-use self::bullets::*;
 use self::map::*;
 use self::soldiers::*;
 use gfx2d::*;
-use std::path::PathBuf;
+use std::{collections::VecDeque, path::PathBuf};
 
 fn filename_override(fs: &Filesystem, prefix: &str, fname: &str) -> PathBuf {
-    let mut path = PathBuf::from(prefix);
-    path.push(fname);
+    let path = PathBuf::from(fname);
 
     // Use / even if OS uses \, as gvfs supports / only.
-    let path_string = path
+    let mut path_segments = path
         .as_path()
         .iter()
         .map(|s| s.to_string_lossy())
-        .collect::<Vec<_>>()
-        .join("/");
-    let mut path = PathBuf::from(path_string);
+        .filter(|s| !s.is_empty() && s != "/")
+        .collect::<VecDeque<_>>();
+    if !prefix.is_empty() {
+        path_segments.push_front(prefix.into());
+    }
+
+    let mut path = PathBuf::from(format!("/{}", Vec::from(path_segments).join("/")));
 
     for ext in &["png", "jpg", "gif", "bmp"] {
         path.set_extension(ext);

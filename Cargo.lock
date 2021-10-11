@@ -587,11 +587,10 @@ dependencies = [
 
 [[package]]
 name = "directories"
-version = "2.0.2"
+version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "551a778172a450d7fc12e629ca3b0428d00f6afa9a43da1b630d54604e97371c"
+checksum = "f51c5d4ddabd36886dd3e1438cb358cdcb0d7c499cb99cb4ac2e38e18b5cb210"
 dependencies = [
- "cfg-if 0.1.10",
  "dirs-sys",
 ]
 
@@ -1019,8 +1018,7 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 [[package]]
 name = "gvfs"
 version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39294b9a1a7b6c946546975ec9e7c7b7b36b2f4ec177b9e64b5a02341475d368"
+source = "git+https://github.com/smokku/gvfs.git#a446415a5864fd88cb34c74c126eed1e21e08826"
 dependencies = [
  "directories",
  "log",
@@ -1118,6 +1116,12 @@ dependencies = [
  "fnv",
  "itoa",
 ]
+
+[[package]]
+name = "human-sort"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "140a09c9305e6d5e557e2ed7cbc68e05765a7d4213975b87cb04920689cc6219"
 
 [[package]]
 name = "humantime"
@@ -1970,9 +1974,9 @@ dependencies = [
 
 [[package]]
 name = "rhai"
-version = "1.0.6"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a2bb3d4236f1aac51ab8f1dccbe7e1c32ce2369ba5b3729affa1e65787a72d7"
+checksum = "f0a6abd5b3f1fe29984451102a69c79e65212f6c70015a68245a43a8ecc2a88b"
 dependencies = [
  "ahash 0.7.5",
  "instant",
@@ -1984,9 +1988,9 @@ dependencies = [
 
 [[package]]
 name = "rhai_codegen"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a340b02636b22e61d94ee53e6bcc2d01d339958766b2003b860d178ccf5ae5e"
+checksum = "f2a81e59b9782e8b85052aaed305d71dfcdec1bfa53e774c19ac1085307cbf39"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2337,6 +2341,7 @@ dependencies = [
  "gvfs",
  "hecs",
  "hocon",
+ "human-sort",
  "instant",
  "laminar",
  "log",
@@ -2346,7 +2351,6 @@ dependencies = [
  "rapier2d",
  "resources",
  "rhai",
- "rhai_codegen",
  "rust-ini",
  "simple-error",
  "smol",
