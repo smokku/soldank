@@ -132,18 +132,20 @@ impl Game for GameState {
         self.world.insert(camera, (components::Pawn,)).unwrap();
 
         // run startup scripts
-        for config in ["/config.cfg"] {
-            match eng.script.evaluate_file(
-                config,
-                eng.input,
-                &mut self.config,
-                &mut self.filesystem,
-            ) {
-                Ok(_ctx) => log::debug!("Loaded {}", config),
-                Err(error) => log::error!("Error loading {}: {}", config, error),
+        for config in ["/config.cfg", "/autoexec.cfg"] {
+            if self.filesystem.is_file(config) {
+                log::info!("Loading {}", config);
+                match eng.script.evaluate_file(
+                    config,
+                    eng.input,
+                    &mut self.config,
+                    &mut self.filesystem,
+                ) {
+                    Ok(_ctx) => log::debug!("Loaded {}", config),
+                    Err(error) => log::error!("Error loading {}: {}", config, error),
+                }
             }
         }
-        // dump_cvars(&mut self.config);
     }
 
     fn update(&mut self, eng: Engine<'_>) {

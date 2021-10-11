@@ -21,6 +21,7 @@ struct Env<'a> {
     input: &'a mut InputEngine,
     config: &'a mut dyn IVisit,
     fs: &'a mut Filesystem,
+    vars: &'a mut HashMap<String, String>,
     engine: &'a mut Engine,
 }
 
@@ -80,6 +81,12 @@ impl ScriptEngine {
         config: &mut dyn IVisit,
         fs: &mut Filesystem,
     ) -> Result<(), String> {
+        // Reset internal state
+        self.vars.insert("IFS".to_string(), " ".to_string());
+        self.vars.insert("NL".to_string(), "\n".to_string());
+        self.vars.insert("TAB".to_string(), "\t".to_string());
+        self.vars.insert("SPACE".to_string(), " ".to_string());
+
         for (i, line) in script.into().lines().enumerate() {
             let i = i + 1; // files start counting lines with line 1
             let mut words: Vec<String> = line
@@ -132,6 +139,7 @@ impl ScriptEngine {
                             config,
                             fs,
                             input,
+                            vars: &mut self.vars,
                             engine: &mut self.engine,
                         },
                     ) {
@@ -142,7 +150,7 @@ impl ScriptEngine {
                     }
                 }
             } else {
-                return Err(format!("Unknown command: {}. Line: {}", command, i));
+                return Err(format!("Unknown command: {:?}. Line: {}", command, i));
             }
 
             if assignment {
@@ -175,7 +183,23 @@ impl ScriptEngine {
 }
 
 fn cvars_get(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
-    Ok(cvar::console::get(env.config, args[0]))
+    let var = args[0];
+    if var.starts_with("--") {
+        match var {
+            "--dump" => {
+                let mut dump = Vec::new();
+                cvar::console::walk(env.config, |path, node| {
+                    if let cvar::Node::Prop(prop) = node.as_node() {
+                        dump.push(format!("{} = `{}`", path, prop.get()));
+                    }
+                });
+                Ok(Some(dump.join("\n")))
+            }
+            _ => Err(format!("Unknown option: {:?}.", var)),
+        }
+    } else {
+        Ok(cvar::console::get(env.config, args[0]))
+    }
 }
 
 fn cvars_set(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
@@ -211,16 +235,20 @@ fn cvars_toggle(args: &[&str], env: &mut Env) -> Result<Option<String>, String> 
     output
 }
 
-fn log_info(args: &[&str], _env: &mut Env) -> Result<Option<String>, String> {
-    log::info!("{}", args.join(" "));
+fn join_args(args: &[&str], env: &mut Env) -> String {
+    args.join(env.vars.get("IFS").unwrap_or(&"".to_string()))
+}
+
+fn log_info(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
+    log::info!("{}", join_args(args, env));
     Ok(None)
 }
-fn log_error(args: &[&str], _env: &mut Env) -> Result<Option<String>, String> {
-    log::error!("{}", args.join(" "));
+fn log_error(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
+    log::error!("{}", join_args(args, env));
     Ok(None)
 }
-fn log_warn(args: &[&str], _env: &mut Env) -> Result<Option<String>, String> {
-    log::warn!("{}", args.join(" "));
+fn log_warn(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
+    log::warn!("{}", join_args(args, env));
     Ok(None)
 }
 
@@ -249,11 +277,11 @@ fn unbind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     }
 }
 
-fn echo_args(args: &[&str], _env: &mut Env) -> Result<Option<String>, String> {
+fn echo_args(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     if args.is_empty() {
         Ok(None)
     } else {
-        Ok(Some(args.join(" ")))
+        Ok(Some(join_args(args, env)))
     }
 }
 
@@ -261,7 +289,10 @@ fn eval_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     let res = env
         .engine
         .eval_expression::<Dynamic>(args.join(" ").as_str())
-        .map_err(|err| err.to_string())?;
+        .map_err(|err| {
+            log::error!("Failed to eval: {:?}", err);
+            "Failed to eval.".to_string()
+        })?;
 
     Ok(Some(res.to_string()))
 }
