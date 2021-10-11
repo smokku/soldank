@@ -140,6 +140,7 @@ impl Game for GameState {
                     eng.input,
                     &mut self.config,
                     &mut self.filesystem,
+                    &mut self.world,
                 ) {
                     Ok(_ctx) => log::debug!("Loaded {}", config),
                     Err(error) => log::error!("Error loading {}: {}", config, error),

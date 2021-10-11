@@ -9,7 +9,7 @@ use rhai::{
     plugin::*,
     Dynamic, Engine, Scope, AST,
 };
-use std::{cell::RefCell, collections::HashMap, io::Read, rc::Rc, str::FromStr};
+use std::{collections::HashMap, io::Read, str::FromStr};
 
 pub struct ScriptEngine {
     vars: HashMap<String, String>,
@@ -17,7 +17,6 @@ pub struct ScriptEngine {
 
     engine: Engine,
     ast: HashMap<String, AST>,
-    world: SharedWorld,
 }
 
 struct Env<'a> {
@@ -27,14 +26,15 @@ struct Env<'a> {
     vars: &'a mut HashMap<String, String>,
     engine: &'a mut Engine,
     ast: &'a mut HashMap<String, AST>,
-    world: SharedWorld,
+    world: &'a mut hecs::World,
 }
 
 type CommandFunction = fn(&[&str], &mut Env) -> Result<Option<String>, String>;
 
-pub struct WorldEnv {}
-
-pub type SharedWorld = Rc<RefCell<WorldEnv>>;
+#[derive(Clone)]
+pub struct WorldEnv {
+    inner: *mut hecs::World,
+}
 
 impl ScriptEngine {
     pub fn new() -> ScriptEngine {
@@ -69,17 +69,14 @@ impl ScriptEngine {
         let package = StandardPackage::new().as_shared_module();
         engine.register_global_module(package);
 
-        engine.register_type_with_name::<SharedWorld>("World");
+        engine.register_type_with_name::<WorldEnv>("World");
         engine.register_global_module(exported_module!(world_api).into());
-
-        let world: SharedWorld = Rc::new(RefCell::new(WorldEnv::new()));
 
         ScriptEngine {
             vars: HashMap::new(),
             commands,
             engine,
             ast: HashMap::new(),
-            world,
         }
     }
 
@@ -89,6 +86,7 @@ impl ScriptEngine {
         input: &mut InputEngine,
         config: &mut dyn IVisit,
         fs: &mut Filesystem,
+        world: &mut hecs::World,
     ) -> Result<(), String> {
         // Reset internal state
         self.vars.insert("IFS".to_string(), " ".to_string());
@@ -151,7 +149,7 @@ impl ScriptEngine {
                             vars: &mut self.vars,
                             engine: &mut self.engine,
                             ast: &mut self.ast,
-                            world: self.world.clone(),
+                            world,
                         },
                     ) {
                         Ok(res) => result = res,
@@ -184,12 +182,19 @@ impl ScriptEngine {
         input: &mut InputEngine,
         config: &mut dyn IVisit,
         fs: &mut Filesystem,
+        world: &mut hecs::World,
     ) -> Result<(), String> {
         let mut file = fs.open(file.as_ref()).map_err(|err| err.to_string())?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
             .map_err(|err| err.to_string())?;
-        self.evaluate(String::from_utf8_lossy(&buffer).as_ref(), input, config, fs)
+        self.evaluate(
+            String::from_utf8_lossy(&buffer).as_ref(),
+            input,
+            config,
+            fs,
+            world,
+        )
     }
 }
 
@@ -337,7 +342,7 @@ fn run_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     };
 
     let mut scope = Scope::new();
-    scope.push_constant("World", env.world.clone());
+    scope.push_constant("World", WorldEnv::new(env.world));
     env.engine
         .consume_ast_with_scope(&mut scope, ast)
         .map_err(|err| {
@@ -349,19 +354,19 @@ fn run_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
 }
 
 impl WorldEnv {
-    fn new() -> Self {
-        WorldEnv {}
+    fn new(world: &mut hecs::World) -> Self {
+        WorldEnv { inner: world }
     }
 
     fn len(&self) -> i32 {
-        42
+        unsafe { self.inner.as_ref() }.unwrap().len() as i32
     }
 }
 
 #[export_module]
 mod world_api {
     #[rhai_fn(get = "len", pure)]
-    pub fn get_len(world: &mut SharedWorld) -> i32 {
-        world.borrow().len()
+    pub fn get_len(world: &mut WorldEnv) -> i32 {
+        world.len()
     }
 }
