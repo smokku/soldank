@@ -7,14 +7,17 @@ use gvfs::filesystem::Filesystem;
 use rhai::{
     packages::{Package, StandardPackage},
     plugin::*,
-    Dynamic, Engine, Scope,
+    Dynamic, Engine, Scope, AST,
 };
 use std::{cell::RefCell, collections::HashMap, io::Read, rc::Rc, str::FromStr};
 
 pub struct ScriptEngine {
     vars: HashMap<String, String>,
     commands: HashMap<&'static str, (usize, CommandFunction)>,
+
     engine: Engine,
+    ast: HashMap<String, AST>,
+    world: SharedWorld,
 }
 
 struct Env<'a> {
@@ -23,6 +26,8 @@ struct Env<'a> {
     fs: &'a mut Filesystem,
     vars: &'a mut HashMap<String, String>,
     engine: &'a mut Engine,
+    ast: &'a mut HashMap<String, AST>,
+    world: SharedWorld,
 }
 
 type CommandFunction = fn(&[&str], &mut Env) -> Result<Option<String>, String>;
@@ -67,10 +72,14 @@ impl ScriptEngine {
         engine.register_type_with_name::<SharedWorld>("World");
         engine.register_global_module(exported_module!(world_api).into());
 
+        let world: SharedWorld = Rc::new(RefCell::new(WorldEnv::new()));
+
         ScriptEngine {
             vars: HashMap::new(),
             commands,
             engine,
+            ast: HashMap::new(),
+            world,
         }
     }
 
@@ -141,6 +150,8 @@ impl ScriptEngine {
                             input,
                             vars: &mut self.vars,
                             engine: &mut self.engine,
+                            ast: &mut self.ast,
+                            world: self.world.clone(),
                         },
                     ) {
                         Ok(res) => result = res,
@@ -299,28 +310,36 @@ fn eval_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
 
 fn run_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     let script = args[0];
-    if !script.ends_with(".rhai") {
-        return Err("Script must end with .rhai extension.".to_string());
-    }
 
-    let mut file = env.fs.open(script).map_err(|err| err.to_string())?;
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer)
-        .map_err(|err| err.to_string())?;
+    let ast = if let Some(ast) = env.ast.get(script) {
+        ast
+    } else {
+        if !script.ends_with(".rhai") {
+            return Err("Script must end with .rhai extension.".to_string());
+        }
 
-    let mut ast = env
-        .engine
-        .compile(String::from_utf8_lossy(&buffer).as_ref())
-        .map_err(|err| {
-            log::error!("Failed to compile {}: {}", script, err);
-            format!("Failed to compile {}.", script)
-        })?;
-    ast.set_source(script);
-    let world: SharedWorld = Rc::new(RefCell::new(WorldEnv::new()));
+        let mut file = env.fs.open(script).map_err(|err| err.to_string())?;
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .map_err(|err| err.to_string())?;
+
+        let mut ast = env
+            .engine
+            .compile(String::from_utf8_lossy(&buffer).as_ref())
+            .map_err(|err| {
+                log::error!("Failed to compile {}: {}", script, err);
+                format!("Failed to compile {}.", script)
+            })?;
+        ast.set_source(script);
+
+        env.ast.insert(script.to_string(), ast);
+        env.ast.get(script).unwrap()
+    };
+
     let mut scope = Scope::new();
-    scope.push_constant("World", world.clone());
+    scope.push_constant("World", env.world.clone());
     env.engine
-        .consume_ast_with_scope(&mut scope, &ast)
+        .consume_ast_with_scope(&mut scope, ast)
         .map_err(|err| {
             log::error!("Error running {}: {}", script, err);
             format!("Error running {}.", script)
