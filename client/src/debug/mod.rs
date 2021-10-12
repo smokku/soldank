@@ -1,13 +1,12 @@
 use crate::{
-    cvars::Config, engine::world::WorldCameraExt, engine::Engine, game::GameState,
-    render::components::Cursor,
+    engine::world::WorldCameraExt, engine::Engine, game::GameState, render::components::Cursor,
 };
 use cvar::{INode, IVisit};
 pub use gfx2d::math::*;
 use hecs::World;
 
-// mod entities;
 mod cli;
+mod entities;
 mod render;
 mod spawner;
 
@@ -18,6 +17,7 @@ pub struct DebugState {
     pub visible: bool,
     cli: cli::CliState,
     spawner: spawner::SpawnerState,
+    entities: entities::EntitiesState,
     pub render: RenderState,
 }
 
@@ -26,6 +26,7 @@ impl IVisit for DebugState {
         f(&mut cvar::Property("visible", &mut self.visible, false));
         f(&mut cvar::List("cli", &mut self.cli));
         f(&mut cvar::List("spawner", &mut self.spawner));
+        f(&mut cvar::List("entities", &mut self.entities));
         f(&mut cvar::List("render", &mut self.render));
     }
 }
@@ -59,7 +60,7 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
                 ui.horizontal_wrapped(|ui| {
                     toggle_state(ui, &mut debug.cli.visible, "CLI");
                     toggle_state(ui, &mut debug.spawner.visible, "Spawn");
-                    toggle_state(ui, &mut false, /*debug.entities.visible*/ "Entities");
+                    toggle_state(ui, &mut debug.entities.visible, "Entities");
                     toggle_state(ui, &mut debug.render.visible, "Render");
                 });
 
@@ -92,7 +93,7 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
         debug
             .spawner
             .build_ui(eng.egui_ctx, &mut game.world, x, y, scale);
-        // debug.entities.build_ui();
+        debug.entities.build_ui(eng.egui_ctx, &mut game.world);
         debug.render.build_ui(eng.egui_ctx);
     }
 }

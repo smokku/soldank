@@ -1047,7 +1047,7 @@ dependencies = [
 [[package]]
 name = "hecs"
 version = "0.6.5"
-source = "git+https://github.com/smokku/hecs.git#42ca7c5f76fba7ade61763528657c69437bbf045"
+source = "git+https://github.com/smokku/hecs.git#c906f608a2d04700734de6714860eca79cfeb454"
 dependencies = [
  "hashbrown 0.11.2",
  "hecs-macros",
@@ -1057,7 +1057,7 @@ dependencies = [
 [[package]]
 name = "hecs-macros"
 version = "0.7.0"
-source = "git+https://github.com/smokku/hecs.git#42ca7c5f76fba7ade61763528657c69437bbf045"
+source = "git+https://github.com/smokku/hecs.git#c906f608a2d04700734de6714860eca79cfeb454"
 dependencies = [
  "proc-macro2",
  "quote",
