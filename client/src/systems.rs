@@ -1,6 +1,6 @@
 use crate::{
     engine::{input::InputState, Engine},
-    game::components::Pawn,
+    game::components::Input,
     math::*,
     particles::Particle,
     render::components::*,
@@ -24,24 +24,29 @@ pub fn kinetic_movement(world: &mut World) {
     }
 }
 
-pub fn primitive_movement(world: &mut World, eng: &Engine) {
-    let mut delta = Vec2::ZERO;
+pub struct PrimitiveMovement;
 
-    if eng.input.state.contains(InputState::MoveLeft) {
-        delta.x -= 1.;
-    }
-    if eng.input.state.contains(InputState::MoveRight) {
-        delta.x += 1.;
-    }
-    if eng.input.state.contains(InputState::Jump) {
-        delta.y -= 1.;
-    }
-    if eng.input.state.contains(InputState::Crouch) {
-        delta.y += 1.;
-    }
+pub fn primitive_movement(world: &mut World) {
+    for (_, (input, mut pos)) in world
+        .query::<With<PrimitiveMovement, (&Input, &mut Position)>>()
+        .iter()
+    {
+        let mut delta = Vec2::ZERO;
 
-    if delta != Vec2::ZERO {
-        for (_entitty, mut pos) in world.query::<With<Pawn, &mut Position>>().iter() {
+        if input.state.contains(InputState::MoveLeft) {
+            delta.x -= 1.;
+        }
+        if input.state.contains(InputState::MoveRight) {
+            delta.x += 1.;
+        }
+        if input.state.contains(InputState::Jump) {
+            delta.y -= 1.;
+        }
+        if input.state.contains(InputState::Crouch) {
+            delta.y += 1.;
+        }
+
+        if delta != Vec2::ZERO {
             **pos += delta;
         }
     }

@@ -1,18 +1,18 @@
 use crate::{
     constants::*,
-    cvars::{dump_cvars, Config},
+    cvars::Config,
     debug,
     engine::{input::InputEvent, world::WorldCameraExt, Engine, Game},
     mapfile::MapFile,
     mq,
     render::{self as render, GameGraphics},
-    systems,
 };
 use gvfs::filesystem::Filesystem;
 use hecs::World;
 use resources::Resources;
 
 pub mod components;
+pub mod systems;
 
 pub struct GameState {
     pub world: World,
@@ -129,7 +129,16 @@ impl Game for GameState {
         ));
         self.world.make_active_camera(camera).unwrap();
         // control camera
-        self.world.insert(camera, (components::Pawn,)).unwrap();
+        self.world
+            .insert(
+                camera,
+                (
+                    components::Pawn,
+                    components::Input::default(),
+                    crate::systems::PrimitiveMovement,
+                ),
+            )
+            .unwrap();
 
         // run startup scripts
         let mut configs = Vec::new();
@@ -180,6 +189,7 @@ impl Game for GameState {
         let mouse_y = eng.input.mouse_y * GAME_HEIGHT / screen_size.1;
 
         render::systems::update_cursor(&mut self.world, mouse_x, mouse_y);
+        self::systems::apply_input(&mut self.world, &eng);
 
         for event in eng.input.drain_events() {
             #[allow(clippy::single_match)]
@@ -200,7 +210,8 @@ impl Game for GameState {
                 }
             }
         }
-        systems::primitive_movement(&mut self.world, &eng);
+
+        crate::systems::primitive_movement(&mut self.world);
 
         self.step_physics(eng.delta);
 
