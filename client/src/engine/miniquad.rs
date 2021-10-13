@@ -14,9 +14,18 @@ impl<G: Game> mq::EventHandler for Runner<G> {
     }
 
     fn draw(&mut self, ctx: &mut mq::Context) {
+        self.last_frame = mq::date::now();
+        let last_second = self.last_frame.round();
+        if (self.fps_second - last_second).abs() > f64::EPSILON {
+            self.fps.push(self.fps_count);
+            self.fps_second = last_second;
+            self.fps_count = 0;
+        }
+        self.fps_count += 1;
+
         let eng = Engine {
             delta: 0.,
-            fps: self.fps,
+            fps: self.fps(),
             overstep_percentage: self.overstep_percentage,
             quad_ctx: ctx,
             egui_ctx: self.egui_mq.egui_ctx(),

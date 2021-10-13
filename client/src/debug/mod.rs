@@ -32,14 +32,7 @@ impl IVisit for DebugState {
 }
 
 pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
-    let mut debug = &mut game.config.debug;
-
-    // if config.debug.fps_second != seconds_since_startup {
-    //     config.debug.fps = config.debug.fps_count;
-    //     config.debug.fps_second = seconds_since_startup;
-    //     config.debug.fps_count = 0;
-    // }
-    // config.debug.fps_count += 1;
+    let debug = &mut game.config.debug;
 
     if debug.visible {
         let mouse = if let Some((_entity, cursor)) = game.world.query::<&Cursor>().iter().next() {

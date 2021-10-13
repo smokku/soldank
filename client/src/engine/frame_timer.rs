@@ -72,7 +72,7 @@ impl<G: Game> Runner<G> {
                 //cap variable update's dt to not be larger than fixed update
                 let eng = Engine {
                     delta: FIXED_DELTATIME,
-                    fps: self.fps,
+                    fps: self.fps(),
                     overstep_percentage: self.overstep_percentage,
                     quad_ctx: ctx,
                     egui_ctx: self.egui_mq.egui_ctx(),
@@ -88,7 +88,7 @@ impl<G: Game> Runner<G> {
 
         let eng = Engine {
             delta: consumed_delta_time,
-            fps: self.fps,
+            fps: self.fps(),
             overstep_percentage: self.overstep_percentage,
             quad_ctx: ctx,
             egui_ctx: self.egui_mq.egui_ctx(),

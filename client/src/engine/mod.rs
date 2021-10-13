@@ -1,5 +1,6 @@
 // https://github.com/Bombfuse/emerald/blob/master/src/core/engine.rs
 use crate::mq;
+use ringbuffer::{AllocRingBuffer, RingBufferExt, RingBufferWrite};
 use std::collections::VecDeque;
 
 mod frame_timer;
@@ -17,7 +18,7 @@ const TIME_HISTORY_COUNT: usize = 4;
 
 pub struct Engine<'a> {
     pub delta: f64,
-    pub fps: f32,
+    pub fps: usize,
     pub overstep_percentage: f32,
     pub quad_ctx: &'a mut mq::Context,
     pub egui_ctx: &'a egui::CtxRef,
@@ -43,7 +44,10 @@ pub struct Runner<G: Game> {
 
     // renderer
     overstep_percentage: f32,
-    fps: f32,
+    last_frame: f64,
+    fps_second: f64,
+    fps_count: usize,
+    fps: AllocRingBuffer<usize>,
 
     // engines
     pub(crate) input: InputEngine,
@@ -65,7 +69,7 @@ impl<G: Game> Runner<G> {
 
         let eng = Engine {
             delta: 0.,
-            fps: 0.0,
+            fps: 0,
             overstep_percentage: 0.,
             quad_ctx: ctx,
             egui_ctx: egui_mq.egui_ctx(),
@@ -85,7 +89,10 @@ impl<G: Game> Runner<G> {
             frame_accumulator: 0.0,
             overstep_percentage: 1.0,
 
-            fps: 0.0,
+            last_frame: mq::date::now(),
+            fps_second: mq::date::now().round(),
+            fps_count: 0,
+            fps: AllocRingBuffer::with_capacity(64),
 
             input,
             script,
@@ -93,5 +100,9 @@ impl<G: Game> Runner<G> {
             egui_mq,
             mouse_over_ui: false,
         }
+    }
+
+    pub fn fps(&self) -> usize {
+        *self.fps.get(-1).unwrap_or(&0)
     }
 }
