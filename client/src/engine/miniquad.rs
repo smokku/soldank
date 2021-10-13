@@ -106,7 +106,9 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         _keymods: mq::KeyMods,
         _repeat: bool,
     ) {
+        if self.mouse_over_ui || self.egui_mq.egui_ctx().wants_keyboard_input() {
         self.egui_mq.char_event(character);
+    }
     }
 
     fn key_down_event(
@@ -117,6 +119,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         repeat: bool,
     ) {
         self.egui_mq.key_down_event(ctx, keycode, keymods);
+        if !self.egui_mq.egui_ctx().wants_keyboard_input() {
         self.input.add_event(input::InputEvent::Key {
             down: true,
             keycode,
@@ -125,6 +128,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         });
         if let Some(bind) = self.input.binds.get(&keycode) {
             self.input.state.insert(*bind);
+            }
         }
 
         match keycode {
@@ -140,6 +144,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         keymods: mq::KeyMods,
     ) {
         self.egui_mq.key_up_event(keycode, keymods);
+        if !self.egui_mq.egui_ctx().wants_keyboard_input() {
         self.input.add_event(input::InputEvent::Key {
             down: false,
             keycode,
@@ -148,6 +153,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         });
         if let Some(bind) = self.input.binds.get(&keycode) {
             self.input.state.remove(*bind);
+            }
         }
 
         match keycode {
