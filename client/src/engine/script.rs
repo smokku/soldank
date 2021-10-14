@@ -210,9 +210,32 @@ impl ScriptEngine {
         )
     }
 
-    pub(crate) fn consume_events(&mut self) {
+    pub(crate) fn consume_events(
+        &mut self,
+        input: &mut InputEngine,
+        config: &mut dyn IVisit,
+        fs: &mut Filesystem,
+        world: &mut hecs::World,
+    ) {
+        let mut commands = Vec::new();
         for event in &self.event_recv {
-            println!("ScriptEngine consumer got {:?}", event);
+            log::trace!("ScriptEngine consumer got {:?}", event);
+            if let Event::Command(script) = event {
+                commands.push(script);
+            }
+        }
+        for command in commands {
+            if let Err(err) = self.evaluate(command, input, config, fs, world) {
+                log::error!("Error evaluating Command Event: {}", err);
+            }
+        }
+    }
+
+    pub(crate) fn drain_events(&mut self) {
+        for event in &self.event_recv {
+            if let Event::Command(script) = event {
+                log::error!("Unhandled Command Event: {}\nForgot to call ScriptEngine::consume_events() in Game::update()?", script);
+            }
         }
     }
 }

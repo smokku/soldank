@@ -6,6 +6,7 @@ use ringbuffer::{AllocRingBuffer, RingBuffer, RingBufferExt, RingBufferWrite};
 pub mod events;
 mod frame_timer;
 pub mod input;
+mod logger;
 mod miniquad;
 mod script;
 pub mod utils;
@@ -13,6 +14,7 @@ pub mod world;
 
 pub use events::Event;
 use input::InputEngine;
+pub use logger::Logger;
 use script::ScriptEngine;
 
 use frame_timer::DESIRED_FRAMETIME;
@@ -27,6 +29,7 @@ pub struct Engine<'a> {
     pub mouse_over_ui: bool,
     pub input: &'a mut InputEngine,
     pub script: &'a mut ScriptEngine,
+    pub event_sender: &'a BroadcastSender<Event>,
 }
 
 pub trait Game {
@@ -56,7 +59,7 @@ pub struct Runner<G: Game> {
     pub(crate) script: ScriptEngine,
 
     // events queue
-    _event_send: BroadcastSender<Event>,
+    event_send: BroadcastSender<Event>,
 
     // dependencies
     egui_mq: egui_miniquad::EguiMq,
@@ -86,6 +89,7 @@ impl<G: Game> Runner<G> {
             mouse_over_ui: false,
             input: &mut input,
             script: &mut script,
+            event_sender: &event_send,
         };
         game.initialize(eng);
 
@@ -107,7 +111,7 @@ impl<G: Game> Runner<G> {
             input,
             script,
 
-            _event_send: event_send,
+            event_send,
 
             egui_mq,
             mouse_over_ui: false,

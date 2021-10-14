@@ -7,7 +7,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         // spin the Game::update() needed number of frames
         self.overstep_percentage = self.frame_timer(ctx) as f32;
 
-        self.script.consume_events();
+        self.script.drain_events();
 
         assert_eq!(
             self.input.queue.len(),
@@ -35,6 +35,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
             script: &mut self.script,
+            event_sender: &self.event_send,
         };
 
         self.game.draw(eng);

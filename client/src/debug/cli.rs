@@ -1,5 +1,5 @@
 use super::*;
-use crate::logger::Logger;
+use crate::engine::{Event, Logger};
 
 pub struct CliState {
     pub(crate) visible: bool,
@@ -52,6 +52,7 @@ impl CliState {
                                         log::Level::Warn => egui::Color32::YELLOW,
                                         log::Level::Error => egui::Color32::RED,
                                         log::Level::Debug | log::Level::Trace => {
+                                            // should not really happen
                                             egui::Color32::BLACK
                                         }
                                     }),
@@ -77,7 +78,11 @@ impl CliState {
                 if edit.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
                     let input = self.input.trim();
                     if !input.is_empty() {
-                        // self.history.push(input.to_owned());
+                        if let Err(err) =
+                            eng.event_sender.try_send(Event::Command(input.to_string()))
+                        {
+                            log::error!("Cannot send Command Event: {}", err);
+                        }
                         self.input.clear();
                         self.auto_scroll = true;
                         self.auto_focus = true;

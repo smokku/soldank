@@ -14,7 +14,6 @@ mod cvars;
 mod debug;
 mod engine;
 mod game;
-mod logger;
 mod mapfile;
 mod networking;
 mod particles;
@@ -30,7 +29,6 @@ use bullet::*;
 use calc::*;
 use constants::*;
 use control::*;
-use logger::*;
 use mapfile::*;
 use networking::*;
 use particles::*;
@@ -54,7 +52,7 @@ use soldank_shared::{networking::GameWorld, orb};
 
 fn main() {
     color_eyre::install().unwrap();
-    Logger::init();
+    engine::Logger::init();
 
     let cmd = clap::app_from_crate!()
         .arg(

@@ -211,6 +211,13 @@ impl Game for GameState {
             }
         }
 
+        eng.script.consume_events(
+            eng.input,
+            &mut self.config,
+            &mut self.filesystem,
+            &mut self.world,
+        );
+
         crate::systems::primitive_movement(&mut self.world);
 
         self.step_physics(eng.delta);
