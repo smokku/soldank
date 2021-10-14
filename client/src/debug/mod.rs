@@ -51,7 +51,11 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
             .collapsible(false)
             .show(eng.egui_ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    toggle_state(ui, &mut debug.cli.visible, "CLI");
+                    if ui.selectable_label(debug.cli.visible, "CLI").clicked() {
+                        debug.cli.visible = !debug.cli.visible;
+                        debug.cli.auto_focus = true;
+                        debug.cli.auto_scroll = true;
+                    }
                     toggle_state(ui, &mut debug.spawner.visible, "Spawn");
                     toggle_state(ui, &mut debug.entities.visible, "Entities");
                     toggle_state(ui, &mut debug.render.visible, "Render");
@@ -82,7 +86,7 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
                 });
             });
 
-        // debug.cli.build_ui();
+        debug.cli.build_ui(eng);
         debug
             .spawner
             .build_ui(eng.egui_ctx, &mut game.world, x, y, scale);

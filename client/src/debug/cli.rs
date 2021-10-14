@@ -1,12 +1,24 @@
 use super::*;
+use crate::logger::Logger;
 
-#[derive(Default)]
 pub struct CliState {
     pub(crate) visible: bool,
 
-    history: Vec<String>,
     input: String,
-    auto_scroll: Option<f32>,
+
+    pub(crate) auto_focus: bool,
+    pub(crate) auto_scroll: bool,
+}
+
+impl Default for CliState {
+    fn default() -> Self {
+        Self {
+            visible: false,
+            input: Default::default(),
+            auto_focus: true,
+            auto_scroll: true,
+        }
+    }
 }
 
 impl IVisit for CliState {
@@ -15,38 +27,64 @@ impl IVisit for CliState {
     }
 }
 
-// impl CliState {
-//     pub fn build_ui(&mut self) {
-//         if self.visible {
-//             self.visible = widgets::Window::new(hash!(), vec2(10., 110.), vec2(600., 280.))
-//                 .label("Command Line Interface")
-//                 .close_button(true)
-//                 .ui(&mut *root_ui(), |ui| {
-//                     for line in &self.history {
-//                         widgets::Label::new(line).ui(ui);
-//                     }
-//                     let input_id = hash!();
-//                     ui.input_text(input_id, "", &mut self.input);
-//                     ui.set_input_focus(input_id);
+impl CliState {
+    pub fn build_ui(&mut self, eng: &Engine<'_>) {
+        if !self.visible {
+            return;
+        }
 
-//                     if let Some(last_y) = self.auto_scroll {
-//                         if last_y < ui.scroll_max().y {
-//                             ui.scroll_here_ratio(0.0);
-//                             self.auto_scroll = Some(-ui.scroll().y);
-//                         } else {
-//                             self.auto_scroll = None;
-//                         }
-//                     }
+        let egui_ctx = eng.egui_ctx;
+        let mut visible = self.visible;
+        egui::Window::new("Command Line Interface")
+            .open(&mut visible)
+            .resizable(true)
+            .show(egui_ctx, |ui| {
+                let scroll_height = ui.fonts()[egui::TextStyle::Monospace].row_height() * 25.;
+                egui::ScrollArea::from_max_height(scroll_height)
+                    // .always_show_scroll(true)
+                    .show(ui, |ui| {
+                        for (level, _time, line) in Logger::get_log().read().unwrap().iter() {
+                            ui.add(
+                                egui::Label::new(line)
+                                    .text_style(egui::TextStyle::Monospace)
+                                    .text_color(match level {
+                                        log::Level::Info => egui::Color32::WHITE,
+                                        log::Level::Warn => egui::Color32::YELLOW,
+                                        log::Level::Error => egui::Color32::RED,
+                                        log::Level::Debug | log::Level::Trace => {
+                                            egui::Color32::BLACK
+                                        }
+                                    }),
+                            );
+                        }
 
-//                     if ui.active_window_focused() && is_key_pressed(KeyCode::Enter) {
-//                         let input = self.input.trim();
-//                         if !input.is_empty() {
-//                             self.history.push(input.to_owned());
-//                             self.input.clear();
-//                             self.auto_scroll = Some(ui.scroll_max().y);
-//                         }
-//                     }
-//                 });
-//         }
-//     }
-// }
+                        if self.auto_scroll {
+                            self.auto_scroll = false;
+                            ui.scroll_to_cursor(egui::Align::BOTTOM);
+                        }
+                    });
+
+                let edit = ui.add(
+                    egui::TextEdit::singleline(&mut self.input)
+                        .code_editor()
+                        .desired_width(f32::INFINITY),
+                );
+                if self.auto_focus {
+                    self.auto_focus = false;
+                    edit.request_focus();
+                }
+
+                if edit.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
+                    let input = self.input.trim();
+                    if !input.is_empty() {
+                        // self.history.push(input.to_owned());
+                        self.input.clear();
+                        self.auto_scroll = true;
+                        self.auto_focus = true;
+                    }
+                }
+            });
+
+        self.visible = visible;
+    }
+}

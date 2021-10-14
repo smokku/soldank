@@ -107,8 +107,8 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         _repeat: bool,
     ) {
         if self.mouse_over_ui || self.egui_mq.egui_ctx().wants_keyboard_input() {
-        self.egui_mq.char_event(character);
-    }
+            self.egui_mq.char_event(character);
+        }
     }
 
     fn key_down_event(
@@ -120,14 +120,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
     ) {
         self.egui_mq.key_down_event(ctx, keycode, keymods);
         if !self.egui_mq.egui_ctx().wants_keyboard_input() {
-        self.input.add_event(input::InputEvent::Key {
-            down: true,
-            keycode,
-            keymods,
-            repeat,
-        });
-        if let Some(bind) = self.input.binds.get(&keycode) {
-            self.input.state.insert(*bind);
+            self.input.add_event(input::InputEvent::Key {
+                down: true,
+                keycode,
+                keymods,
+                repeat,
+            });
+            if let Some(bind) = self.input.binds.get(&keycode) {
+                self.input.state.insert(*bind);
             }
         }
 
@@ -145,14 +145,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
     ) {
         self.egui_mq.key_up_event(keycode, keymods);
         if !self.egui_mq.egui_ctx().wants_keyboard_input() {
-        self.input.add_event(input::InputEvent::Key {
-            down: false,
-            keycode,
-            keymods,
-            repeat: false,
-        });
-        if let Some(bind) = self.input.binds.get(&keycode) {
-            self.input.state.remove(*bind);
+            self.input.add_event(input::InputEvent::Key {
+                down: false,
+                keycode,
+                keymods,
+                repeat: false,
+            });
+            if let Some(bind) = self.input.binds.get(&keycode) {
+                self.input.state.remove(*bind);
             }
         }
 
