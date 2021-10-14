@@ -46,8 +46,7 @@ impl<G: Game> Runner<G> {
         }
 
         //delta time averaging
-        self.time_averager.pop_front();
-        self.time_averager.push_back(delta_time);
+        self.time_averager.push(delta_time);
         delta_time = self.time_averager.iter().sum::<f64>() / self.time_averager.len() as f64;
 
         //add to the accumulator

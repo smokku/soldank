@@ -1,7 +1,6 @@
 // https://github.com/Bombfuse/emerald/blob/master/src/core/engine.rs
 use crate::mq;
-use ringbuffer::{AllocRingBuffer, RingBufferExt, RingBufferWrite};
-use std::collections::VecDeque;
+use ringbuffer::{AllocRingBuffer, RingBuffer, RingBufferExt, RingBufferWrite};
 
 mod frame_timer;
 pub mod input;
@@ -39,7 +38,7 @@ pub struct Runner<G: Game> {
     // frame_timer
     resync: bool,
     prev_frame_time: f64,
-    time_averager: VecDeque<f64>,
+    time_averager: AllocRingBuffer<f64>,
     frame_accumulator: f64,
 
     // renderer
@@ -60,8 +59,8 @@ pub struct Runner<G: Game> {
 
 impl<G: Game> Runner<G> {
     pub fn new(ctx: &mut mq::Context, mut game: G) -> Self {
-        let mut time_averager = VecDeque::with_capacity(TIME_HISTORY_COUNT);
-        time_averager.resize(TIME_HISTORY_COUNT, DESIRED_FRAMETIME);
+        let mut time_averager = AllocRingBuffer::with_capacity(TIME_HISTORY_COUNT);
+        time_averager.fill(DESIRED_FRAMETIME);
 
         let egui_mq = egui_miniquad::EguiMq::new(ctx);
         let mut input = InputEngine::new();
