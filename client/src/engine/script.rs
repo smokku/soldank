@@ -1,3 +1,4 @@
+use super::*;
 use crate::engine::{
     input::{InputEngine, InputState},
     utils::*,
@@ -17,6 +18,9 @@ pub struct ScriptEngine {
 
     engine: Engine,
     ast: HashMap<String, AST>,
+
+    event_send: BroadcastSender<Event>,
+    event_recv: BroadcastReceiver<Event>,
 }
 
 struct Env<'a> {
@@ -27,6 +31,7 @@ struct Env<'a> {
     engine: &'a mut Engine,
     ast: &'a mut HashMap<String, AST>,
     world: &'a mut hecs::World,
+    event_sender: &'a BroadcastSender<Event>,
 }
 
 type CommandFunction = fn(&[&str], &mut Env) -> Result<Option<String>, String>;
@@ -37,7 +42,10 @@ pub struct WorldEnv {
 }
 
 impl ScriptEngine {
-    pub fn new() -> ScriptEngine {
+    pub fn new(
+        event_send: BroadcastSender<Event>,
+        event_recv: BroadcastReceiver<Event>,
+    ) -> ScriptEngine {
         let mut commands = HashMap::new();
 
         commands.insert("get", (1, cvars_get as CommandFunction));
@@ -75,8 +83,12 @@ impl ScriptEngine {
         ScriptEngine {
             vars: HashMap::new(),
             commands,
+
             engine,
             ast: HashMap::new(),
+
+            event_send,
+            event_recv,
         }
     }
 
@@ -150,6 +162,7 @@ impl ScriptEngine {
                             engine: &mut self.engine,
                             ast: &mut self.ast,
                             world,
+                            event_sender: &self.event_send,
                         },
                     ) {
                         Ok(res) => result = res,
@@ -196,6 +209,12 @@ impl ScriptEngine {
             world,
         )
     }
+
+    pub(crate) fn consume_events(&mut self) {
+        for event in &self.event_recv {
+            println!("ScriptEngine consumer got {:?}", event);
+        }
+    }
 }
 
 fn cvars_get(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
@@ -220,7 +239,13 @@ fn cvars_get(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
 
 fn cvars_set(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     match cvar::console::set(env.config, args[0], args[1]).unwrap() {
-        true => Ok(None),
+        true => {
+            if let Err(err) = env.event_sender.try_send(Event::ConfigChanged) {
+                log::error!("Cannot send ConfigChanged Event: {}", err);
+            }
+
+            Ok(None)
+        }
         false => Err("No such cvar.".to_string()),
     }
 }
@@ -247,6 +272,12 @@ fn cvars_toggle(args: &[&str], env: &mut Env) -> Result<Option<String>, String> 
             }
         }
     });
+
+    if output.is_ok() {
+        if let Err(err) = env.event_sender.try_send(Event::ConfigChanged) {
+            log::error!("Cannot send ConfigChanged Event: {}", err);
+        }
+    }
 
     output
 }

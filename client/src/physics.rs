@@ -1,11 +1,7 @@
 pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
 
-use crate::{
-    cvars::Config,
-    events::{AppEvent, AppEventsQueue},
-    MapFile, PolyType,
-};
+use crate::{cvars::Config, MapFile, PolyType};
 use ::resources::Resources;
 use hecs::World;
 

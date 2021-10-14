@@ -13,7 +13,6 @@ mod control;
 mod cvars;
 mod debug;
 mod engine;
-mod events;
 mod game;
 mod logger;
 mod mapfile;
@@ -31,7 +30,6 @@ use bullet::*;
 use calc::*;
 use constants::*;
 use control::*;
-use events::*;
 use logger::*;
 use mapfile::*;
 use networking::*;
@@ -146,13 +144,13 @@ fn main() {
     }
     // filesystem.print_all();
 
-    let mut networking = Networking::new(cmd.value_of("connect"));
-    if let Some(key) = cmd.value_of("key") {
-        networking.connection_key = key.to_string();
-    }
-    if let Some(nick) = cmd.value_of("nick") {
-        networking.nick_name = nick.to_string();
-    }
+    // let mut networking = Networking::new(cmd.value_of("connect"));
+    // if let Some(key) = cmd.value_of("key") {
+    //     networking.connection_key = key.to_string();
+    // }
+    // if let Some(nick) = cmd.value_of("nick") {
+    //     networking.nick_name = nick.to_string();
+    // }
 
     let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
     map_name.push_str(".pms");
@@ -200,9 +198,9 @@ fn main() {
 
     let mut resources = Resources::new();
 
-    let app_events = AppEventsQueue::new();
+    // let app_events = AppEventsQueue::new();
 
-    resources.insert(app_events);
+    // resources.insert(app_events);
     resources.insert(map);
     // resources.insert(config);
     resources.insert(state);
@@ -463,7 +461,7 @@ impl mq::EventHandler for GameStage {
         // physics::config_update(&self.resources);
 
         self.world.clear_trackers();
-        self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
+        // self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 
     fn key_down_event(

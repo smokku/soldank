@@ -1,7 +1,9 @@
 // https://github.com/Bombfuse/emerald/blob/master/src/core/engine.rs
 use crate::mq;
+use multiqueue2::{broadcast_queue, BroadcastReceiver, BroadcastSender};
 use ringbuffer::{AllocRingBuffer, RingBuffer, RingBufferExt, RingBufferWrite};
 
+pub mod events;
 mod frame_timer;
 pub mod input;
 mod miniquad;
@@ -9,6 +11,7 @@ mod script;
 pub mod utils;
 pub mod world;
 
+pub use events::Event;
 use input::InputEngine;
 use script::ScriptEngine;
 
@@ -52,6 +55,9 @@ pub struct Runner<G: Game> {
     pub(crate) input: InputEngine,
     pub(crate) script: ScriptEngine,
 
+    // events queue
+    _event_send: BroadcastSender<Event>,
+
     // dependencies
     egui_mq: egui_miniquad::EguiMq,
     mouse_over_ui: bool,
@@ -62,9 +68,14 @@ impl<G: Game> Runner<G> {
         let mut time_averager = AllocRingBuffer::with_capacity(TIME_HISTORY_COUNT);
         time_averager.fill(DESIRED_FRAMETIME);
 
+        let (event_send, event_recv) = broadcast_queue(64);
+        // Take notice that I drop the receiver - this removes it from
+        // the queue, meaning that other readers
+        // won't get starved by the lack of progress here
+
         let egui_mq = egui_miniquad::EguiMq::new(ctx);
         let mut input = InputEngine::new();
-        let mut script = ScriptEngine::new();
+        let mut script = ScriptEngine::new(event_send.clone(), event_recv.clone());
 
         let eng = Engine {
             delta: 0.,
@@ -95,6 +106,8 @@ impl<G: Game> Runner<G> {
 
             input,
             script,
+
+            _event_send: event_send,
 
             egui_mq,
             mouse_over_ui: false,

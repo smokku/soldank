@@ -11,10 +11,7 @@ use resources::Resources;
 use smol::channel::{unbounded, Receiver, Sender};
 use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
-use crate::{
-    cvars::Config,
-    events::{AppEvent, AppEventsQueue},
-};
+use crate::{cvars::Config, engine};
 use soldank_shared::{
     constants::SERVER_PORT,
     control::Control,
@@ -55,6 +52,7 @@ pub struct Networking {
 
     // game state
     control: HashMap<usize, (Control, i32, i32)>,
+    game_event_sender: multiqueue2::BroadcastSender<engine::Event>,
 }
 
 fn backoff_enabled(round: i32) -> bool {
@@ -88,7 +86,10 @@ impl ConnectionMessenger<ReceiveEvent> for PacketMessenger {
 }
 
 impl Networking {
-    pub fn new(connect_to: Option<&str>) -> Networking {
+    pub fn new(
+        connect_to: Option<&str>,
+        game_event_sender: multiqueue2::BroadcastSender<engine::Event>,
+    ) -> Networking {
         let server_socket_address = if let Some(addr) = connect_to {
             addr.parse().expect("cannot parse connect address")
         } else {
@@ -134,6 +135,7 @@ impl Networking {
             server_tick_received: 0,
 
             control: Default::default(),
+            game_event_sender,
         }
     }
 
@@ -334,10 +336,12 @@ impl Networking {
                         ));
                     }
                     self.cvars_received = true;
-                    resources
-                        .get_mut::<AppEventsQueue>()
-                        .unwrap()
-                        .push(AppEvent::CvarsChanged);
+                    if let Err(err) = self
+                        .game_event_sender
+                        .try_send(engine::Event::ConfigChanged)
+                    {
+                        log::error!("Cannot send engine::Event: {}", err);
+                    }
                 }
                 NetworkMessage::GameState { tick, entities } => {
                     if tick > self.server_tick_received {

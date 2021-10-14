@@ -4,7 +4,10 @@ impl<G: Game> mq::EventHandler for Runner<G> {
     fn update(&mut self, ctx: &mut mq::Context) {
         self.egui_mq.begin_frame(ctx);
 
+        // spin the Game::update() needed number of frames
         self.overstep_percentage = self.frame_timer(ctx) as f32;
+
+        self.script.consume_events();
 
         assert_eq!(
             self.input.queue.len(),
