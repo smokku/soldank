@@ -21,7 +21,6 @@ mod physics;
 mod render;
 mod soldier;
 mod state;
-mod systems;
 mod weapons;
 
 use anims::*;

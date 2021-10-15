@@ -3,6 +3,7 @@ use crate::{
     cvars::Config,
     debug,
     engine::{input::InputEvent, world::WorldCameraExt, Engine, Game},
+    game,
     mapfile::MapFile,
     mq,
     render::{self as render, GameGraphics},
@@ -135,7 +136,7 @@ impl Game for GameState {
                 (
                     components::Pawn,
                     components::Input::default(),
-                    crate::systems::PrimitiveMovement,
+                    game::systems::PrimitiveMovement,
                 ),
             )
             .unwrap();
@@ -218,7 +219,7 @@ impl Game for GameState {
             &mut self.world,
         );
 
-        crate::systems::primitive_movement(&mut self.world);
+        game::systems::primitive_movement(&mut self.world);
 
         self.step_physics(eng.delta);
 
