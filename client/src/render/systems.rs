@@ -5,7 +5,9 @@ use gfx2d::{
 use hecs::World;
 
 use super::{components::*, render_skeleton, render_soldier, SoldierGraphics};
-use crate::{constants::*, physics::RigidBodyPosition, render::Sprites, soldier::Soldier};
+use crate::{
+    calc::lerp, constants::*, physics::RigidBodyPosition, render::Sprites, soldier::Soldier,
+};
 
 fn draw_sprite_in_batch(
     batch: &mut DrawBatch,
@@ -68,7 +70,7 @@ pub fn render_sprites(world: &World, sprites: &Sprites, batch: &mut DrawBatch, p
                 rbp.position.rotation.angle(),
             ))
         } else {
-            position.map(|pos| (pos.clone(), 0.0))
+            position.map(|pos| (*pos, 0.0))
         };
 
         if let Some((pos, rot)) = params {
@@ -77,26 +79,24 @@ pub fn render_sprites(world: &World, sprites: &Sprites, batch: &mut DrawBatch, p
     }
 }
 
-pub fn update_cursor(world: &mut World, x: f32, y: f32) {
+pub fn update_cursor(world: &mut World, mouse_x: f32, mouse_y: f32) {
     for (_entity, mut cursor) in world.query::<&mut Cursor>().iter() {
-        cursor.x = x;
-        cursor.y = y;
+        cursor.x = mouse_x;
+        cursor.y = mouse_y;
     }
 
-    for (_entity, (mut camera, pos)) in world.query::<(&mut Camera, &Position)>().iter() {
+    for (_entity, mut camera) in world.query::<&mut Camera>().iter() {
         if camera.is_active && camera.centered {
             let zoom = f32::exp(camera.zoom);
-            let mut m = Vec2::ZERO;
+            let mut offset = Vec2::ZERO;
 
-            m.x = zoom * (x - GAME_WIDTH / 2.0) / 7.0
+            offset.x = zoom
+                * (mouse_x - GAME_WIDTH / 2.0)
                 * ((2.0 * 640.0 / GAME_WIDTH - 1.0)
                     + (GAME_WIDTH - 640.0) / GAME_WIDTH * 0.0 / 6.8);
-            m.y = zoom * (y - GAME_HEIGHT / 2.0) / 7.0;
+            offset.y = zoom * (mouse_y - GAME_HEIGHT / 2.0);
 
-            let norm = **pos - camera.offset;
-            let s = norm * 0.14;
-            camera.offset += s;
-            camera.offset += m;
+            camera.offset = lerp(camera.offset, offset, 0.14);
         }
     }
 }
