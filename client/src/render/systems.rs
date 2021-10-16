@@ -4,8 +4,8 @@ use gfx2d::{
 };
 use hecs::World;
 
-use super::components::*;
-use crate::{constants::*, physics::RigidBodyPosition, render::Sprites};
+use super::{components::*, render_skeleton, render_soldier, SoldierGraphics};
+use crate::{constants::*, physics::RigidBodyPosition, render::Sprites, soldier::Soldier};
 
 fn draw_sprite_in_batch(
     batch: &mut DrawBatch,
@@ -115,5 +115,25 @@ pub fn render_cursor(world: &World, sprites: &Sprites, batch: &mut DrawBatch) {
             Position(**cursor + offset),
             0.0,
         );
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn render_soldiers(
+    world: &World,
+    soldier_graphics: &SoldierGraphics,
+    sprites: &[Vec<gfx2d::Sprite>],
+    batch: &mut DrawBatch,
+    debug_batch: &mut DrawBatch,
+    frame_percent: f32,
+    scale: f32,
+    skeleton: bool,
+) {
+    for (_entity, soldier) in world.query::<&Soldier>().iter() {
+        let frame_percent = iif!(soldier.active, frame_percent, 1.0);
+        render_soldier(soldier, soldier_graphics, sprites, batch, frame_percent);
+        if skeleton {
+            render_skeleton(soldier, debug_batch, scale, frame_percent);
+        }
     }
 }

@@ -95,7 +95,7 @@ impl GameGraphics {
         // let (dx, dy) = (cam.x - w / 2.0, cam.y - h / 2.0);
         let transform = Transform::ortho(cam.x, cam.x + w, cam.y, cam.y + h).matrix();
         let transform_bg = Transform::ortho(0.0, 1.0, cam.y, cam.y + h).matrix();
-        let scale = config.phys.scale;
+        let phys_scale = config.phys.scale;
 
         let debug_state = &config.debug;
 
@@ -138,7 +138,17 @@ impl GameGraphics {
         if !debug_state.render.disable_scenery_back {
             context.draw(ctx, &mut self.map.scenery_back(), &transform);
         }
-        render::systems::render_sprites(world, &self.sprites, &mut self.batch, scale);
+        render::systems::render_soldiers(
+            world,
+            &self.soldier_graphics,
+            &self.sprites.stat,
+            &mut self.batch,
+            &mut self.debug_batch,
+            frame_percent,
+            h / ctx.screen_size().1,
+            debug_state.render.render_skeleton,
+        );
+        render::systems::render_sprites(world, &self.sprites, &mut self.batch, phys_scale);
         context.draw(ctx, &mut self.batch.all(), &transform);
         if !debug_state.render.disable_scenery_middle {
             context.draw(ctx, &mut self.map.scenery_mid(), &transform);
