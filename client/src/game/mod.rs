@@ -7,6 +7,7 @@ use crate::{
     mapfile::MapFile,
     mq,
     render::{self as render, GameGraphics},
+    soldier::Soldier,
 };
 use gvfs::filesystem::Filesystem;
 use hecs::World;
@@ -123,23 +124,19 @@ impl Game for GameState {
             render::components::Sprite::new("Crosshair", "38"),
         ));
 
-        // spawn camera
-        let camera = self.world.spawn((
+        // spawn Player
+        let map = self.resources.get::<MapFile>().unwrap();
+        let soldier = Soldier::new(&map.spawnpoints[0], &self.config);
+        let position = soldier.particle.pos;
+        let player = self.world.spawn((
+            soldier,
+            components::Pawn,
+            components::Input::default(),
+            game::systems::PrimitiveMovement,
             render::components::Camera::default(),
-            render::components::Position::default(),
+            render::components::Position(position),
         ));
-        self.world.make_active_camera(camera).unwrap();
-        // control camera
-        self.world
-            .insert(
-                camera,
-                (
-                    components::Pawn,
-                    components::Input::default(),
-                    game::systems::PrimitiveMovement,
-                ),
-            )
-            .unwrap();
+        self.world.make_active_camera(player).unwrap();
 
         // run startup scripts
         let mut configs = Vec::new();
@@ -218,6 +215,8 @@ impl Game for GameState {
             &mut self.filesystem,
             &mut self.world,
         );
+
+        game::systems::update_soldiers(&mut self.world, &self.resources, &self.config);
 
         game::systems::primitive_movement(&mut self.world);
 

@@ -374,27 +374,27 @@ impl mq::EventHandler for GameStage {
                 }
             }
 
-            // update soldiers
-            self.soldier.update(
-                &self.resources,
-                &mut self.emitter,
-                &*self.resources.get::<Config>().unwrap(),
-            );
+            // // update soldiers
+            // self.soldier.update(
+            //     &self.resources,
+            //     &mut self.emitter,
+            //     &*self.resources.get::<Config>().unwrap(),
+            // );
 
             // update bullets
             for bullet in self.bullets.iter_mut() {
                 bullet.update(&self.resources);
             }
 
-            // create emitted objects
-            for item in self.emitter.drain(..) {
-                match item {
-                    EmitterItem::Bullet(params) => self.bullets.push(Bullet::new(
-                        &params,
-                        &*self.resources.get::<Config>().unwrap(),
-                    )),
-                };
-            }
+            // // create emitted objects
+            // for item in self.emitter.drain(..) {
+            //     match item {
+            //         EmitterItem::Bullet(params) => self.bullets.push(Bullet::new(
+            //             &params,
+            //             &*self.resources.get::<Config>().unwrap(),
+            //         )),
+            //     };
+            // }
 
             {
                 // update camera
