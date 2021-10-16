@@ -110,14 +110,14 @@ impl Soldier {
         }
     }
 
-    pub fn new(spawn: &MapSpawnpoint, config: &Config) -> Soldier {
+    pub fn new(spawn: &MapSpawnpoint, gravity: f32) -> Soldier {
         let particle = Particle {
             active: true,
             pos: vec2(spawn.x as f32, spawn.y as f32),
             old_pos: vec2(spawn.x as f32, spawn.y as f32),
             one_over_mass: 1.0,
             timestep: 1.0,
-            gravity: config.phys.gravity,
+            gravity,
             e_damping: 0.99,
             ..Default::default()
         };

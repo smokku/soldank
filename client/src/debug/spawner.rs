@@ -1,5 +1,5 @@
 use super::*;
-use crate::{components, physics::*, rand};
+use crate::{components, physics::*, rand, MapSpawnpoint, Soldier};
 
 #[derive(Default)]
 pub struct SpawnerState {
@@ -37,6 +37,7 @@ impl SpawnerState {
         x: f32,
         y: f32,
         scale: f32,
+        gravity: f32,
     ) {
         if self.visible {
             let mut visible = self.visible;
@@ -64,12 +65,15 @@ impl SpawnerState {
                 SpawnEntity::Nothing => {}
                 SpawnEntity::Gostek => {
                     log::debug!("Spawning Gostek");
-                    // cmd.spawn(Soldier::new(&MapSpawnpoint {
-                    //     active: false,
-                    //     x: pos.x as i32,
-                    //     y: pos.y as i32,
-                    //     team: 0,
-                    // }));
+                    world.spawn((Soldier::new(
+                        &MapSpawnpoint {
+                            active: false,
+                            x: pos.x as i32,
+                            y: pos.y as i32,
+                            team: 0,
+                        },
+                        gravity,
+                    ),));
                 }
                 SpawnEntity::AK47 => {
                     log::debug!("Spawning AK74");

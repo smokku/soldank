@@ -272,7 +272,7 @@ impl GameStage {
 
         let mut state = resources.get_mut::<MainState>().unwrap();
         let map = resources.get::<MapFile>().unwrap();
-        let soldier = Soldier::new(&map.spawnpoints[0], &config);
+        let soldier = Soldier::new(&map.spawnpoints[0], config.phys.gravity);
         state.camera = soldier.particle.pos;
         state.camera_prev = state.camera;
 

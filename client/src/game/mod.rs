@@ -124,20 +124,6 @@ impl Game for GameState {
             render::components::Sprite::new("Crosshair", "38"),
         ));
 
-        // spawn Player
-        let map = self.resources.get::<MapFile>().unwrap();
-        let soldier = Soldier::new(&map.spawnpoints[0], &self.config);
-        let position = soldier.particle.pos;
-        let player = self.world.spawn((
-            soldier,
-            components::Pawn,
-            components::Input::default(),
-            game::systems::PrimitiveMovement,
-            render::components::Camera::default(),
-            render::components::Position(position),
-        ));
-        self.world.make_active_camera(player).unwrap();
-
         // run startup scripts
         let mut configs = Vec::new();
         let mut autoexecs = Vec::new();
@@ -175,6 +161,20 @@ impl Game for GameState {
                 }
             }
         }
+
+        // spawn Player
+        let map = self.resources.get::<MapFile>().unwrap();
+        let soldier = Soldier::new(&map.spawnpoints[0], self.config.phys.gravity);
+        let position = soldier.particle.pos;
+        let player = self.world.spawn((
+            soldier,
+            components::Pawn,
+            components::Input::default(),
+            game::systems::PrimitiveMovement,
+            render::components::Camera::default(),
+            render::components::Position(position),
+        ));
+        self.world.make_active_camera(player).unwrap();
     }
 
     fn update(&mut self, eng: Engine<'_>) {

@@ -32,6 +32,7 @@ impl IVisit for DebugState {
 }
 
 pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
+    let gravity = game.config.phys.gravity;
     let debug = &mut game.config.debug;
 
     if debug.visible {
@@ -89,7 +90,7 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
         debug.cli.build_ui(eng);
         debug
             .spawner
-            .build_ui(eng.egui_ctx, &mut game.world, x, y, scale);
+            .build_ui(eng.egui_ctx, &mut game.world, x, y, scale, gravity);
         debug.entities.build_ui(eng.egui_ctx, &mut game.world);
         debug.render.build_ui(eng.egui_ctx);
     }
