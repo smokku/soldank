@@ -216,7 +216,12 @@ impl Game for GameState {
             &mut self.world,
         );
 
-        game::systems::update_soldiers(&mut self.world, &self.resources, &self.config);
+        game::systems::update_soldiers(
+            &mut self.world,
+            &self.resources,
+            &self.config,
+            (mouse_x, mouse_y),
+        );
 
         game::systems::primitive_movement(&mut self.world);
 

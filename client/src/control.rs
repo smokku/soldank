@@ -45,14 +45,7 @@ pub struct Control {
 
 impl Soldier {
     #[allow(clippy::collapsible_if)]
-    pub fn control(
-        &mut self,
-        resources: &resources::Resources,
-        emitter: &mut Vec<EmitterItem>,
-        gravity: f32,
-    ) {
-        let state = resources.get::<MainState>().unwrap();
-
+    pub fn control(&mut self, emitter: &mut Vec<EmitterItem>, gravity: f32) {
         let mut player_pressed_left_right = false;
 
         if self.legs_animation.speed < 1 {
@@ -62,11 +55,6 @@ impl Soldier {
         if self.body_animation.speed < 1 {
             self.body_animation.speed = 1;
         }
-
-        self.control.mouse_aim_x =
-            (state.mouse.x - state.game_width as f32 / 2.0 + state.camera.x).round() as i32;
-        self.control.mouse_aim_y =
-            (state.mouse.y - state.game_height as f32 / 2.0 + state.camera.y).round() as i32;
 
         let (mut cleft, mut cright) = (self.control.left, self.control.right);
 

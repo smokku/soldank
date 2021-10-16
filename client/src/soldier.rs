@@ -202,7 +202,7 @@ impl Soldier {
         let mut arm_s;
 
         self.particle.euler();
-        self.control(resources, emitter, config.phys.gravity);
+        self.control(emitter, config.phys.gravity);
 
         *self.skeleton.old_pos_mut(21) = self.skeleton.pos(21);
         *self.skeleton.old_pos_mut(23) = self.skeleton.pos(23);
