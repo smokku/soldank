@@ -134,6 +134,13 @@ pub fn debug_render(
         }
     }
 
+    if state.render_position {
+        for (_entity, pos) in world.query::<&components::Position>().iter() {
+            graphics.draw_debug_disk(pos.x, pos.y, 1.5, rgb(255, 128, 32), rgb(255, 128, 32));
+            graphics.draw_debug_disk(pos.x, pos.y, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
+        }
+    }
+
     if state.render_physics {
         physics(graphics, world, resources, zoom, config.phys.scale);
     }

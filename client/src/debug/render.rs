@@ -5,6 +5,8 @@ pub struct RenderState {
     pub(crate) visible: bool,
 
     pub render_skeleton: bool,
+    pub render_position: bool,
+    pub render_particles: bool,
     pub render_physics: bool,
 
     // Taken from http://urraka.github.io/soldat-map/#171/Airpirates
@@ -56,6 +58,16 @@ impl IVisit for RenderState {
         f(&mut cvar::Property(
             "render_skeleton",
             &mut self.render_skeleton,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "render_position",
+            &mut self.render_position,
+            false,
+        ));
+        f(&mut cvar::Property(
+            "render_particles",
+            &mut self.render_particles,
             false,
         ));
         f(&mut cvar::Property(
@@ -120,6 +132,8 @@ impl RenderState {
             .scroll(true)
             .show(egui_ctx, |ui| {
                 toggle_state(ui, &mut self.render_skeleton, "Skeleton");
+                toggle_state(ui, &mut self.render_position, "Position");
+                toggle_state(ui, &mut self.render_particles, "Particles");
                 toggle_state(ui, &mut self.render_physics, "Physics");
 
                 ui.separator();
