@@ -1,8 +1,5 @@
 use super::*;
-use crate::engine::{
-    input::{InputEngine, InputState},
-    utils::*,
-};
+use crate::engine::input::{InputEngine, InputState};
 use cvar::IVisit;
 use gvfs::filesystem::Filesystem;
 use rhai::{
@@ -412,22 +409,29 @@ fn log_warn(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
 }
 
 fn bind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
-    match keycode_from_str(args[0]) {
-        Ok(kc) => {
-            if args[1].starts_with('+') {
-                if let Ok(state) = InputState::from_str(&args[1][1..]) {
-                    env.input.bind_key(kc, state);
-                    return Ok(None);
-                }
-            }
-            Err("Unknown input state.".to_string())
+    let kb = if let Some(button) = args[0].to_ascii_lowercase().strip_prefix("mouse") {
+        KeyBind::Mouse(match button {
+            "1" => mq::MouseButton::Left,
+            "2" => mq::MouseButton::Middle,
+            "3" => mq::MouseButton::Right,
+            _ => return Err("Unknown mouse button".to_string()),
+        })
+    } else {
+        KeyBind::from_str(args[0]).map_err(|_err| "Unknown keycode.".to_string())?
+    };
+
+    if args[1].starts_with('+') {
+        if let Ok(state) = InputState::from_str(&args[1][1..]) {
+            env.input.bind_key(kb, state);
+            return Ok(None);
         }
-        Err(_) => Err("Unknown keycode.".to_string()),
     }
+
+    Err("Unknown input state.".to_string())
 }
 
 fn unbind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
-    match keycode_from_str(args[0]) {
+    match KeyBind::from_str(args[0]) {
         Ok(kc) => {
             env.input.unbind_key(kc);
             Ok(None)

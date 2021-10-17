@@ -9,11 +9,10 @@ pub mod input;
 mod logger;
 mod miniquad;
 mod script;
-pub mod utils;
 pub mod world;
 
 pub use events::Event;
-use input::InputEngine;
+use input::{InputEngine, KeyBind};
 pub use logger::Logger;
 use script::ScriptEngine;
 

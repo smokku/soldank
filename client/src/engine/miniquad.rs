@@ -82,6 +82,9 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 x,
                 y,
             });
+            if let Some(bind) = self.input.binds.get(&KeyBind::Mouse(button)) {
+                self.input.state.insert(*bind);
+            }
         }
     }
 
@@ -100,6 +103,9 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 x,
                 y,
             });
+            if let Some(bind) = self.input.binds.get(&KeyBind::Mouse(button)) {
+                self.input.state.remove(*bind);
+            }
         }
     }
 
@@ -130,7 +136,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 keymods,
                 repeat,
             });
-            if let Some(bind) = self.input.binds.get(&keycode) {
+            if let Some(bind) = self.input.binds.get(&KeyBind::Key(keycode)) {
                 self.input.state.insert(*bind);
             }
         }
@@ -155,7 +161,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 keymods,
                 repeat: false,
             });
-            if let Some(bind) = self.input.binds.get(&keycode) {
+            if let Some(bind) = self.input.binds.get(&KeyBind::Key(keycode)) {
                 self.input.state.remove(*bind);
             }
         }
