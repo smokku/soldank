@@ -1,4 +1,5 @@
 use super::*;
+use crate::engine::world::WorldCameraExt;
 
 pub fn debug_render(
     ctx: &mut Context,
@@ -8,13 +9,13 @@ pub fn debug_render(
     config: &Config,
 ) {
     let state = &config.debug.render;
-    let game = resources.get::<MainState>().unwrap();
     let map = resources.get::<MapFile>().unwrap();
 
     let screen_size = ctx.screen_size();
-    let screen_scale = game.game_width / screen_size.0;
+    let screen_scale = GAME_WIDTH / screen_size.0;
 
-    let zoom = f32::exp(game.zoom);
+    let (camera, _pos) = world.get_camera_and_camera_position();
+    let zoom = f32::exp(camera.zoom);
 
     // let fonts = resources.get::<HashMap<&str, FontId>>().unwrap();
     // let mut paint = Paint::color(Color::hex("B7410E"));

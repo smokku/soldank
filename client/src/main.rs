@@ -20,7 +20,6 @@ mod particles;
 mod physics;
 mod render;
 mod soldier;
-mod state;
 mod weapons;
 
 use anims::*;
@@ -33,7 +32,6 @@ use networking::*;
 use particles::*;
 use render::*;
 use soldier::*;
-use state::*;
 use weapons::*;
 
 use cvars::{set_cli_cvars, Config, NetConfig};
@@ -47,6 +45,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use game::components::{EmitterItem, Team};
 use soldank_shared::{networking::GameWorld, orb};
 
 fn main() {
@@ -168,19 +167,6 @@ fn main() {
     config.debug.visible = cmd.is_present("debug");
     set_cli_cvars(&mut config, &cmd);
 
-    let state = MainState {
-        game_width: WINDOW_WIDTH as f32 * (480.0 / WINDOW_HEIGHT as f32),
-        game_height: 480.0,
-        camera: Vec2::ZERO,
-        camera_prev: Vec2::ZERO,
-        mouse: Vec2::ZERO,
-        mouse_prev: Vec2::ZERO,
-        mouse_phys: Vec2::ZERO,
-        mouse_pressed: false,
-        zoom: 0.0,
-        mouse_over_ui: false,
-    };
-
     AnimData::initialize(&mut filesystem);
     Soldier::initialize(&mut filesystem, &config);
 
@@ -200,7 +186,6 @@ fn main() {
     // resources.insert(app_events);
     resources.insert(map);
     // resources.insert(config);
-    resources.insert(state);
     resources.insert(weapons);
 
     resources.insert(physics::PhysicsPipeline::new());
@@ -270,14 +255,10 @@ impl GameStage {
     ) -> Self {
         // setup window, renderer & main loop
 
-        let mut state = resources.get_mut::<MainState>().unwrap();
         let map = resources.get::<MapFile>().unwrap();
         let soldier = Soldier::new(&map.spawnpoints[0], config.phys.gravity);
-        state.camera = soldier.particle.pos;
-        state.camera_prev = state.camera;
 
         drop(map);
-        drop(state);
         // drop(config);
 
         GameStage {
@@ -396,36 +377,6 @@ impl mq::EventHandler for GameStage {
             //     };
             // }
 
-            {
-                // update camera
-                let mut state = self.resources.get_mut::<MainState>().unwrap();
-
-                state.camera_prev = state.camera;
-                state.mouse_prev = state.mouse;
-
-                if self.zoomin_pressed ^ self.zoomout_pressed {
-                    state.zoom += iif!(self.zoomin_pressed, -1.0, 1.0) * TIMESTEP_RATE as f32;
-                }
-
-                state.camera = {
-                    let z = f32::exp(state.zoom);
-                    let mut m = Vec2::ZERO;
-
-                    m.x = z * (state.mouse.x - state.game_width / 2.0) / 7.0
-                        * ((2.0 * 640.0 / state.game_width - 1.0)
-                            + (state.game_width - 640.0) / state.game_width * 0.0 / 6.8);
-                    m.y = z * (state.mouse.y - state.game_height / 2.0) / 7.0;
-
-                    let mut cam_v = state.camera;
-                    let p = self.soldier.particle.pos;
-                    let norm = p - cam_v;
-                    let s = norm * 0.14;
-                    cam_v += s;
-                    cam_v += m;
-                    cam_v
-                };
-            }
-
             let time = mq::date::now();
             self.timeacc += time - self.last_frame;
             self.last_frame = time;
@@ -507,12 +458,7 @@ impl mq::EventHandler for GameStage {
             mq::KeyCode::Minus => {
                 self.zoomout_pressed = false;
             }
-            _ => {
-                let state = self.resources.get::<MainState>().unwrap();
-                if !state.mouse_over_ui {
-                    self.soldier.update_keys(false, keycode)
-                }
-            }
+            _ => {}
         }
     }
 
@@ -523,11 +469,7 @@ impl mq::EventHandler for GameStage {
         x: f32,
         y: f32,
     ) {
-        let mut state = self.resources.get_mut::<MainState>().unwrap();
-        state.mouse_pressed = true;
-        if !state.mouse_over_ui {
-            self.soldier.update_mouse_button(true, button);
-        }
+        self.soldier.update_mouse_button(true, button);
     }
 
     fn mouse_button_up_event(
@@ -540,13 +482,7 @@ impl mq::EventHandler for GameStage {
         self.soldier.update_mouse_button(false, button);
     }
 
-    fn mouse_motion_event(&mut self, ctx: &mut mq::Context, x: f32, y: f32) {
-        let mut state = self.resources.get_mut::<MainState>().unwrap();
-        state.mouse.x = x * state.game_width / WINDOW_WIDTH as f32;
-        state.mouse.y = y * state.game_height / WINDOW_HEIGHT as f32;
-        state.mouse_phys.x = x;
-        state.mouse_phys.y = y;
-    }
+    fn mouse_motion_event(&mut self, ctx: &mut mq::Context, x: f32, y: f32) {}
 
     fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {}
 
