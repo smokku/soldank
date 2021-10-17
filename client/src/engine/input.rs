@@ -181,9 +181,19 @@ impl FromStr for InputState {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum KeyBind {
     Key(mq::KeyCode),
     Mouse(mq::MouseButton),
+    Wheel(Direction),
+    Axis(Direction),
     Button(),
 }
 

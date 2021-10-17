@@ -64,6 +64,30 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         self.egui_mq.mouse_wheel_event(ctx, dx, dy);
         if !self.mouse_over_ui {
             self.input.add_event(input::InputEvent::Wheel { dx, dy });
+            if dx < 0. {
+                self.handle_bind(
+                    &KeyBind::Wheel(Direction::Left),
+                    mq::KeyMods::default(),
+                    true,
+                );
+            }
+            if dx > 0. {
+                self.handle_bind(
+                    &KeyBind::Wheel(Direction::Right),
+                    mq::KeyMods::default(),
+                    true,
+                );
+            }
+            if dy < 0. {
+                self.handle_bind(&KeyBind::Wheel(Direction::Up), mq::KeyMods::default(), true);
+            }
+            if dy > 0. {
+                self.handle_bind(
+                    &KeyBind::Wheel(Direction::Down),
+                    mq::KeyMods::default(),
+                    true,
+                );
+            }
         }
     }
 

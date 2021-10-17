@@ -6,7 +6,7 @@ use crate::{
     game,
     mapfile::MapFile,
     mq,
-    render::{self as render, GameGraphics},
+    render::{self as render, components::Camera, GameGraphics},
     soldier::Soldier,
     Weapon, WeaponKind,
 };
@@ -213,6 +213,20 @@ impl Game for GameState {
                             let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
                             let active_weapon = soldier.active_weapon;
                             soldier.weapons[active_weapon] = weapons[index];
+                        }
+                    }
+                    mq::KeyCode::Equal if down => {
+                        for (_ent, mut camera) in self.world.query::<&mut Camera>().iter() {
+                            if camera.is_active {
+                                camera.zoom -= TIMESTEP_RATE as f32;
+                            }
+                        }
+                    }
+                    mq::KeyCode::Minus if down => {
+                        for (_ent, mut camera) in self.world.query::<&mut Camera>().iter() {
+                            if camera.is_active {
+                                camera.zoom += TIMESTEP_RATE as f32;
+                            }
                         }
                     }
                     _ => {}

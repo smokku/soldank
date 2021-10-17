@@ -456,7 +456,15 @@ fn bind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
             "1" => mq::MouseButton::Left,
             "2" => mq::MouseButton::Middle,
             "3" => mq::MouseButton::Right,
-            _ => return Err("Unknown mouse button".to_string()),
+            _ => return Err("Unknown mouse button.".to_string()),
+        })
+    } else if let Some(wheel) = key.strip_prefix("mwheel") {
+        KeyBind::Wheel(match wheel {
+            "up" => Direction::Up,
+            "down" => Direction::Down,
+            "left" => Direction::Left,
+            "right" => Direction::Right,
+            _ => return Err("Unknown mouse wheel direction.".to_string()),
         })
     } else {
         let mut rest = "";
