@@ -7,7 +7,7 @@ use rhai::{
     plugin::*,
     Dynamic, Engine, Scope, AST,
 };
-use std::{collections::HashMap, fmt, io::Read, str::FromStr};
+use std::{collections::HashMap, fmt, io::Read, path::PathBuf, str::FromStr};
 
 pub struct ScriptEngine {
     vars: HashMap<String, String>,
@@ -145,6 +145,7 @@ impl ScriptEngine {
 
     pub fn evaluate<S: Into<String>>(
         &mut self,
+        file_name: Option<&str>,
         script: S,
         input: &mut InputEngine,
         config: &mut dyn IVisit,
@@ -221,7 +222,24 @@ impl ScriptEngine {
                                 i,
                             ));
                         }
-                        if let Err(err) = self.evaluate_file(args[0], input, config, fs, world) {
+                        let path = PathBuf::from(args[0]);
+                        let path = if path.is_absolute() {
+                            path
+                        } else if let Some(current) = file_name {
+                            let mut base = PathBuf::from(current);
+                            base.pop();
+                            base.push(path);
+                            base
+                        } else {
+                            return Err(ScriptError::from_line(
+                                "Relative exec not possible in string evaluate.".to_string(),
+                                i,
+                            ));
+                        };
+                        let path = path.to_string_lossy();
+
+                        log::info!("Executing {}", path);
+                        if let Err(err) = self.evaluate_file(path, input, config, fs, world) {
                             return Err(err);
                         }
                     } else {
@@ -283,6 +301,7 @@ impl ScriptEngine {
         file.read_to_end(&mut buffer)
             .map_err(|err| ScriptError::from_source(err.to_string(), file_name.to_string()))?;
         self.evaluate(
+            Some(file_name),
             String::from_utf8_lossy(&buffer).as_ref(),
             input,
             config,
@@ -312,7 +331,7 @@ impl ScriptEngine {
             }
         }
         for command in commands {
-            if let Err(err) = self.evaluate(command, input, config, fs, world) {
+            if let Err(err) = self.evaluate(None, command, input, config, fs, world) {
                 log::error!("Error evaluating Command Event: {}", err);
             }
         }
