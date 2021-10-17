@@ -8,9 +8,10 @@ use crate::{
     mq,
     render::{self as render, GameGraphics},
     soldier::Soldier,
+    Weapon, WeaponKind,
 };
 use gvfs::filesystem::Filesystem;
-use hecs::World;
+use hecs::{With, World};
 use resources::Resources;
 
 pub mod components;
@@ -199,6 +200,20 @@ impl Game for GameState {
                 } => match keycode {
                     mq::KeyCode::GraveAccent if down && !repeat && keymods.ctrl => {
                         self.config.debug.visible = !self.config.debug.visible;
+                    }
+                    mq::KeyCode::Tab if down && !repeat => {
+                        // FIXME: remove this
+                        let weapons = self.resources.get::<Vec<Weapon>>().unwrap();
+                        for (_entity, mut soldier) in self
+                            .world
+                            .query::<With<game::components::Pawn, &mut Soldier>>()
+                            .iter()
+                        {
+                            let index = soldier.primary_weapon().kind.index();
+                            let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
+                            let active_weapon = soldier.active_weapon;
+                            soldier.weapons[active_weapon] = weapons[index];
+                        }
                     }
                     _ => {}
                 },

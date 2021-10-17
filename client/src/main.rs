@@ -463,25 +463,25 @@ impl mq::EventHandler for GameStage {
 
     fn key_down_event(
         &mut self,
-        ctx: &mut mq::Context,
+        _ctx: &mut mq::Context,
         keycode: mq::KeyCode,
         keymods: mq::KeyMods,
         _repeat: bool,
     ) {
         match keycode {
-            mq::KeyCode::Escape => ctx.request_quit(),
+            // mq::KeyCode::Escape => ctx.request_quit(),
             mq::KeyCode::Equal => {
                 self.zoomin_pressed = true;
             }
             mq::KeyCode::Minus => {
                 self.zoomout_pressed = true;
             }
-            mq::KeyCode::Tab => {
-                let weapons = self.resources.get::<Vec<Weapon>>().unwrap();
-                let index = self.soldier.primary_weapon().kind.index();
-                let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
-                self.soldier.weapons[self.soldier.active_weapon] = weapons[index];
-            }
+            // mq::KeyCode::Tab => {
+            //     let weapons = self.resources.get::<Vec<Weapon>>().unwrap();
+            //     let index = self.soldier.primary_weapon().kind.index();
+            //     let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
+            //     self.soldier.weapons[self.soldier.active_weapon] = weapons[index];
+            // }
             mq::KeyCode::GraveAccent => {
                 if keymods.ctrl {
                     let mut config = self.resources.get_mut::<Config>().unwrap();
