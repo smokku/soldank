@@ -170,7 +170,6 @@ impl Game for GameState {
             soldier,
             components::Pawn,
             components::Input::default(),
-            game::systems::PrimitiveMovement,
             render::components::Camera::default(),
             render::components::Position(position),
         ));

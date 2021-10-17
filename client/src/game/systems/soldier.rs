@@ -14,7 +14,10 @@ pub fn update_soldiers(
     let (camera, camera_position) = world.get_camera_and_camera_position();
     let (x, y) = camera.mouse_to_world(*camera_position, mouse.0, mouse.1);
 
-    for (_entity, (mut soldier, input)) in world.query::<(&mut Soldier, Option<&Input>)>().iter() {
+    for (_entity, (mut soldier, input, pos)) in world
+        .query::<(&mut Soldier, Option<&Input>, Option<&mut Position>)>()
+        .iter()
+    {
         soldier.control.mouse_aim_x = x as i32;
         soldier.control.mouse_aim_y = y as i32;
 
@@ -27,6 +30,11 @@ pub fn update_soldiers(
         }
 
         soldier.update(resources, &mut emitter, config);
+
+        if let Some(mut pos) = pos {
+            pos.x = soldier.particle.pos.x;
+            pos.y = soldier.particle.pos.y;
+        }
     }
 
     for item in emitter.drain(..) {
