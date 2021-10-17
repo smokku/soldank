@@ -12,7 +12,7 @@ mod script;
 pub mod world;
 
 pub use events::Event;
-use input::{InputEngine, KeyBind};
+use input::{InputEngine, KeyBind, KeyMods};
 pub use logger::Logger;
 use script::ScriptEngine;
 

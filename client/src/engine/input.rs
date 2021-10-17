@@ -36,8 +36,8 @@ pub struct InputEngine {
 
 #[derive(Debug)]
 pub enum BindEntry {
-    State(BitFlags<InputState>),
-    Script(String),
+    State(KeyMods, BitFlags<InputState>),
+    Script(KeyMods, String),
 }
 
 impl InputEngine {
@@ -64,14 +64,19 @@ impl InputEngine {
         self.queue.drain(..)
     }
 
-    pub fn bind_key<F: Into<BitFlags<InputState>>>(&mut self, key: KeyBind, inputs: F) {
+    pub fn bind_key<F: Into<BitFlags<InputState>>>(
+        &mut self,
+        key: KeyBind,
+        mods: KeyMods,
+        inputs: F,
+    ) {
         let bind = self.binds.entry(key).or_default();
-        bind.push(BindEntry::State(inputs.into()));
+        bind.push(BindEntry::State(mods, inputs.into()));
     }
 
-    pub fn bind_script<S: Into<String>>(&mut self, key: KeyBind, script: S) {
+    pub fn bind_script<S: Into<String>>(&mut self, key: KeyBind, mods: KeyMods, script: S) {
         let bind = self.binds.entry(key).or_default();
-        bind.push(BindEntry::Script(script.into()));
+        bind.push(BindEntry::Script(mods, script.into()));
     }
 
     pub fn unbind_key(&mut self, key: KeyBind) {
@@ -83,20 +88,27 @@ impl InputEngine {
     }
 }
 
+#[inline]
+fn check_mods(mods: KeyMods, keymods: mq::KeyMods) -> bool {
+    (!mods.shift || keymods.shift) && (!mods.alt || keymods.alt) && (!mods.ctrl || keymods.ctrl)
+}
+
 impl<G: Game> Runner<G> {
-    pub fn handle_bind(&mut self, key: &KeyBind, down: bool) {
+    pub fn handle_bind(&mut self, key: &KeyBind, keymods: mq::KeyMods, down: bool) {
         if let Some(binds) = self.input.binds.get(key) {
             for bind in binds {
                 match &bind {
-                    BindEntry::State(state) => {
+                    BindEntry::State(mods, state) => {
                         if down {
-                            self.input.state.insert(*state);
+                            if check_mods(*mods, keymods) {
+                                self.input.state.insert(*state);
+                            }
                         } else {
                             self.input.state.remove(*state);
                         }
                     }
-                    BindEntry::Script(script) => {
-                        if down {
+                    BindEntry::Script(mods, script) => {
+                        if down && check_mods(*mods, keymods) {
                             if let Err(err) =
                                 self.event_sender.try_send(Event::Command(script.clone()))
                             {
@@ -173,6 +185,13 @@ pub enum KeyBind {
     Key(mq::KeyCode),
     Mouse(mq::MouseButton),
     Button(),
+}
+
+#[derive(Default, Debug, Copy, Clone)]
+pub struct KeyMods {
+    pub shift: bool,
+    pub ctrl: bool,
+    pub alt: bool,
 }
 
 impl std::str::FromStr for KeyBind {

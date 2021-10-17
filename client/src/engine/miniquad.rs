@@ -82,7 +82,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 x,
                 y,
             });
-            self.handle_bind(&KeyBind::Mouse(button), true);
+            self.handle_bind(&KeyBind::Mouse(button), mq::KeyMods::default(), true);
         }
     }
 
@@ -101,7 +101,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 x,
                 y,
             });
-            self.handle_bind(&KeyBind::Mouse(button), false);
+            self.handle_bind(&KeyBind::Mouse(button), mq::KeyMods::default(), false);
         }
     }
 
@@ -132,7 +132,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 keymods,
                 repeat,
             });
-            self.handle_bind(&KeyBind::Key(keycode), true);
+            self.handle_bind(&KeyBind::Key(keycode), keymods, true);
         }
 
         match keycode {
@@ -155,7 +155,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 keymods,
                 repeat: false,
             });
-            self.handle_bind(&KeyBind::Key(keycode), false);
+            self.handle_bind(&KeyBind::Key(keycode), keymods, false);
         }
 
         match keycode {

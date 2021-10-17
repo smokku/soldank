@@ -409,7 +409,10 @@ fn log_warn(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
 }
 
 fn bind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
-    let kb = if let Some(button) = args[0].to_ascii_lowercase().strip_prefix("mouse") {
+    let key = args[0].to_ascii_lowercase();
+    let mut mods = KeyMods::default();
+
+    let kb = if let Some(button) = key.strip_prefix("mouse") {
         KeyBind::Mouse(match button {
             "1" => mq::MouseButton::Left,
             "2" => mq::MouseButton::Middle,
@@ -417,17 +420,34 @@ fn bind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
             _ => return Err("Unknown mouse button".to_string()),
         })
     } else {
-        KeyBind::from_str(args[0]).map_err(|_err| "Unknown keycode.".to_string())?
+        let mut rest = "";
+        for key in key.split('+') {
+            match key {
+                "shift" => mods.shift = true,
+                "ctrl" => mods.ctrl = true,
+                "alt" => mods.alt = true,
+                k => {
+                    rest = k;
+                    break;
+                }
+            }
+        }
+        KeyBind::from_str(rest).map_err(|_err| "Unknown keycode.".to_string())?
     };
 
     if args[1].starts_with('+') {
         if let Ok(state) = InputState::from_str(&args[1][1..]) {
-            env.input.bind_key(kb, state);
+            env.input.bind_key(kb, mods, state);
             return Ok(None);
         }
         Err("Unknown input state.".to_string())
     } else {
-        env.input.bind_script(kb, args[1..].join(" "));
+        let mut script = args[1..].join(" ");
+        if script.starts_with('"') && script.ends_with('"') {
+            script.remove(0);
+            script.pop();
+        }
+        env.input.bind_script(kb, mods, script);
         Ok(None)
     }
 }
