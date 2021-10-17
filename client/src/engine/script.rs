@@ -177,6 +177,16 @@ impl ScriptEngine {
                 continue;
             }
 
+            // skip some Soldat cvar commands
+            if words[0].starts_with("cl_")
+                || words[0].starts_with("r_")
+                || words[0].starts_with("snd_")
+            {
+                log::trace!("Skipping line {}", i);
+                // TODO? push these to separate engine modules via event_sender
+                continue;
+            }
+
             let mut idx = 0;
             let mut assignment = false;
             let mut result = None;
