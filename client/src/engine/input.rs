@@ -73,7 +73,7 @@ impl InputEngine {
 }
 
 #[bitflags]
-#[repr(u8)]
+#[repr(u32)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum InputState {
     MoveLeft,
@@ -81,6 +81,21 @@ pub enum InputState {
     Jump,
     Crouch,
     Prone,
+    Fire,
+    Jet,
+    ChangeWeapon,
+    Reload,
+    DropWeapon,
+    ThrowGrenade,
+    Chat,
+    TeamChat,
+    Radio,
+    Weapons,
+    FragsList,
+    StatsMenu,
+    MiniMap,
+    Cmd,
+    GameStats,
 }
 
 impl FromStr for InputState {
@@ -88,11 +103,28 @@ impl FromStr for InputState {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
+            "left" => Ok(InputState::MoveLeft),
             "moveleft" => Ok(InputState::MoveLeft),
+            "right" => Ok(InputState::MoveRight),
             "moveright" => Ok(InputState::MoveRight),
             "jump" => Ok(InputState::Jump),
             "crouch" => Ok(InputState::Crouch),
             "prone" => Ok(InputState::Prone),
+            "fire" => Ok(InputState::Fire),
+            "jet" => Ok(InputState::Jet),
+            "changeweapon" => Ok(InputState::ChangeWeapon),
+            "reload" => Ok(InputState::Reload),
+            "dropweapon" => Ok(InputState::DropWeapon),
+            "throwgrenade" => Ok(InputState::ThrowGrenade),
+            "chat" => Ok(InputState::Chat),
+            "teamchat" => Ok(InputState::TeamChat),
+            "radio" => Ok(InputState::Radio),
+            "weapons" => Ok(InputState::Weapons),
+            "fragslist" => Ok(InputState::FragsList),
+            "statsmenu" => Ok(InputState::StatsMenu),
+            "minimap" => Ok(InputState::MiniMap),
+            "cmd" => Ok(InputState::Cmd),
+            "gamestats" => Ok(InputState::GameStats),
             _ => Err(()),
         }
     }
