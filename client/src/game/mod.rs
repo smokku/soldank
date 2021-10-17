@@ -157,7 +157,7 @@ impl Game for GameState {
                     &mut self.world,
                 ) {
                     Ok(_ctx) => log::debug!("Loaded {}", config),
-                    Err(error) => log::error!("Error loading {}: {}", config, error),
+                    Err(error) => log::error!("{}", error),
                 }
             }
         }

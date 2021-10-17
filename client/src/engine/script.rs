@@ -10,7 +10,7 @@ use rhai::{
     plugin::*,
     Dynamic, Engine, Scope, AST,
 };
-use std::{collections::HashMap, io::Read, str::FromStr};
+use std::{collections::HashMap, fmt, io::Read, str::FromStr};
 
 pub struct ScriptEngine {
     vars: HashMap<String, String>,
@@ -21,6 +21,53 @@ pub struct ScriptEngine {
 
     event_send: BroadcastSender<Event>,
     event_recv: BroadcastReceiver<Event>,
+}
+
+pub struct ScriptError {
+    source: Option<String>,
+    line: Option<usize>,
+    message: String,
+}
+
+impl ScriptError {
+    fn from_line<S: Into<String>>(message: S, line: usize) -> Self {
+        ScriptError {
+            source: None,
+            line: Some(line),
+            message: message.into(),
+        }
+    }
+
+    fn from_source<S: Into<String>>(message: S, source: S) -> Self {
+        ScriptError {
+            source: Some(source.into()),
+            line: None,
+            message: message.into(),
+        }
+    }
+
+    fn set_source<S: Into<String>>(&mut self, source: S) {
+        self.source.replace(source.into());
+    }
+}
+
+impl fmt::Display for ScriptError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(source) = &self.source {
+            write!(
+                f,
+                "{}{} | {}",
+                source,
+                self.line
+                    .map_or_else(String::new, |line| { format!(":{}", line) }),
+                self.message
+            )
+        } else if self.line.is_none() {
+            write!(f, "{}", self.message)
+        } else {
+            write!(f, ":{} | {}", self.line.unwrap(), self.message)
+        }
+    }
 }
 
 struct Env<'a> {
@@ -48,6 +95,7 @@ impl ScriptEngine {
     ) -> ScriptEngine {
         let mut commands = HashMap::new();
 
+        commands.insert("exec", (1, fake_command as CommandFunction));
         commands.insert("get", (1, cvars_get as CommandFunction));
         commands.insert("set", (2, cvars_set as CommandFunction));
         commands.insert("toggle", (1, cvars_toggle as CommandFunction));
@@ -57,6 +105,7 @@ impl ScriptEngine {
         commands.insert("bind", (1, bind_key as CommandFunction));
         commands.insert("unbind", (1, unbind_key as CommandFunction));
         commands.insert("echo", (0, echo_args as CommandFunction));
+        commands.insert("exit", (0, exit_game as CommandFunction));
         commands.insert("eval", (1, eval_rhai as CommandFunction));
         commands.insert("run", (1, run_rhai as CommandFunction));
 
@@ -99,7 +148,7 @@ impl ScriptEngine {
         config: &mut dyn IVisit,
         fs: &mut Filesystem,
         world: &mut hecs::World,
-    ) -> Result<(), String> {
+    ) -> Result<(), ScriptError> {
         // Reset internal state
         self.vars.insert("IFS".to_string(), " ".to_string());
         self.vars.insert("NL".to_string(), "\n".to_string());
@@ -110,8 +159,15 @@ impl ScriptEngine {
             let i = i + 1; // files start counting lines with line 1
             let mut words: Vec<String> = line
                 .split_ascii_whitespace()
-                .take_while(|word| !word.starts_with('#'))
-                .map(String::from)
+                .take_while(|word| !word.starts_with('#') && !word.starts_with("//"))
+                .map(|s| {
+                    let mut s = String::from(s);
+                    if s.starts_with('"') && s.ends_with('"') {
+                        s.remove(0);
+                        s.pop();
+                    }
+                    s
+                })
                 .collect();
 
             if words.is_empty() {
@@ -120,7 +176,7 @@ impl ScriptEngine {
 
             let mut idx = 0;
             let mut assignment = false;
-            let result;
+            let mut result = None;
 
             if words.len() > 2 && words[1] == "=" {
                 // variable assignment
@@ -129,7 +185,7 @@ impl ScriptEngine {
             }
 
             if words.len() <= idx {
-                return Err(format!("Command missing. Line: {}", i));
+                return Err(ScriptError::from_line("Command missing.", i));
             }
 
             for word in words.iter_mut().skip(idx) {
@@ -137,7 +193,10 @@ impl ScriptEngine {
                     if let Some(value) = self.vars.get(&word[1..]) {
                         *word = value.clone();
                     } else {
-                        return Err(format!("Variable unset: {}. Line: {}", word, i));
+                        return Err(ScriptError::from_line(
+                            format!("Variable unset: {}.", word),
+                            i,
+                        ));
                     }
                 }
             }
@@ -150,29 +209,45 @@ impl ScriptEngine {
 
             if let Some((min_args, cmd)) = self.commands.get(command) {
                 if words.len() - idx < *min_args {
-                    return Err(format!("Not enough arguments. Line: {}", i));
+                    return Err(ScriptError::from_line("Not enough arguments.", i));
                 } else {
-                    match cmd(
-                        &words[idx..],
-                        &mut Env {
-                            config,
-                            fs,
-                            input,
-                            vars: &mut self.vars,
-                            engine: &mut self.engine,
-                            ast: &mut self.ast,
-                            world,
-                            event_sender: &self.event_send,
-                        },
-                    ) {
-                        Ok(res) => result = res,
-                        Err(err) => {
-                            return Err(format!("{} Line: {}", err, i));
+                    let args = &words[idx..];
+                    if command == "exec" {
+                        if args.is_empty() || !args[0].ends_with(".cfg") {
+                            return Err(ScriptError::from_line(
+                                "Script must end with .cfg extension.".to_string(),
+                                i,
+                            ));
+                        }
+                        if let Err(err) = self.evaluate_file(args[0], input, config, fs, world) {
+                            return Err(err);
+                        }
+                    } else {
+                        match cmd(
+                            args,
+                            &mut Env {
+                                config,
+                                fs,
+                                input,
+                                vars: &mut self.vars,
+                                engine: &mut self.engine,
+                                ast: &mut self.ast,
+                                world,
+                                event_sender: &self.event_send,
+                            },
+                        ) {
+                            Ok(res) => result = res,
+                            Err(err) => {
+                                return Err(ScriptError::from_line(err, i));
+                            }
                         }
                     }
                 }
             } else {
-                return Err(format!("Unknown command: {:?}. Line: {}", command, i));
+                return Err(ScriptError::from_line(
+                    format!("Unknown command: {:?}.", command),
+                    i,
+                ));
             }
 
             if assignment {
@@ -182,7 +257,7 @@ impl ScriptEngine {
                     self.vars.remove(words[0]);
                 }
             } else if result.is_some() {
-                return Err(format!("Unused result. Line: {}", i));
+                return Err(ScriptError::from_line("Unused result.", i));
             }
         }
 
@@ -191,16 +266,19 @@ impl ScriptEngine {
 
     pub fn evaluate_file<S: AsRef<str>>(
         &mut self,
-        file: S,
+        file_name: S,
         input: &mut InputEngine,
         config: &mut dyn IVisit,
         fs: &mut Filesystem,
         world: &mut hecs::World,
-    ) -> Result<(), String> {
-        let mut file = fs.open(file.as_ref()).map_err(|err| err.to_string())?;
+    ) -> Result<(), ScriptError> {
+        let file_name = file_name.as_ref();
+        let mut file = fs
+            .open(file_name)
+            .map_err(|err| ScriptError::from_source(err.to_string(), file_name.to_string()))?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)
-            .map_err(|err| err.to_string())?;
+            .map_err(|err| ScriptError::from_source(err.to_string(), file_name.to_string()))?;
         self.evaluate(
             String::from_utf8_lossy(&buffer).as_ref(),
             input,
@@ -208,6 +286,12 @@ impl ScriptEngine {
             fs,
             world,
         )
+        .map_err(|mut err| {
+            if err.source.is_none() {
+                err.set_source(file_name)
+            };
+            err
+        })
     }
 
     pub(crate) fn consume_events(
@@ -219,7 +303,7 @@ impl ScriptEngine {
     ) {
         let mut commands = Vec::new();
         for event in &self.event_recv {
-            log::trace!("ScriptEngine consumer got {:?}", event);
+            log::trace!("ScriptEngine Event consumer got {:?}", event);
             if let Event::Command(script) = event {
                 commands.push(script);
             }
@@ -238,6 +322,10 @@ impl ScriptEngine {
             }
         }
     }
+}
+
+fn fake_command(_args: &[&str], _env: &mut Env) -> Result<Option<String>, String> {
+    Err("Called fake command.".to_string())
 }
 
 fn cvars_get(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
@@ -355,6 +443,16 @@ fn echo_args(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     }
 }
 
+fn exit_game(_args: &[&str], _env: &mut Env) -> Result<Option<String>, String> {
+    if cfg!(debug_assertions) {
+        log::info!("Script exit");
+        std::process::abort();
+    } else {
+        log::warn!("Attempted script exit!");
+    }
+    Ok(None)
+}
+
 fn eval_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     let res = env
         .engine
@@ -385,10 +483,7 @@ fn run_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
         let mut ast = env
             .engine
             .compile(String::from_utf8_lossy(&buffer).as_ref())
-            .map_err(|err| {
-                log::error!("Failed to compile {}: {}", script, err);
-                format!("Failed to compile {}.", script)
-            })?;
+            .map_err(|err| format!("Failed to compile {}: {}", script, err))?;
         ast.set_source(script);
 
         env.ast.insert(script.to_string(), ast);
@@ -399,10 +494,7 @@ fn run_rhai(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
     scope.push_constant("World", WorldEnv::new(env.world));
     env.engine
         .consume_ast_with_scope(&mut scope, ast)
-        .map_err(|err| {
-            log::error!("Error running {}: {}", script, err);
-            format!("Error running {}.", script)
-        })?;
+        .map_err(|err| format!("Error running {}: {}", script, err))?;
 
     Ok(None)
 }
