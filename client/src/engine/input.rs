@@ -179,20 +179,24 @@ impl std::str::FromStr for KeyBind {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        keycode_from_str(s)
-            .map(|key| KeyBind::Key(key))
-            .map_err(|err| err)
+        keycode_from_str(s).map(KeyBind::Key).map_err(|err| err)
     }
 }
 
 fn keycode_from_str(input: &str) -> Result<mq::KeyCode, ()> {
-    match input.to_lowercase().as_str() {
+    match input.to_ascii_lowercase().as_str() {
         "space" => Ok(mq::KeyCode::Space),
+        " " => Ok(mq::KeyCode::Space),
         "apostrophe" => Ok(mq::KeyCode::Apostrophe),
+        "'" => Ok(mq::KeyCode::Apostrophe),
         "comma" => Ok(mq::KeyCode::Comma),
+        "," => Ok(mq::KeyCode::Comma),
         "minus" => Ok(mq::KeyCode::Minus),
+        "-" => Ok(mq::KeyCode::Minus),
         "period" => Ok(mq::KeyCode::Period),
+        "." => Ok(mq::KeyCode::Period),
         "slash" => Ok(mq::KeyCode::Slash),
+        "/" => Ok(mq::KeyCode::Slash),
         "key0" => Ok(mq::KeyCode::Key0),
         "key1" => Ok(mq::KeyCode::Key1),
         "key2" => Ok(mq::KeyCode::Key2),
@@ -203,8 +207,20 @@ fn keycode_from_str(input: &str) -> Result<mq::KeyCode, ()> {
         "key7" => Ok(mq::KeyCode::Key7),
         "key8" => Ok(mq::KeyCode::Key8),
         "key9" => Ok(mq::KeyCode::Key9),
+        "0" => Ok(mq::KeyCode::Key0),
+        "1" => Ok(mq::KeyCode::Key1),
+        "2" => Ok(mq::KeyCode::Key2),
+        "3" => Ok(mq::KeyCode::Key3),
+        "4" => Ok(mq::KeyCode::Key4),
+        "5" => Ok(mq::KeyCode::Key5),
+        "6" => Ok(mq::KeyCode::Key6),
+        "7" => Ok(mq::KeyCode::Key7),
+        "8" => Ok(mq::KeyCode::Key8),
+        "9" => Ok(mq::KeyCode::Key9),
         "semicolon" => Ok(mq::KeyCode::Semicolon),
+        ";" => Ok(mq::KeyCode::Semicolon),
         "equal" => Ok(mq::KeyCode::Equal),
+        "=" => Ok(mq::KeyCode::Equal),
         "a" => Ok(mq::KeyCode::A),
         "b" => Ok(mq::KeyCode::B),
         "c" => Ok(mq::KeyCode::C),
@@ -232,13 +248,19 @@ fn keycode_from_str(input: &str) -> Result<mq::KeyCode, ()> {
         "y" => Ok(mq::KeyCode::Y),
         "z" => Ok(mq::KeyCode::Z),
         "leftbracket" => Ok(mq::KeyCode::LeftBracket),
+        "[" => Ok(mq::KeyCode::LeftBracket),
         "backslash" => Ok(mq::KeyCode::Backslash),
+        "\\" => Ok(mq::KeyCode::Backslash),
         "rightbracket" => Ok(mq::KeyCode::RightBracket),
+        "]" => Ok(mq::KeyCode::RightBracket),
         "graveaccent" => Ok(mq::KeyCode::GraveAccent),
+        "`" => Ok(mq::KeyCode::GraveAccent),
         "world1" => Ok(mq::KeyCode::World1),
         "world2" => Ok(mq::KeyCode::World2),
         "escape" => Ok(mq::KeyCode::Escape),
+        "esc" => Ok(mq::KeyCode::Escape),
         "enter" => Ok(mq::KeyCode::Enter),
+        "return" => Ok(mq::KeyCode::Enter),
         "tab" => Ok(mq::KeyCode::Tab),
         "backspace" => Ok(mq::KeyCode::Backspace),
         "insert" => Ok(mq::KeyCode::Insert),
