@@ -12,6 +12,7 @@ use std::{collections::HashMap, fmt, io::Read, str::FromStr};
 pub struct ScriptEngine {
     vars: HashMap<String, String>,
     commands: HashMap<&'static str, (usize, CommandFunction)>,
+    aliases: HashMap<String, String>,
 
     engine: Engine,
     ast: HashMap<String, AST>,
@@ -68,6 +69,7 @@ impl fmt::Display for ScriptError {
 }
 
 struct Env<'a> {
+    aliases: &'a mut HashMap<String, String>,
     input: &'a mut InputEngine,
     config: &'a mut dyn IVisit,
     fs: &'a mut Filesystem,
@@ -93,6 +95,7 @@ impl ScriptEngine {
         let mut commands = HashMap::new();
 
         commands.insert("exec", (1, fake_command as CommandFunction));
+        commands.insert("alias", (2, alias_command as CommandFunction));
         commands.insert("get", (1, cvars_get as CommandFunction));
         commands.insert("set", (2, cvars_set as CommandFunction));
         commands.insert("toggle", (1, cvars_toggle as CommandFunction));
@@ -130,6 +133,7 @@ impl ScriptEngine {
         ScriptEngine {
             vars: HashMap::new(),
             commands,
+            aliases: HashMap::new(),
 
             engine,
             ast: HashMap::new(),
@@ -224,6 +228,7 @@ impl ScriptEngine {
                         match cmd(
                             args,
                             &mut Env {
+                                aliases: &mut self.aliases,
                                 config,
                                 fs,
                                 input,
@@ -324,6 +329,11 @@ impl ScriptEngine {
 
 fn fake_command(_args: &[&str], _env: &mut Env) -> Result<Option<String>, String> {
     Err("Called fake command.".to_string())
+}
+
+fn alias_command(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
+    env.aliases.insert(args[0].to_string(), args[1..].join(" "));
+    Ok(None)
 }
 
 fn cvars_get(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
