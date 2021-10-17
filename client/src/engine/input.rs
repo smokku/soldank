@@ -31,7 +31,13 @@ pub struct InputEngine {
     pub mouse_y: f32,
     pub(crate) queue: VecDeque<InputEvent>,
     pub state: BitFlags<InputState>,
-    pub(crate) binds: HashMap<KeyBind, BitFlags<InputState>>,
+    pub(crate) binds: HashMap<KeyBind, Vec<BindEntry>>,
+}
+
+#[derive(Debug)]
+pub enum BindEntry {
+    State(BitFlags<InputState>),
+    Script(String),
 }
 
 impl InputEngine {
@@ -60,7 +66,12 @@ impl InputEngine {
 
     pub fn bind_key<F: Into<BitFlags<InputState>>>(&mut self, key: KeyBind, inputs: F) {
         let bind = self.binds.entry(key).or_default();
-        bind.insert(inputs);
+        bind.push(BindEntry::State(inputs.into()));
+    }
+
+    pub fn bind_script<S: Into<String>>(&mut self, key: KeyBind, script: S) {
+        let bind = self.binds.entry(key).or_default();
+        bind.push(BindEntry::Script(script.into()));
     }
 
     pub fn unbind_key(&mut self, key: KeyBind) {
@@ -69,6 +80,33 @@ impl InputEngine {
 
     pub fn unbind_all(&mut self) {
         self.binds.clear();
+    }
+}
+
+impl<G: Game> Runner<G> {
+    pub fn handle_bind(&mut self, key: &KeyBind, down: bool) {
+        if let Some(binds) = self.input.binds.get(key) {
+            for bind in binds {
+                match &bind {
+                    BindEntry::State(state) => {
+                        if down {
+                            self.input.state.insert(*state);
+                        } else {
+                            self.input.state.remove(*state);
+                        }
+                    }
+                    BindEntry::Script(script) => {
+                        if down {
+                            if let Err(err) =
+                                self.event_sender.try_send(Event::Command(script.clone()))
+                            {
+                                log::error!("Cannot send Command Event: {}", err);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

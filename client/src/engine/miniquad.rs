@@ -35,7 +35,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
             script: &mut self.script,
-            event_sender: &self.event_send,
+            event_sender: &self.event_sender,
         };
 
         self.game.draw(eng);
@@ -82,9 +82,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 x,
                 y,
             });
-            if let Some(bind) = self.input.binds.get(&KeyBind::Mouse(button)) {
-                self.input.state.insert(*bind);
-            }
+            self.handle_bind(&KeyBind::Mouse(button), true);
         }
     }
 
@@ -103,9 +101,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 x,
                 y,
             });
-            if let Some(bind) = self.input.binds.get(&KeyBind::Mouse(button)) {
-                self.input.state.remove(*bind);
-            }
+            self.handle_bind(&KeyBind::Mouse(button), false);
         }
     }
 
@@ -136,9 +132,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 keymods,
                 repeat,
             });
-            if let Some(bind) = self.input.binds.get(&KeyBind::Key(keycode)) {
-                self.input.state.insert(*bind);
-            }
+            self.handle_bind(&KeyBind::Key(keycode), true);
         }
 
         match keycode {
@@ -161,9 +155,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
                 keymods,
                 repeat: false,
             });
-            if let Some(bind) = self.input.binds.get(&KeyBind::Key(keycode)) {
-                self.input.state.remove(*bind);
-            }
+            self.handle_bind(&KeyBind::Key(keycode), false);
         }
 
         match keycode {

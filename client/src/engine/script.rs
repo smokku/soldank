@@ -425,9 +425,11 @@ fn bind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
             env.input.bind_key(kb, state);
             return Ok(None);
         }
+        Err("Unknown input state.".to_string())
+    } else {
+        env.input.bind_script(kb, args[1..].join(" "));
+        Ok(None)
     }
-
-    Err("Unknown input state.".to_string())
 }
 
 fn unbind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {

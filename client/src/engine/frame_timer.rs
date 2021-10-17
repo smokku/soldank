@@ -78,7 +78,7 @@ impl<G: Game> Runner<G> {
                     mouse_over_ui: self.mouse_over_ui,
                     input: &mut self.input,
                     script: &mut self.script,
-                    event_sender: &self.event_send,
+                    event_sender: &self.event_sender,
                 };
                 self.game.update(eng);
                 consumed_delta_time -= DESIRED_FRAMETIME;
@@ -95,7 +95,7 @@ impl<G: Game> Runner<G> {
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
             script: &mut self.script,
-            event_sender: &self.event_send,
+            event_sender: &self.event_sender,
         };
         self.game.update(eng);
 

@@ -58,7 +58,7 @@ pub struct Runner<G: Game> {
     pub(crate) script: ScriptEngine,
 
     // events queue
-    event_send: BroadcastSender<Event>,
+    event_sender: BroadcastSender<Event>,
 
     // dependencies
     egui_mq: egui_miniquad::EguiMq,
@@ -70,14 +70,14 @@ impl<G: Game> Runner<G> {
         let mut time_averager = AllocRingBuffer::with_capacity(TIME_HISTORY_COUNT);
         time_averager.fill(DESIRED_FRAMETIME);
 
-        let (event_send, event_recv) = broadcast_queue(64);
+        let (event_sender, event_recv) = broadcast_queue(64);
         // Take notice that I drop the receiver - this removes it from
         // the queue, meaning that other readers
         // won't get starved by the lack of progress here
 
         let egui_mq = egui_miniquad::EguiMq::new(ctx);
         let mut input = InputEngine::new();
-        let mut script = ScriptEngine::new(event_send.clone(), event_recv.clone());
+        let mut script = ScriptEngine::new(event_sender.clone(), event_recv.clone());
 
         let eng = Engine {
             delta: 0.,
@@ -88,7 +88,7 @@ impl<G: Game> Runner<G> {
             mouse_over_ui: false,
             input: &mut input,
             script: &mut script,
-            event_sender: &event_send,
+            event_sender: &event_sender,
         };
         game.initialize(eng);
 
@@ -110,7 +110,7 @@ impl<G: Game> Runner<G> {
             input,
             script,
 
-            event_send,
+            event_sender,
 
             egui_mq,
             mouse_over_ui: false,
