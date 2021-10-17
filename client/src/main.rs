@@ -175,17 +175,13 @@ fn main() {
         .map(|k| Weapon::new(*k, false))
         .collect();
 
-    let client = orb::client::Client::<GameWorld>::new(mq::date::now(), config.net.orb.clone());
+    // let client = orb::client::Client::<GameWorld>::new(mq::date::now(), config.net.orb.clone());
 
     let mut world = World::new();
 
     let mut resources = Resources::new();
 
-    // let app_events = AppEventsQueue::new();
-
-    // resources.insert(app_events);
     resources.insert(map);
-    // resources.insert(config);
     resources.insert(weapons);
 
     resources.insert(physics::PhysicsPipeline::new());
@@ -223,298 +219,48 @@ fn main() {
     });
 }
 
-pub struct GameStage {
-    world: World,
-    resources: Resources,
-    filesystem: Filesystem,
-    networking: Networking,
-    client: orb::client::Client<GameWorld>,
+// fn update(&mut self, _ctx: &mut mq::Context) {
+//     self.networking.tick += 1;
+//     self.networking.update();
 
-    // context: gfx2d::Gfx2dContext,
-    // graphics: GameGraphics,
-    last_frame: f64,
-    timeacc: f64,
+//     while self.timeacc >= TIMESTEP_RATE {
+//         self.timeacc -= TIMESTEP_RATE;
 
-    soldier: Soldier,
-    emitter: Vec<EmitterItem>,
-    bullets: Vec<Bullet>,
+//         // remove inactive bullets
+//         let mut i = 0;
+//         while i < self.bullets.len() {
+//             if !self.bullets[i].active {
+//                 self.bullets.swap_remove(i);
+//             } else {
+//                 i += 1;
+//             }
+//         }
 
-    zoomin_pressed: bool,
-    zoomout_pressed: bool,
-}
+//         // // update soldiers
 
-impl GameStage {
-    pub fn new(
-        ctx: &mut mq::Context,
-        world: World,
-        mut resources: Resources,
-        mut filesystem: Filesystem,
-        networking: Networking,
-        config: &Config,
-        client: orb::client::Client<GameWorld>,
-    ) -> Self {
-        // setup window, renderer & main loop
+//         // update bullets
+//         for bullet in self.bullets.iter_mut() {
+//             bullet.update(&self.resources);
+//         }
 
-        let map = resources.get::<MapFile>().unwrap();
-        let soldier = Soldier::new(&map.spawnpoints[0], config.phys.gravity);
+//         // // create emitted objects
+//         // for item in self.emitter.drain(..) {
+//         //     match item {
+//         //         EmitterItem::Bullet(params) => self.bullets.push(Bullet::new(
+//         //             &params,
+//         //             &*self.resources.get::<Config>().unwrap(),
+//         //         )),
+//         //     };
+//         // }
+//     }
 
-        drop(map);
-        // drop(config);
+//     self.networking.set_input_state(&self.soldier.control);
 
-        GameStage {
-            world,
-            resources,
-            filesystem,
-            networking,
-            client,
-
-            last_frame: mq::date::now(),
-            timeacc: 0.0,
-
-            soldier,
-            emitter: Vec::new(),
-            bullets: Vec::new(),
-
-            zoomin_pressed: false,
-            zoomout_pressed: false,
-        }
-    }
-}
-
-impl mq::EventHandler for GameStage {
-    fn update(&mut self, _ctx: &mut mq::Context) {
-        physics::attach_bodies_and_colliders(&mut self.world);
-        // physics::create_joints_system();
-        physics::finalize_collider_attach_to_bodies(
-            &mut self.world,
-            &mut *self
-                .resources
-                .get_mut::<physics::ModificationTracker>()
-                .unwrap(),
-        );
-
-        self.networking.tick += 1;
-        self.networking.update();
-
-        {
-            let mut modifs_tracker = self
-                .resources
-                .get_mut::<physics::ModificationTracker>()
-                .unwrap();
-            physics::prepare_step(&mut self.world, &mut modifs_tracker);
-        }
-
-        let time = mq::date::now();
-        self.timeacc += time - self.last_frame;
-        self.last_frame = time;
-
-        while self.timeacc >= TIMESTEP_RATE {
-            self.timeacc -= TIMESTEP_RATE;
-
-            {
-                use physics::*;
-                let gravity = vector![0.0, 9.81];
-
-                // let configuration = resources.get::<RapierConfiguration>().unwrap();
-                let integration_parameters = self.resources.get::<IntegrationParameters>().unwrap();
-                let mut modifs_tracker = self.resources.get_mut::<ModificationTracker>().unwrap();
-
-                let mut physics_pipeline = self.resources.get_mut::<PhysicsPipeline>().unwrap();
-                // let mut query_pipeline = self.resources.get_mut::<QueryPipeline>().unwrap();
-                let mut island_manager = self.resources.get_mut::<IslandManager>().unwrap();
-                let mut broad_phase = self.resources.get_mut::<BroadPhase>().unwrap();
-                let mut narrow_phase = self.resources.get_mut::<NarrowPhase>().unwrap();
-                let mut ccd_solver = self.resources.get_mut::<CCDSolver>().unwrap();
-                let mut joint_set = self.resources.get_mut::<JointSet>().unwrap();
-                // let mut joints_entity_map = self.resources.get_mut::<JointsEntityMap>().unwrap();
-                // let physics_hooks = ();
-                let event_handler = ();
-
-                physics::step_world(
-                    &mut self.world,
-                    &gravity,
-                    &integration_parameters,
-                    &mut physics_pipeline,
-                    &mut modifs_tracker,
-                    &mut island_manager,
-                    &mut broad_phase,
-                    &mut narrow_phase,
-                    &mut joint_set,
-                    &mut ccd_solver,
-                    &event_handler,
-                );
-            }
-
-            // remove inactive bullets
-            let mut i = 0;
-            while i < self.bullets.len() {
-                if !self.bullets[i].active {
-                    self.bullets.swap_remove(i);
-                } else {
-                    i += 1;
-                }
-            }
-
-            // // update soldiers
-            // self.soldier.update(
-            //     &self.resources,
-            //     &mut self.emitter,
-            //     &*self.resources.get::<Config>().unwrap(),
-            // );
-
-            // update bullets
-            for bullet in self.bullets.iter_mut() {
-                bullet.update(&self.resources);
-            }
-
-            // // create emitted objects
-            // for item in self.emitter.drain(..) {
-            //     match item {
-            //         EmitterItem::Bullet(params) => self.bullets.push(Bullet::new(
-            //             &params,
-            //             &*self.resources.get::<Config>().unwrap(),
-            //         )),
-            //     };
-            // }
-
-            let time = mq::date::now();
-            self.timeacc += time - self.last_frame;
-            self.last_frame = time;
-        }
-
-        // systems::rotate_balls(&mut world, self.last_frame);
-
-        self.networking.set_input_state(&self.soldier.control);
-
-        self.networking.process(&self.resources, &mut self.client);
-        self.client.update(self.timeacc, self.last_frame);
-        if let Some(state) = self.client.display_state() {
-            log::trace!("client_display_state: {}", state.display_state().len());
-        }
-        self.networking
-            .post_process(&*self.resources.get::<Config>().unwrap());
-
-        physics::despawn_outliers(
-            &mut self.world,
-            2500.,
-            self.resources.get::<Config>().unwrap().phys.scale,
-        );
-        physics::collect_removals(
-            &mut self.world,
-            &mut *self
-                .resources
-                .get_mut::<physics::ModificationTracker>()
-                .unwrap(),
-        );
-        // physics::config_update(&self.resources);
-
-        self.world.clear_trackers();
-        // self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
-    }
-
-    fn key_down_event(
-        &mut self,
-        _ctx: &mut mq::Context,
-        keycode: mq::KeyCode,
-        keymods: mq::KeyMods,
-        _repeat: bool,
-    ) {
-        match keycode {
-            // mq::KeyCode::Escape => ctx.request_quit(),
-            mq::KeyCode::Equal => {
-                self.zoomin_pressed = true;
-            }
-            mq::KeyCode::Minus => {
-                self.zoomout_pressed = true;
-            }
-            // mq::KeyCode::Tab => {
-            //     let weapons = self.resources.get::<Vec<Weapon>>().unwrap();
-            //     let index = self.soldier.primary_weapon().kind.index();
-            //     let index = (index + 1) % (WeaponKind::NoWeapon.index() + 1);
-            //     self.soldier.weapons[self.soldier.active_weapon] = weapons[index];
-            // }
-            mq::KeyCode::GraveAccent => {
-                if keymods.ctrl {
-                    let mut config = self.resources.get_mut::<Config>().unwrap();
-                    config.debug.visible = !config.debug.visible;
-                }
-            }
-
-            _ => self.soldier.update_keys(true, keycode),
-        }
-    }
-
-    fn key_up_event(
-        &mut self,
-        ctx: &mut gfx2d::Context,
-        keycode: mq::KeyCode,
-        keymods: mq::KeyMods,
-    ) {
-        match keycode {
-            mq::KeyCode::Escape => ctx.request_quit(),
-            mq::KeyCode::Equal => {
-                self.zoomin_pressed = false;
-            }
-            mq::KeyCode::Minus => {
-                self.zoomout_pressed = false;
-            }
-            _ => {}
-        }
-    }
-
-    fn mouse_button_down_event(
-        &mut self,
-        ctx: &mut mq::Context,
-        button: mq::MouseButton,
-        x: f32,
-        y: f32,
-    ) {
-        self.soldier.update_mouse_button(true, button);
-    }
-
-    fn mouse_button_up_event(
-        &mut self,
-        ctx: &mut gfx2d::Context,
-        button: mq::MouseButton,
-        x: f32,
-        y: f32,
-    ) {
-        self.soldier.update_mouse_button(false, button);
-    }
-
-    fn mouse_motion_event(&mut self, ctx: &mut mq::Context, x: f32, y: f32) {}
-
-    fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {}
-
-    fn draw(&mut self, ctx: &mut mq::Context) {
-        let p = f64::min(1.0, f64::max(0.0, self.timeacc / TIMESTEP_RATE));
-
-        // self.egui_mq.begin_frame(ctx);
-        // if cfg!(debug_assertions) {
-        //     debug::build_ui(
-        //         ctx,
-        //         self.egui_mq.egui_ctx(),
-        //         &mut self.world,
-        //         &self.resources,
-        //         self.last_frame as u64,
-        //         p as f32,
-        //     );
-        // }
-        // self.egui_mq.end_frame(ctx);
-
-        // render::debug::debug_render(ctx, &mut self.graphics, &self.world, &self.resources);
-
-        // self.graphics.render_frame(
-        //     &mut self.context,
-        //     ctx,
-        //     &self.world,
-        //     &self.resources,
-        //     &self.soldier,
-        //     &self.bullets,
-        //     self.last_frame - TIMESTEP_RATE * (1.0 - p),
-        //     p as f32,
-        // );
-
-        ctx.commit_frame();
-    }
-}
+//     self.networking.process(&self.resources, &mut self.client);
+//     self.client.update(self.timeacc, self.last_frame);
+//     if let Some(state) = self.client.display_state() {
+//         log::trace!("client_display_state: {}", state.display_state().len());
+//     }
+//     self.networking
+//         .post_process(&*self.resources.get::<Config>().unwrap());
+// }

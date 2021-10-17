@@ -83,6 +83,7 @@ impl GameState {
         // let physics_hooks = ();
         let event_handler = ();
 
+        // TODO: make all preparations before looping necessary number of steps
         attach_bodies_and_colliders(&mut self.world);
         // create_joints_system();
         finalize_collider_attach_to_bodies(&mut self.world, &mut modifs_tracker);
