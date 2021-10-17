@@ -66,6 +66,10 @@ impl InputEngine {
     pub fn unbind_key(&mut self, key: mq::KeyCode) {
         self.binds.remove(&key);
     }
+
+    pub fn unbind_all(&mut self) {
+        self.binds.clear();
+    }
 }
 
 #[bitflags]

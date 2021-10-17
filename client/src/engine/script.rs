@@ -104,6 +104,7 @@ impl ScriptEngine {
         commands.insert("error", (1, log_error as CommandFunction));
         commands.insert("bind", (1, bind_key as CommandFunction));
         commands.insert("unbind", (1, unbind_key as CommandFunction));
+        commands.insert("unbindall", (0, unbind_all as CommandFunction));
         commands.insert("echo", (0, echo_args as CommandFunction));
         commands.insert("exit", (0, exit_game as CommandFunction));
         commands.insert("eval", (1, eval_rhai as CommandFunction));
@@ -433,6 +434,11 @@ fn unbind_key(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
         }
         Err(_) => Err("Unknown keycode.".to_string()),
     }
+}
+
+fn unbind_all(_args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
+    env.input.unbind_all();
+    Ok(None)
 }
 
 fn echo_args(args: &[&str], env: &mut Env) -> Result<Option<String>, String> {
