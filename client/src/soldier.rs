@@ -285,12 +285,19 @@ impl Soldier {
         );
 
         if !self.dead_meat {
-            let pos = self.skeleton.pos(9);
-            let r_norm = 0.1 * vec2normalize(self.skeleton.pos(12) - aim);
+            let pos_neck = self.skeleton.pos(9);
+            let pos_head = self.skeleton.pos(12);
+            let r_norm = vec2normalize(self.skeleton.pos(12) - aim);
             let dir = f32::from(self.direction);
 
-            *self.skeleton.pos_mut(12) = pos + vec2(-dir * r_norm.y, dir * r_norm.x);
-            *self.skeleton.pos_mut(23) = pos + vec2(-dir * r_norm.y, dir * r_norm.x) * 50.0;
+            let dist_head = distance(pos_neck, pos_head);
+            *self.skeleton.pos_mut(12) =
+                pos_neck + vec2(-dir * r_norm.y, dir * r_norm.x) * dist_head;
+
+            let pos_dread = self.skeleton.pos(23);
+            let dist_dread = distance(pos_neck, pos_dread);
+            *self.skeleton.pos_mut(23) =
+                pos_neck + vec2(-dir * r_norm.y, dir * r_norm.x) * dist_dread;
         }
 
         let not_aiming_anims = [

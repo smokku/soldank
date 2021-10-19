@@ -129,7 +129,7 @@ impl ParticleSystem {
 
     pub fn do_verlet_timestep_for(&mut self, particle_num: usize, constraint_num: usize) {
         self.particles[particle_num - 1].verlet();
-        self.satisfy_constraint_for(constraint_num - 1);
+        self.satisfy_constraint_for(constraint_num);
     }
 
     #[allow(dead_code)]
