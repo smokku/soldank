@@ -15,6 +15,7 @@ pub use render::RenderState;
 #[derive(Default)]
 pub struct DebugState {
     pub visible: bool,
+    pub initial_zoom: f32,
     cli: cli::CliState,
     spawner: spawner::SpawnerState,
     entities: entities::EntitiesState,
@@ -24,6 +25,11 @@ pub struct DebugState {
 impl IVisit for DebugState {
     fn visit(&mut self, f: &mut dyn FnMut(&mut dyn INode)) {
         f(&mut cvar::Property("visible", &mut self.visible, false));
+        f(&mut cvar::Property(
+            "initial_zoom",
+            &mut self.initial_zoom,
+            0.0,
+        ));
         f(&mut cvar::List("cli", &mut self.cli));
         f(&mut cvar::List("spawner", &mut self.spawner));
         f(&mut cvar::List("entities", &mut self.entities));

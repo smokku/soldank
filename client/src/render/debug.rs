@@ -140,6 +140,12 @@ pub fn debug_render(
             graphics.draw_debug_disk(pos.x, pos.y, 1.5, rgb(255, 128, 32), rgb(255, 128, 32));
             graphics.draw_debug_disk(pos.x, pos.y, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
         }
+        let (camera, camera_position) = world.get_camera_and_camera_position();
+        for (_entity, pos) in world.query::<&components::Cursor>().iter() {
+            let (x, y) = camera.mouse_to_world(*camera_position, pos.x, pos.y);
+            graphics.draw_debug_disk(x, y, 1.5, rgb(255, 128, 32), rgb(128, 128, 32));
+            graphics.draw_debug_disk(x, y, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
+        }
     }
 
     if state.render_physics {

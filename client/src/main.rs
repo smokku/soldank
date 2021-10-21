@@ -93,6 +93,7 @@ fn main() {
                 .help("set cvar value [multiple]")
                 .long("set")
                 .takes_value(true)
+                .allow_hyphen_values(true)
                 .multiple(true)
                 .number_of_values(2)
                 .value_names(&["cvar", "value"]),

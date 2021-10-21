@@ -172,7 +172,10 @@ impl Game for GameState {
             soldier,
             components::Pawn,
             components::Input::default(),
-            render::components::Camera::default(),
+            render::components::Camera {
+                zoom: self.config.debug.initial_zoom,
+                ..Default::default()
+            },
             render::components::Position(position),
         ));
         self.world.make_active_camera(player).unwrap();
