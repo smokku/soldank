@@ -167,10 +167,10 @@ pub fn physics(
         .iter()
     {
         let tr = rb.position.position.translation;
-        let center = (tr.x * scale, tr.y * scale);
+        let center = Vec2::new(tr.x * scale, tr.y * scale);
 
-        graphics.draw_debug_disk(center.0, center.1, 1.5, rgb(255, 255, 0), rgb(255, 255, 0));
-        graphics.draw_debug_disk(center.0, center.1, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
+        graphics.draw_debug_disk(center.x, center.y, 1.5, rgb(255, 255, 0), rgb(255, 255, 0));
+        graphics.draw_debug_disk(center.x, center.y, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
     }
 
     let cl = rgb(0, 255, 0);
@@ -184,38 +184,46 @@ pub fn physics(
             translation: tr,
             rotation: rot,
         } = coll.position.0;
-        let center = (tr.x * scale, tr.y * scale);
-        graphics.draw_debug_line(
-            center.0,
-            center.1,
-            cl,
-            center.0 + rot.re * 10.,
-            center.1 + rot.im * 10.,
-            cl,
-            th,
-        );
-        graphics.draw_debug_circle(center.0, center.1, 1.5, cl, th);
-        graphics.draw_debug_disk(center.0, center.1, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
+        let center = Vec2::new(tr.x, tr.y) * scale;
+        let line = center + Vec2::new(rot.re, rot.im).normalize() * (10. * zoom).clamp(2., 10.);
+        graphics.draw_debug_line(center.x, center.y, cl, line.x, line.y, cl, th);
+        graphics.draw_debug_circle(center.x, center.y, 1.5, cl, th);
+        graphics.draw_debug_disk(center.x, center.y, 0.75, rgb(0, 0, 0), rgb(0, 0, 0));
 
         match coll.shape.as_typed_shape() {
             TypedShape::Ball(ball) => {
                 let r = ball.radius * scale;
-                graphics.draw_debug_circle(center.0, center.1, r, cl, th);
+                graphics.draw_debug_circle(center.x, center.y, r, cl, th);
             }
             TypedShape::Cuboid(cuboid) => {
                 let hw = cuboid.half_extents.x * scale;
                 let hh = cuboid.half_extents.y * scale;
                 graphics.draw_debug_polyline(
                     &[
-                        (center.0 - hw, center.1 - hh, cl),
-                        (center.0 + hw, center.1 - hh, cl),
-                        (center.0 + hw, center.1 + hh, cl),
-                        (center.0 - hw, center.1 + hh, cl),
+                        (center.x - hw, center.y - hh, cl),
+                        (center.x + hw, center.y - hh, cl),
+                        (center.x + hw, center.y + hh, cl),
+                        (center.x - hw, center.y + hh, cl),
                     ],
                     th,
                 );
             }
-            TypedShape::Capsule(_) => todo!(),
+            TypedShape::Capsule(capsule) => {
+                let r = capsule.radius * scale;
+                let mut a: Vec2 = (coll.position.0 * capsule.segment.a).into();
+                let mut b: Vec2 = (coll.position.0 * capsule.segment.b).into();
+                a *= scale;
+                b *= scale;
+                let off = Vec2::new(rot.re, rot.im).normalize() * r;
+                let a1 = a + off;
+                let b1 = b + off;
+                let a2 = a - off;
+                let b2 = b - off;
+                graphics.draw_debug_line(a1.x, a1.y, cl, b1.x, b1.y, cl, th);
+                graphics.draw_debug_line(a2.x, a2.y, cl, b2.x, b2.y, cl, th);
+                graphics.draw_debug_circle(a.x, a.y, r, cl, th);
+                graphics.draw_debug_circle(b.x, b.y, r, cl, th);
+            }
             TypedShape::Segment(_) => todo!(),
             TypedShape::Triangle(triangle) => {
                 graphics.draw_debug_polyline(

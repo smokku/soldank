@@ -1,4 +1,5 @@
 use crate::{
+    calc::*,
     constants::*,
     cvars::Config,
     debug,
@@ -6,13 +7,14 @@ use crate::{
     game,
     mapfile::MapFile,
     mq,
+    physics::*,
     render::{self as render, components::Camera, GameGraphics},
     soldier::Soldier,
     Weapon, WeaponKind,
 };
+use ::resources::Resources;
 use gvfs::filesystem::Filesystem;
 use hecs::{With, World};
-use resources::Resources;
 
 pub mod components;
 pub mod systems;
@@ -169,7 +171,6 @@ impl Game for GameState {
         let soldier = Soldier::new(&map.spawnpoints[0], self.config.phys.gravity);
         let position = soldier.particle.pos;
         let player = self.world.spawn((
-            soldier,
             components::Pawn,
             components::Input::default(),
             render::components::Camera {
@@ -177,8 +178,43 @@ impl Game for GameState {
                 ..Default::default()
             },
             render::components::Position(position),
+            game::systems::ForceMovement,
         ));
         self.world.make_active_camera(player).unwrap();
+        self.world
+            .insert(
+                player,
+                ColliderBundle {
+                    shape: ColliderShape::capsule(
+                        Vec2::new(0., -3. / self.config.phys.scale).into(),
+                        Vec2::new(0., 3. / self.config.phys.scale).into(),
+                        2. / self.config.phys.scale,
+                    ),
+                    // shape: ColliderShape::ball(5. / self.config.phys.scale),
+                    // position: Vec2::new(-3. / self.config.phys.scale, 0.0).into(),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        self.world
+            .insert(
+                player,
+                RigidBodyBundle {
+                    body_type: RigidBodyType::Dynamic,
+                    mass_properties: RigidBodyMassProps {
+                        flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
+                        ..Default::default()
+                    },
+                    position: (position / self.config.phys.scale).into(),
+                    activation: RigidBodyActivation::cannot_sleep(),
+                    // ccd: RigidBodyCcd {
+                    //     ccd_enabled: true,
+                    //     ..Default::default()
+                    // },
+                    ..Default::default()
+                },
+            )
+            .unwrap();
     }
 
     fn update(&mut self, eng: Engine<'_>) {
@@ -256,6 +292,7 @@ impl Game for GameState {
         );
 
         game::systems::primitive_movement(&mut self.world);
+        game::systems::force_movement(&mut self.world, &self.config);
 
         self.step_physics(eng.delta);
 

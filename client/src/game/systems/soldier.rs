@@ -1,7 +1,10 @@
 use super::*;
-use crate::engine::input::InputState;
-use crate::{engine::world::WorldCameraExt, Config, EmitterItem, Soldier};
-use resources::Resources;
+use crate::{
+    engine::{input::InputState, world::WorldCameraExt},
+    physics::*,
+    Config, EmitterItem, Soldier,
+};
+use ::resources::Resources;
 
 pub fn update_soldiers(
     world: &mut World,
@@ -14,8 +17,13 @@ pub fn update_soldiers(
     let (camera, camera_position) = world.get_camera_and_camera_position();
     let (x, y) = camera.mouse_to_world(*camera_position, mouse.0, mouse.1);
 
-    for (_entity, (mut soldier, input, pos)) in world
-        .query::<(&mut Soldier, Option<&Input>, Option<&mut Position>)>()
+    for (_entity, (mut soldier, input, pos, rb_pos)) in world
+        .query::<(
+            &mut Soldier,
+            Option<&Input>,
+            Option<&mut Position>,
+            Option<&mut RigidBodyPosition>,
+        )>()
         .iter()
     {
         soldier.control.mouse_aim_x = x as i32;
@@ -42,6 +50,10 @@ pub fn update_soldiers(
         if let Some(mut pos) = pos {
             pos.x = soldier.particle.pos.x;
             pos.y = soldier.particle.pos.y;
+        }
+
+        if let Some(mut pos) = rb_pos {
+            *pos = (soldier.particle.pos / config.phys.scale).into();
         }
     }
 
