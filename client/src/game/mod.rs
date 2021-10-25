@@ -103,6 +103,7 @@ impl GameState {
             &mut broad_phase,
             &mut narrow_phase,
             &mut joint_set,
+            &mut joints_entity_map,
             &mut ccd_solver,
             &PHYSICS_HOOKS,
             &event_handler,
@@ -173,6 +174,7 @@ impl Game for GameState {
         let soldier = Soldier::new(&map.spawnpoints[0], self.config.phys.gravity);
         let position = soldier.particle.pos;
         let player = self.world.spawn((
+            // soldier,
             components::Pawn,
             components::Input::default(),
             render::components::Camera {
@@ -186,13 +188,19 @@ impl Game for GameState {
         self.world
             .insert(
                 player,
-                ColliderBundle {
-                    shape: ColliderShape::capsule(
-                        Vec2::new(0., -3. / self.config.phys.scale).into(),
-                        Vec2::new(0., 3. / self.config.phys.scale).into(),
-                        2. / self.config.phys.scale,
-                    ),
-                    flags: ColliderFlags::from(ActiveHooks::FILTER_CONTACT_PAIRS),
+                RigidBodyBundle {
+                    body_type: RigidBodyType::Dynamic,
+                    mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+                    position: (position / self.config.phys.scale).into(),
+                    activation: RigidBodyActivation::cannot_sleep(),
+                    forces: RigidBodyForces {
+                        gravity_scale: 0.8,
+                        ..Default::default()
+                    },
+                    ccd: RigidBodyCcd {
+                        ccd_enabled: true,
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
             )
@@ -200,22 +208,56 @@ impl Game for GameState {
         self.world
             .insert(
                 player,
-                RigidBodyBundle {
-                    body_type: RigidBodyType::Dynamic,
-                    mass_properties: RigidBodyMassProps {
-                        flags: RigidBodyMassPropsFlags::ROTATION_LOCKED,
-                        ..Default::default()
-                    },
-                    position: (position / self.config.phys.scale).into(),
-                    activation: RigidBodyActivation::cannot_sleep(),
-                    // ccd: RigidBodyCcd {
-                    //     ccd_enabled: true,
-                    //     ..Default::default()
-                    // },
+                ColliderBundle {
+                    shape: ColliderShape::capsule(
+                        Vec2::new(0., -7. / self.config.phys.scale).into(),
+                        Vec2::new(0., 5. / self.config.phys.scale).into(),
+                        3. / self.config.phys.scale,
+                    ),
+                    mass_properties: ColliderMassProps::Density(0.5),
+                    material: ColliderMaterial::new(3.0, 0.1),
                     ..Default::default()
                 },
             )
             .unwrap();
+        let legs = self.world.spawn((components::Legs, Parent(player)));
+        self.world
+            .insert(
+                legs,
+                RigidBodyBundle {
+                    position: (position / self.config.phys.scale).into(),
+                    activation: RigidBodyActivation::cannot_sleep(),
+                    damping: RigidBodyDamping {
+                        angular_damping: 20.,
+                        ..RigidBodyDamping::default()
+                    },
+                    ccd: RigidBodyCcd {
+                        ccd_enabled: true,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        self.world
+            .insert(
+                legs,
+                ColliderBundle {
+                    shape: ColliderShape::ball(4.5 / self.config.phys.scale),
+                    flags: ColliderFlags::from(ActiveHooks::FILTER_CONTACT_PAIRS),
+                    mass_properties: ColliderMassProps::Density(0.3),
+                    material: ColliderMaterial::new(0.0, 0.0),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        let mut legs_body_joint = BallJoint::new(
+            Vec2::new(0.0, 0.0).into(),
+            Vec2::new(0.0, 8.0 / self.config.phys.scale).into(),
+        );
+        legs_body_joint.motor_model = SpringModel::Disabled;
+        self.world
+            .spawn((JointBuilderComponent::new(legs_body_joint, legs, player),));
     }
 
     fn update(&mut self, eng: Engine<'_>) {

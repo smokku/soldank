@@ -27,3 +27,5 @@ impl Default for Team {
 pub enum EmitterItem {
     Bullet(BulletParams),
 }
+
+pub struct Legs;

@@ -120,6 +120,7 @@ impl Stepper for GameWorld {
             &mut self.physics.broad_phase,
             &mut self.physics.narrow_phase,
             &mut self.physics.joint_set,
+            &mut self.physics.joints_entity_map,
             &mut self.physics.ccd_solver,
             &(),
             &(),

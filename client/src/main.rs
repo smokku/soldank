@@ -197,7 +197,7 @@ fn main() {
     // resources.insert(physics::Events::<IntersectionEvent>::default());
     // resources.insert(physics::Events::<ContactEvent>::default());
     // resources.insert(physics::SimulationToRenderTime::default());
-    // resources.insert(physics::JointsEntityMap::default());
+    resources.insert(physics::JointsEntityMap::default());
     resources.insert(physics::ModificationTracker::default());
     physics::create_map_colliders(&mut world, &resources, &config);
 

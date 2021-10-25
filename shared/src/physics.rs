@@ -11,6 +11,7 @@ pub struct PhysicsEngine {
     pub(crate) broad_phase: BroadPhase,
     pub(crate) narrow_phase: NarrowPhase,
     pub(crate) joint_set: JointSet,
+    pub(crate) joints_entity_map: JointsEntityMap,
     pub(crate) ccd_solver: CCDSolver,
     // pub(crate) physics_hooks: dyn PhysicsHooks<RigidBodyComponentsSet, ColliderComponentsSet>,
     // pub(crate) event_handler: dyn EventHandler,
@@ -27,6 +28,7 @@ impl Default for PhysicsEngine {
             broad_phase: BroadPhase::new(),
             narrow_phase: NarrowPhase::new(),
             joint_set: JointSet::new(),
+            joints_entity_map: JointsEntityMap::default(),
             ccd_solver: CCDSolver::new(),
         }
     }
