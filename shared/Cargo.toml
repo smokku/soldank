@@ -20,7 +20,7 @@ clap = "2.33"
 rapier2d = { version = "0.11", features = ["simd-stable"] }
 nalgebra = { version = "0.29", features = ["convert-glam014"] }
 glam = "0.14" # bound to gfx2d's dependency
-hecs_rapier = "0.10.2"
+hecs_rapier = "0.11.0"
 derive_deref = "1.1"
 simple-error = "0.2"
 

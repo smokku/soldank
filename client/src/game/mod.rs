@@ -17,6 +17,7 @@ use gvfs::filesystem::Filesystem;
 use hecs::{With, World};
 
 pub mod components;
+pub mod physics;
 pub mod systems;
 
 pub struct GameState {
@@ -81,13 +82,13 @@ impl GameState {
         let mut narrow_phase = self.resources.get_mut::<NarrowPhase>().unwrap();
         let mut ccd_solver = self.resources.get_mut::<CCDSolver>().unwrap();
         let mut joint_set = self.resources.get_mut::<JointSet>().unwrap();
-        // let mut joints_entity_map = self.resources.get_mut::<JointsEntityMap>().unwrap();
-        // let physics_hooks = ();
+        let mut joints_entity_map = self.resources.get_mut::<JointsEntityMap>().unwrap();
+        const PHYSICS_HOOKS: physics::SameParentFilter = physics::SameParentFilter {};
         let event_handler = ();
 
         // TODO: make all preparations before looping necessary number of steps
         attach_bodies_and_colliders(&mut self.world);
-        // create_joints_system();
+        create_joints(&mut self.world, &mut joint_set, &mut joints_entity_map);
         finalize_collider_attach_to_bodies(&mut self.world, &mut modifs_tracker);
 
         prepare_step(&mut self.world, &mut modifs_tracker);
@@ -103,6 +104,7 @@ impl GameState {
             &mut narrow_phase,
             &mut joint_set,
             &mut ccd_solver,
+            &PHYSICS_HOOKS,
             &event_handler,
         );
 
@@ -190,8 +192,7 @@ impl Game for GameState {
                         Vec2::new(0., 3. / self.config.phys.scale).into(),
                         2. / self.config.phys.scale,
                     ),
-                    // shape: ColliderShape::ball(5. / self.config.phys.scale),
-                    // position: Vec2::new(-3. / self.config.phys.scale, 0.0).into(),
+                    flags: ColliderFlags::from(ActiveHooks::FILTER_CONTACT_PAIRS),
                     ..Default::default()
                 },
             )

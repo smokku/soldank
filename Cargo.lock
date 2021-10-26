@@ -1087,8 +1087,8 @@ dependencies = [
 
 [[package]]
 name = "hecs_rapier"
-version = "0.10.2"
-source = "git+https://github.com/smokku/hecs_rapier.git#be451e0d12358b733bf198e55acdfc0080050456"
+version = "0.11.0"
+source = "git+https://github.com/smokku/hecs_rapier.git#423054a2bd4c5913ad6da4d2f60c1acfbeef9137"
 dependencies = [
  "hecs",
  "rapier2d",

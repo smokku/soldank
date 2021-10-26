@@ -122,6 +122,7 @@ impl Stepper for GameWorld {
             &mut self.physics.joint_set,
             &mut self.physics.ccd_solver,
             &(),
+            &(),
         );
 
         physics::despawn_outliers(&mut self.world, 2500., 16.); // FIXME: use config.phys.scale
