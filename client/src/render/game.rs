@@ -504,7 +504,7 @@ impl GameGraphics {
         );
     }
 
-    fn get_circle_vertices(x: f32, y: f32, radius: f32) -> Vec<Vec2> {
+    fn get_circle_vertices(x: f32, y: f32, radius: f32, rotation: Rad) -> Vec<Vec2> {
         const STEPS: usize = 16;
         let pos = vec2(x, y);
         let mut vertices = Vec::with_capacity(STEPS);
@@ -512,7 +512,10 @@ impl GameGraphics {
             let m = Transform::FromOrigin {
                 pos,
                 scale: vec2(1.0, 1.0),
-                rot: ((2. * PI / STEPS as f32) * step as f32, Vec2::ZERO),
+                rot: (
+                    rotation + (2. * PI / STEPS as f32) * step as f32,
+                    Vec2::ZERO,
+                ),
             }
             .matrix();
 
@@ -526,12 +529,13 @@ impl GameGraphics {
         x: f32,
         y: f32,
         radius: f32,
+        rotation: Rad,
         color_c: C,
         color_r: C,
     ) {
         let color_c = color_c.into();
         let color_r = color_r.into();
-        let vertices = Self::get_circle_vertices(x, y, radius);
+        let vertices = Self::get_circle_vertices(x, y, radius, rotation);
         for (i, &vert) in vertices.iter().enumerate() {
             let next = vertices[(i + 1) % vertices.len()];
             self.add_debug_geometry(
@@ -550,13 +554,33 @@ impl GameGraphics {
         x: f32,
         y: f32,
         radius: f32,
+        rotation: Rad,
         color: C,
         thickness: f32,
     ) {
-        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(x, y, radius)
+        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(x, y, radius, rotation)
             .iter()
             .map(|vertex| (vertex.x, vertex.y, color))
             .collect();
         self.draw_debug_polyline(vertices.as_slice(), thickness);
+    }
+
+    pub fn draw_debug_half_circle<C: Into<Color> + Copy>(
+        &mut self,
+        x: f32,
+        y: f32,
+        radius: f32,
+        rotation: Rad,
+        color: C,
+        thickness: f32,
+    ) {
+        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(x, y, radius, rotation)
+            .iter()
+            .map(|vertex| (vertex.x, vertex.y, color))
+            .collect();
+        for (i, &vert) in vertices.iter().enumerate().take(vertices.len() / 2) {
+            let next = &vertices[(i + 1) % vertices.len()];
+            self.draw_debug_line(vert.0, vert.1, vert.2, next.0, next.1, next.2, thickness);
+        }
     }
 }
