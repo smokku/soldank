@@ -123,7 +123,7 @@ impl<WorldType: World> Client<WorldType> {
     // Here is how one might call [`Client::update`] outside of any game engine:
     //
     // ```
-    // use soldank_shared::orb::{Config, client::Client};
+    // use orb::{Config, client::Client};
     // use crystalorb_demo::DemoWorld;
     // use crystalorb_mock_network::MockNetwork;
     // use std::time::Instant;

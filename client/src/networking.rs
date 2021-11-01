@@ -12,13 +12,13 @@ use smol::channel::{unbounded, Receiver, Sender};
 use std::{collections::HashMap, convert::TryFrom, net::SocketAddr};
 
 use crate::{cvars::Config, engine};
+use orb::client::Client;
 use soldank_shared::{
     constants::SERVER_PORT,
     control::Control,
     math::vec2,
     messages::{self, NetworkMessage},
     networking::{GameWorld, PacketStats},
-    orb::client::Client,
     trace_dump_packet,
 };
 

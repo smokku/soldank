@@ -46,7 +46,6 @@ use std::{
 };
 
 use game::components::{EmitterItem, Team};
-use soldank_shared::{networking::GameWorld, orb};
 
 fn main() {
     color_eyre::install().unwrap();
@@ -104,8 +103,8 @@ fn main() {
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
-        filesystem.mount(path.as_path(), true);
+        path.push("../resources");
+        filesystem.mount(path.canonicalize().unwrap().as_path(), true);
     }
     log::info!("Full VFS info: {:#?}", filesystem);
 

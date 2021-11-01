@@ -16,7 +16,7 @@ use crate::{
     cvars::{set_cli_cvars, Config, NetConfig},
     networking::Networking,
 };
-use soldank_shared::{messages::NetworkMessage, networking::GameWorld, orb};
+use soldank_shared::{messages::NetworkMessage, networking::GameWorld};
 
 mod cheat;
 mod constants;

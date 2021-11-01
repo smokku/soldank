@@ -40,7 +40,7 @@ impl Timestamp {
     /// # Example
     ///
     /// ```
-    /// use soldank_shared::orb::timestamp::Timestamp;
+    /// use orb::timestamp::Timestamp;
     /// use float_cmp::approx_eq;
     /// const TIMESTEP: f64 = 1.0 / 60.0;
     ///
@@ -159,7 +159,7 @@ impl FloatTimestamp {
     /// # Example
     ///
     /// ```
-    /// use soldank_shared::orb::timestamp::FloatTimestamp;
+    /// use orb::timestamp::FloatTimestamp;
     /// use float_cmp::approx_eq;
     /// const TIMESTEP: f64 = 1.0 / 60.0;
     ///
@@ -181,7 +181,7 @@ impl FloatTimestamp {
     /// # Example
     ///
     /// ```
-    /// use soldank_shared::orb::timestamp::{FloatTimestamp, Timestamp};
+    /// use orb::timestamp::{FloatTimestamp, Timestamp};
     ///
     /// let t1 = FloatTimestamp::from_unwrapped(123.4);
     /// let t2 = FloatTimestamp::from_unwrapped(123.0);
@@ -199,7 +199,7 @@ impl FloatTimestamp {
     /// # Example
     ///
     /// ```
-    /// use soldank_shared::orb::timestamp::{FloatTimestamp, Timestamp};
+    /// use orb::timestamp::{FloatTimestamp, Timestamp};
     ///
     /// let t1 = FloatTimestamp::from_unwrapped(123.4);
     /// let t2 = FloatTimestamp::from_unwrapped(123.0);

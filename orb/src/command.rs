@@ -14,7 +14,7 @@ use std::{cmp::Reverse, collections::BTreeMap, fmt::Debug, ops::Range};
 /// # Example
 ///
 /// ```
-/// use soldank_shared::orb::command::Command;
+/// use orb::command::Command;
 ///
 /// #[derive(Debug, Clone)]
 /// struct Player(usize);

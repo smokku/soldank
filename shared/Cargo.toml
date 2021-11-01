@@ -7,6 +7,7 @@ license = "MIT"
 publish = false
 
 [dependencies]
+orb = { path = "../orb" }
 log = "0.4"
 bytes = "1.0"
 hexdump = "0.1"
@@ -22,10 +23,3 @@ nalgebra = { version = "0.29", features = ["convert-glam014"] }
 glam = "0.14" # bound to gfx2d's dependency
 hecs_rapier = "0.11.0"
 derive_deref = "1.1"
-simple-error = "0.2"
-
-[dev-dependencies]
-itertools = "0.10"
-float-cmp = "0.9"
-env_logger = "0.9"
-test-env-log = "0.2"

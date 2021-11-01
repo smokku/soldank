@@ -72,7 +72,7 @@ impl TweeningMethod {
 // # Example
 //
 // ```
-// use soldank_shared::orb::{Config, client::Client};
+// use orb::{Config, client::Client};
 // use crystalorb_demo::DemoWorld;
 //
 // let client = Client::<DemoWorld>::new(Config::default());
@@ -222,7 +222,7 @@ impl Default for Config {
     /// If you want to use the defaults:
     ///
     // ```
-    // use soldank_shared::orb::{Config, client::Client};
+    // use orb::{Config, client::Client};
     // use crystalorb_demo::DemoWorld;
     //
     // let client = Client::<DemoWorld>::new(Config::default());
@@ -231,7 +231,7 @@ impl Default for Config {
     /// If you want to override the defaults:
     ///
     // ```
-    // use soldank_shared::orb::{Config, client::Client};
+    // use orb::{Config, client::Client};
     // use crystalorb_demo::DemoWorld;
     // let client = Client::<DemoWorld>::new(Config {
     //     lag_compensation_latency: 0.5,
@@ -242,7 +242,7 @@ impl Default for Config {
     /// You can use `Default::default()` too:
     ///
     // ```
-    // use soldank_shared::orb::{Config, client::Client};
+    // use orb::{Config, client::Client};
     // use crystalorb_demo::DemoWorld;
     // let client = Client::<DemoWorld>::new(Config {
     //     lag_compensation_latency: 0.5,
@@ -263,6 +263,29 @@ impl Default for Config {
             timestamp_skip_threshold_seconds: 1.0,
             fastforward_max_per_step: 10,
             tweening_method: TweeningMethod::Interpolated,
+        }
+    }
+}
+
+impl std::str::FromStr for TweeningMethod {
+    type Err = simple_error::SimpleError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "MostRecentlyPassed" => Ok(TweeningMethod::MostRecentlyPassed),
+            "Nearest" => Ok(TweeningMethod::Nearest),
+            "Interpolated" => Ok(TweeningMethod::Interpolated),
+            s => Err(Self::Err::new(format!("Unknown TweeningMethod: {}", s))),
+        }
+    }
+}
+
+impl std::fmt::Display for TweeningMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TweeningMethod::MostRecentlyPassed => f.write_str("MostRecentlyPassed"),
+            TweeningMethod::Nearest => f.write_str("Nearest"),
+            TweeningMethod::Interpolated => f.write_str("Interpolated"),
         }
     }
 }

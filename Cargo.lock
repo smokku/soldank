@@ -1593,6 +1593,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "orb"
+version = "0.2.1"
+dependencies = [
+ "env_logger",
+ "float-cmp",
+ "itertools 0.10.1",
+ "log",
+ "simple-error",
+ "test-env-log",
+]
+
+[[package]]
 name = "ordered-float"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2406,6 +2418,7 @@ dependencies = [
  "multiqueue2",
  "naia-client-socket",
  "nalgebra",
+ "orb",
  "quad-rand",
  "rapier2d",
  "resources",
@@ -2433,6 +2446,7 @@ dependencies = [
  "laminar",
  "log",
  "naia-server-socket",
+ "orb",
  "smol",
  "soldank-shared",
 ]
@@ -2447,20 +2461,16 @@ dependencies = [
  "cvar",
  "derive_deref",
  "enum-primitive-derive",
- "env_logger",
- "float-cmp",
  "glam",
  "hecs",
  "hecs_rapier",
  "hexdump",
- "itertools 0.10.1",
  "log",
  "nalgebra",
  "nanoserde",
  "num-traits",
+ "orb",
  "rapier2d",
- "simple-error",
- "test-env-log",
 ]
 
 [[package]]

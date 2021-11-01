@@ -12,7 +12,8 @@ publish = false
 
 [dependencies]
 soldank-shared = { path = "../shared" }
-gfx2d = { path = "./gfx2d" }
+gfx2d = { path = "../gfx2d" }
+orb = { path = "../orb" }
 gvfs = "0.1"
 zip = { version = "0.5", features = [
     # enable deflate support in gvfs
