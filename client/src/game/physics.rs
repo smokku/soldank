@@ -35,3 +35,48 @@ impl PhysicsHooksWithWorld for SameParentFilter {
         Some(SolverFlags::all())
     }
 }
+
+#[derive(Debug)]
+pub struct PreviousPhysics {
+    pub position: Isometry<Real>,
+    pub linvel: Vector<Real>,
+    pub angvel: AngVector<Real>,
+    pub force: Vector<Real>,
+    pub torque: AngVector<Real>,
+}
+
+impl Default for PreviousPhysics {
+    fn default() -> Self {
+        Self {
+            position: Isometry::identity(),
+            linvel: Default::default(),
+            angvel: Default::default(),
+            force: Default::default(),
+            torque: Default::default(),
+        }
+    }
+}
+
+pub fn update_previous_physics(world: &mut World) {
+    for (_entity, (mut prev, pos, vel, force)) in world
+        .query::<(
+            &mut PreviousPhysics,
+            Option<&RigidBodyPosition>,
+            Option<&RigidBodyVelocity>,
+            Option<&RigidBodyForces>,
+        )>()
+        .iter()
+    {
+        if let Some(pos) = pos {
+            prev.position = pos.position;
+        }
+        if let Some(vel) = vel {
+            prev.linvel = vel.linvel;
+            prev.angvel = vel.angvel;
+        }
+        if let Some(force) = force {
+            prev.force = force.force;
+            prev.torque = force.torque;
+        }
+    }
+}

@@ -183,6 +183,7 @@ impl Game for GameState {
             },
             render::components::Position(position),
             game::systems::ForceMovement,
+            game::physics::PreviousPhysics::default(),
         ));
         self.world.make_active_camera(player).unwrap();
         self.world
@@ -220,7 +221,11 @@ impl Game for GameState {
                 },
             )
             .unwrap();
-        let legs = self.world.spawn((components::Legs, Parent(player)));
+        let legs = self.world.spawn((
+            components::Legs,
+            Parent(player),
+            game::physics::PreviousPhysics::default(),
+        ));
         self.world
             .insert(
                 legs,
@@ -340,6 +345,8 @@ impl Game for GameState {
         self.step_physics(eng.delta);
 
         self.config_update();
+
+        game::physics::update_previous_physics(&mut self.world);
 
         self.world.clear_trackers();
         // self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
