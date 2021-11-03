@@ -78,5 +78,5 @@ You can use `--set cvar value` option (multiple times) to override config variab
 - [x] Debug UI
 - [x] Use `cvar`s for configuration
 - [ ] Implement game interface
-- [ ] Server-authoritative networking
-- [ ] [Rhai](http://rhai.rs) scripted gameplay and console
+- [ ] Server-authoritative networking (in-progress)
+- [ ] [Rhai](http://rhai.rs) scripted gameplay and console (in-progress)
