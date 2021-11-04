@@ -421,31 +421,24 @@ impl GameGraphics {
     ) {
         let dx = x2 - x1;
         let dy = y2 - y1;
+        let v = vec2(dx, dy);
+        if let Some(t) = v.perp().try_normalize() {
+            let t = t * (thickness / 2.);
+            let p1 = vec2(x1, y1);
+            let p2 = vec2(x2, y2);
+            let color1 = color1.into();
+            let color2 = color2.into();
 
-        // https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
-
-        let nx = -dy;
-        let ny = dx;
-
-        let tlen = (nx * nx + ny * ny).sqrt() / (thickness * 0.5);
-        if tlen < std::f32::EPSILON {
-            return;
+            self.add_debug_geometry(
+                None,
+                &[
+                    vertex(p1 + t, vec2(0., 0.), color1),
+                    vertex(p1 - t, vec2(0., 0.), color1),
+                    vertex(p2 - t, vec2(0., 0.), color2),
+                    vertex(p2 + t, vec2(0., 0.), color2),
+                ],
+            );
         }
-        let tx = nx / tlen;
-        let ty = ny / tlen;
-
-        let color1 = color1.into();
-        let color2 = color2.into();
-
-        self.add_debug_geometry(
-            None,
-            &[
-                vertex(vec2(x1 + tx, y1 + ty), vec2(0., 0.), color1),
-                vertex(vec2(x1 - tx, y1 - ty), vec2(0., 0.), color1),
-                vertex(vec2(x2 + tx, y2 + ty), vec2(0., 0.), color2),
-                vertex(vec2(x2 - tx, y2 - ty), vec2(0., 0.), color2),
-            ],
-        );
     }
 
     pub fn draw_debug_polyline<C: Into<Color> + Copy>(

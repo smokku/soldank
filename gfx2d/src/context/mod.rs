@@ -28,6 +28,8 @@ pub struct Gfx2dContext {
 
 impl Gfx2dContext {
     pub fn new(ctx: &mut Context) -> Gfx2dContext {
+        let white_texture = Texture::from_rgba8(ctx, 1, 1, &[255, 255, 255, 255]);
+
         let shader = Shader::new(
             ctx,
             pipeline::VERT_SOURCE,
@@ -50,13 +52,13 @@ impl Gfx2dContext {
         let bindings = Bindings {
             vertex_buffers: vec![],
             index_buffer: Buffer::stream(ctx, BufferType::IndexBuffer, 0),
-            images: vec![],
+            images: vec![white_texture],
         };
 
         Gfx2dContext {
             pipeline,
             bindings,
-            white_texture: Texture::from_rgba8(ctx, 1, 1, &[255, 255, 255, 255]),
+            white_texture,
         }
     }
 
@@ -106,7 +108,7 @@ impl Gfx2dContext {
                 self.bindings.index_buffer = Buffer::stream(ctx, BufferType::IndexBuffer, size);
             };
             self.bindings.index_buffer.update(ctx, indices.as_slice());
-            self.bindings.images = vec![*texture];
+            self.bindings.images[0] = *texture;
 
             ctx.apply_bindings(&self.bindings);
             ctx.draw(0, indices.len() as i32, 1);

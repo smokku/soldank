@@ -110,7 +110,7 @@ impl DrawBatch {
 
     pub fn add_quad(&mut self, texture: Option<&Texture>, vertices: &[Vertex; 4]) {
         self.add(texture, &[vertices[0], vertices[1], vertices[2]]);
-        self.add(texture, &[vertices[2], vertices[0], vertices[3]]);
+        self.add(texture, &[vertices[2], vertices[3], vertices[0]]);
     }
 
     pub fn add_sprite(&mut self, sprite: &Sprite, color: Color, transform: Transform) {
