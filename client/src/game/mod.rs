@@ -13,6 +13,7 @@ use crate::{
     Weapon, WeaponKind,
 };
 use ::resources::Resources;
+use enumflags2::BitFlags;
 use gvfs::filesystem::Filesystem;
 use hecs::{With, World};
 
@@ -217,6 +218,16 @@ impl Game for GameState {
                     ),
                     mass_properties: ColliderMassProps::Density(0.5),
                     material: ColliderMaterial::new(3.0, 0.1),
+                    flags: ColliderFlags {
+                        collision_groups: physics::InteractionGroups::new(
+                            BitFlags::<physics::InteractionFlag>::from(
+                                physics::InteractionFlag::Player,
+                            )
+                            .bits(),
+                            BitFlags::<physics::InteractionFlag>::all().bits(),
+                        ),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
             )
@@ -249,7 +260,16 @@ impl Game for GameState {
                 legs,
                 ColliderBundle {
                     shape: ColliderShape::ball(4.5 / self.config.phys.scale),
-                    flags: ColliderFlags::from(ActiveHooks::FILTER_CONTACT_PAIRS),
+                    flags: ColliderFlags {
+                        collision_groups: physics::InteractionGroups::new(
+                            BitFlags::<physics::InteractionFlag>::from(
+                                physics::InteractionFlag::Player,
+                            )
+                            .bits(),
+                            BitFlags::<physics::InteractionFlag>::all().bits(),
+                        ),
+                        ..ColliderFlags::from(ActiveHooks::FILTER_CONTACT_PAIRS)
+                    },
                     mass_properties: ColliderMassProps::Density(0.3),
                     material: ColliderMaterial::new(0.0, 0.0),
                     ..Default::default()

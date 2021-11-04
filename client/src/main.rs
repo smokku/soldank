@@ -17,7 +17,6 @@ mod game;
 mod mapfile;
 mod networking;
 mod particles;
-mod physics;
 mod render;
 mod soldier;
 mod weapons;
@@ -40,12 +39,13 @@ use gvfs::filesystem::{File, Filesystem};
 use hecs::World;
 use quad_rand as rand;
 use resources::Resources;
+use soldank_shared::physics;
 use std::{
     env, path,
     sync::{Arc, RwLock},
 };
 
-use game::components::{EmitterItem, Team};
+use crate::game::components::{EmitterItem, Team};
 
 fn main() {
     color_eyre::install().unwrap();
@@ -198,7 +198,7 @@ fn main() {
     // resources.insert(physics::SimulationToRenderTime::default());
     resources.insert(physics::JointsEntityMap::default());
     resources.insert(physics::ModificationTracker::default());
-    physics::create_map_colliders(&mut world, &resources, &config);
+    game::physics::create_map_colliders(&mut world, &resources, &config);
 
     let conf = mq::conf::Conf {
         sample_count: 4,

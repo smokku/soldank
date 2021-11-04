@@ -1,5 +1,23 @@
-use crate::physics::*;
+use crate::{cvars::Config, MapFile, PolyType};
+use ::resources::Resources;
+use enumflags2::{bitflags, BitFlags};
 use hecs::World;
+pub use rapier2d::prelude::*;
+pub use soldank_shared::physics::*;
+
+#[bitflags]
+#[repr(u32)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum InteractionFlag {
+    Player,
+    Bullet,
+    Alpha,
+    Bravo,
+    Charlie,
+    Delta,
+    Flag,
+    Flagger,
+}
 
 pub struct SameParentFilter;
 impl PhysicsHooksWithWorld for SameParentFilter {
@@ -78,5 +96,121 @@ pub fn update_previous_physics(world: &mut World) {
             prev.force = force.force;
             prev.torque = force.torque;
         }
+    }
+}
+
+impl From<PolyType> for InteractionGroups {
+    fn from(polytype: PolyType) -> Self {
+        let mut memberships = BitFlags::<InteractionFlag>::all();
+        let mut filter = BitFlags::<InteractionFlag>::all();
+
+        match polytype {
+            PolyType::Normal
+            | PolyType::Ice
+            | PolyType::Deadly
+            | PolyType::BloodyDeadly
+            | PolyType::Hurts
+            | PolyType::Regenerates
+            | PolyType::Lava
+            | PolyType::Bouncy
+            | PolyType::Explosive
+            | PolyType::HurtsFlaggers
+            | PolyType::Background
+            | PolyType::BackgroundTransition => {}
+            PolyType::OnlyBulletsCollide => {
+                filter.remove(InteractionFlag::Player);
+            }
+            PolyType::OnlyPlayersCollide => {
+                filter.remove(InteractionFlag::Bullet);
+            }
+            PolyType::NoCollide => {
+                filter = BitFlags::<InteractionFlag>::empty();
+            }
+            PolyType::AlphaBullets => {
+                filter = InteractionFlag::Bullet | InteractionFlag::Alpha;
+            }
+            PolyType::AlphaPlayers => {
+                filter = InteractionFlag::Player | InteractionFlag::Alpha;
+            }
+            PolyType::BravoBullets => {
+                filter = InteractionFlag::Bullet | InteractionFlag::Bravo;
+            }
+            PolyType::BravoPlayers => {
+                filter = InteractionFlag::Player | InteractionFlag::Bravo;
+            }
+            PolyType::CharlieBullets => {
+                filter = InteractionFlag::Bullet | InteractionFlag::Charlie;
+            }
+            PolyType::CharliePlayers => {
+                filter = InteractionFlag::Player | InteractionFlag::Charlie;
+            }
+            PolyType::DeltaBullets => {
+                filter = InteractionFlag::Bullet | InteractionFlag::Delta;
+            }
+            PolyType::DeltaPlayers => {
+                filter = InteractionFlag::Player | InteractionFlag::Delta;
+            }
+            PolyType::OnlyFlaggers => {
+                filter = InteractionFlag::Flagger.into();
+            }
+            PolyType::NotFlaggers => {
+                filter.remove(InteractionFlag::Flagger);
+            }
+            PolyType::FlagCollide => {
+                filter = InteractionFlag::Flag.into();
+            }
+        }
+
+        InteractionGroups {
+            memberships: memberships.bits(),
+            filter: filter.bits(),
+        }
+    }
+}
+
+pub fn create_map_colliders(world: &mut World, resources: &Resources, config: &Config) {
+    let map = resources.get::<MapFile>().unwrap();
+    let scale = config.phys.scale;
+
+    for polygon in map.polygons.iter() {
+        match polygon.polytype {
+            PolyType::NoCollide | PolyType::Background | PolyType::BackgroundTransition => continue,
+            _ => {}
+        }
+
+        let vertices: Vec<Point<Real>> = polygon
+            .vertices
+            .iter()
+            .map(|v| point![v.x / scale, v.y / scale])
+            .collect();
+        let mut collider = ColliderBundle {
+            shape: ColliderShape::triangle(vertices[0], vertices[1], vertices[2]),
+            flags: ColliderFlags {
+                collision_groups: polygon.polytype.into(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        if polygon.polytype == PolyType::Bouncy {
+            collider.material.restitution = polygon.bounciness;
+        }
+        world.spawn(collider);
+    }
+
+    for coll in map.colliders.iter() {
+        if !coll.active {
+            continue;
+        }
+
+        let collider = ColliderBundle {
+            shape: ColliderShape::ball(coll.diameter / scale / 2.),
+            position: vector![coll.x / scale, coll.y / scale].into(),
+            flags: ColliderFlags {
+                collision_groups: InteractionGroups::all(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        world.spawn(collider);
     }
 }
