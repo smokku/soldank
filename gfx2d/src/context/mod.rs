@@ -51,7 +51,7 @@ impl Gfx2dContext {
         );
         let bindings = Bindings {
             vertex_buffers: vec![],
-            index_buffer: Buffer::stream(ctx, BufferType::IndexBuffer, 0),
+            index_buffer: Buffer::index_stream(ctx, IndexType::Int, 0),
             images: vec![white_texture],
         };
 
@@ -79,13 +79,13 @@ impl Gfx2dContext {
         };
         ctx.apply_uniforms(&uniforms);
 
-        let mut draws: Vec<(Texture, Vec<u16>)> = Vec::new();
+        let mut draws: Vec<(Texture, Vec<u32>)> = Vec::new();
         for cmd in slice.commands() {
             let indices = cmd
                 .vertex_range
                 .clone()
-                .map(|i| i as u16)
-                .collect::<Vec<u16>>();
+                .map(|i| i as u32)
+                .collect::<Vec<u32>>();
             let texture = match cmd.texture {
                 None => self.white_texture,
                 Some(t) => t,
@@ -101,11 +101,11 @@ impl Gfx2dContext {
         }
 
         for (texture, indices) in draws.iter() {
-            let size = indices.len() * mem::size_of::<u16>();
+            let size = indices.len() * mem::size_of::<u32>();
             let mut delete_buffer = None;
             if self.bindings.index_buffer.size() < size {
                 delete_buffer.replace(self.bindings.index_buffer);
-                self.bindings.index_buffer = Buffer::stream(ctx, BufferType::IndexBuffer, size);
+                self.bindings.index_buffer = Buffer::index_stream(ctx, IndexType::Int, size);
             };
             self.bindings.index_buffer.update(ctx, indices.as_slice());
             self.bindings.images[0] = *texture;

@@ -1317,7 +1317,7 @@ dependencies = [
 [[package]]
 name = "miniquad"
 version = "0.3.0-alpha.37"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 dependencies = [
  "sapp-android",
  "sapp-darwin",
@@ -2019,9 +2019,9 @@ dependencies = [
 
 [[package]]
 name = "rhai"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "512b5306cc54606ff5d1acab8d5c1a89c088756f9011fd23af0111ef5e9dccdf"
+checksum = "0b9394df571d413a865159d9e73df2e16e270c112bddc15538944c076469760a"
 dependencies = [
  "ahash 0.7.6",
  "instant",
@@ -2118,7 +2118,7 @@ dependencies = [
 [[package]]
 name = "sapp-android"
 version = "0.1.8"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 dependencies = [
  "libc",
  "ndk-sys",
@@ -2127,7 +2127,7 @@ dependencies = [
 [[package]]
 name = "sapp-darwin"
 version = "0.1.6"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 dependencies = [
  "cc",
 ]
@@ -2135,7 +2135,7 @@ dependencies = [
 [[package]]
 name = "sapp-dummy"
 version = "0.1.5"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 dependencies = [
  "libc",
 ]
@@ -2143,7 +2143,7 @@ dependencies = [
 [[package]]
 name = "sapp-ios"
 version = "0.1.2"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 dependencies = [
  "cc",
 ]
@@ -2157,7 +2157,7 @@ checksum = "bb8ababa867431fa6c0a178248bfe7e77b5d1de357c9848883ba8e3946bb21d4"
 [[package]]
 name = "sapp-linux"
 version = "0.1.13"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 dependencies = [
  "libc",
 ]
@@ -2165,12 +2165,12 @@ dependencies = [
 [[package]]
 name = "sapp-wasm"
 version = "0.1.26"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 
 [[package]]
 name = "sapp-windows"
 version = "0.2.18"
-source = "git+https://github.com/not-fl3/miniquad.git#b6b0366b4ef53a111e0907d102cb615d6ca0b8ee"
+source = "git+https://github.com/not-fl3/miniquad.git#8255b7d8d2b245509663819178c4b0cd991b1603"
 dependencies = [
  "winapi",
 ]
@@ -2249,9 +2249,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.68"
+version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f690853975602e1bfe1ccbf50504d67174e3bcf340f23b5ea9992e0587a52d8"
+checksum = "e466864e431129c7e0d3476b92f20458e5879919a0596c6472738d9fa2d342f8"
 dependencies = [
  "itoa",
  "ryu",
