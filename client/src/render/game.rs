@@ -408,34 +408,28 @@ impl GameGraphics {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn draw_debug_line<C: Into<Color>>(
+    pub fn draw_debug_line<P: Into<Vec2>, C: Into<Color>>(
         &mut self,
-        x1: f32,
-        y1: f32,
+        point1: P,
         color1: C,
-        x2: f32,
-        y2: f32,
+        point2: P,
         color2: C,
         thickness: f32,
     ) {
-        let dx = x2 - x1;
-        let dy = y2 - y1;
-        let v = vec2(dx, dy);
-        if let Some(t) = v.perp().try_normalize() {
-            let t = t * (thickness / 2.);
-            let p1 = vec2(x1, y1);
-            let p2 = vec2(x2, y2);
+        let point1 = point1.into();
+        let point2 = point2.into();
+        if let Some(d) = (point2 - point1).perp().try_normalize() {
+            let d = d * (thickness / 2.);
             let color1 = color1.into();
             let color2 = color2.into();
 
             self.add_debug_geometry(
                 None,
                 &[
-                    vertex(p1 + t, vec2(0., 0.), color1),
-                    vertex(p1 - t, vec2(0., 0.), color1),
-                    vertex(p2 - t, vec2(0., 0.), color2),
-                    vertex(p2 + t, vec2(0., 0.), color2),
+                    vertex(point1 + d, vec2(0., 0.), color1),
+                    vertex(point1 - d, vec2(0., 0.), color1),
+                    vertex(point2 - d, vec2(0., 0.), color2),
+                    vertex(point2 + d, vec2(0., 0.), color2),
                 ],
             );
         }
@@ -448,7 +442,13 @@ impl GameGraphics {
     ) {
         for (i, &vert) in vertices.iter().enumerate() {
             let next = &vertices[(i + 1) % vertices.len()];
-            self.draw_debug_line(vert.0, vert.1, vert.2, next.0, next.1, next.2, thickness);
+            self.draw_debug_line(
+                (vert.0, vert.1),
+                vert.2,
+                (next.0, next.1),
+                next.2,
+                thickness,
+            );
         }
     }
 
@@ -497,13 +497,16 @@ impl GameGraphics {
         );
     }
 
-    fn get_circle_vertices(x: f32, y: f32, radius: f32, rotation: Rad) -> Vec<Vec2> {
+    fn get_circle_vertices<P: Into<Vec2> + Copy>(
+        center: P,
+        radius: f32,
+        rotation: Rad,
+    ) -> Vec<Vec2> {
         const STEPS: usize = 16;
-        let pos = vec2(x, y);
         let mut vertices = Vec::with_capacity(STEPS);
         for step in 0..STEPS {
             let m = Transform::FromOrigin {
-                pos,
+                pos: center.into(),
                 scale: vec2(1.0, 1.0),
                 rot: (
                     rotation + (2. * PI / STEPS as f32) * step as f32,
@@ -517,10 +520,9 @@ impl GameGraphics {
         vertices
     }
 
-    pub fn draw_debug_disk<C: Into<Color>>(
+    pub fn draw_debug_disk<P: Into<Vec2> + Copy, C: Into<Color>>(
         &mut self,
-        x: f32,
-        y: f32,
+        center: P,
         radius: f32,
         rotation: Rad,
         color_c: C,
@@ -528,13 +530,13 @@ impl GameGraphics {
     ) {
         let color_c = color_c.into();
         let color_r = color_r.into();
-        let vertices = Self::get_circle_vertices(x, y, radius, rotation);
+        let vertices = Self::get_circle_vertices(center, radius, rotation);
         for (i, &vert) in vertices.iter().enumerate() {
             let next = vertices[(i + 1) % vertices.len()];
             self.add_debug_geometry(
                 None,
                 &[
-                    vertex(vec2(x, y), Vec2::ZERO, color_c),
+                    vertex(center.into(), Vec2::ZERO, color_c),
                     vertex(vert, Vec2::ZERO, color_r),
                     vertex(next, Vec2::ZERO, color_r),
                 ],
@@ -542,38 +544,42 @@ impl GameGraphics {
         }
     }
 
-    pub fn draw_debug_circle<C: Into<Color> + Copy>(
+    pub fn draw_debug_circle<P: Into<Vec2> + Copy, C: Into<Color> + Copy>(
         &mut self,
-        x: f32,
-        y: f32,
+        center: P,
         radius: f32,
         rotation: Rad,
         color: C,
         thickness: f32,
     ) {
-        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(x, y, radius, rotation)
+        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(center, radius, rotation)
             .iter()
             .map(|vertex| (vertex.x, vertex.y, color))
             .collect();
         self.draw_debug_polyline(vertices.as_slice(), thickness);
     }
 
-    pub fn draw_debug_half_circle<C: Into<Color> + Copy>(
+    pub fn draw_debug_half_circle<P: Into<Vec2> + Copy, C: Into<Color> + Copy>(
         &mut self,
-        x: f32,
-        y: f32,
+        center: P,
         radius: f32,
         rotation: Rad,
         color: C,
         thickness: f32,
     ) {
-        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(x, y, radius, rotation)
+        let vertices: Vec<(f32, f32, C)> = Self::get_circle_vertices(center, radius, rotation)
             .iter()
             .map(|vertex| (vertex.x, vertex.y, color))
             .collect();
         for (i, &vert) in vertices.iter().enumerate().take(vertices.len() / 2) {
             let next = &vertices[(i + 1) % vertices.len()];
-            self.draw_debug_line(vert.0, vert.1, vert.2, next.0, next.1, next.2, thickness);
+            self.draw_debug_line(
+                (vert.0, vert.1),
+                vert.2,
+                (next.0, next.1),
+                next.2,
+                thickness,
+            );
         }
     }
 }
