@@ -93,7 +93,6 @@ impl Game for GameState {
                 },
                 0.,
             ),
-            game::systems::ForceMovement,
         ));
         self.world.make_active_camera(player).unwrap();
         self.world
@@ -121,8 +120,8 @@ impl Game for GameState {
                 player,
                 ColliderBundle {
                     shape: ColliderShape::capsule(
-                        Vec2::new(0., -7. / self.config.phys.scale).into(),
-                        Vec2::new(0., 5. / self.config.phys.scale).into(),
+                        Vec2::new(0., -9. / self.config.phys.scale).into(),
+                        Vec2::new(0., 7. / self.config.phys.scale).into(),
                         3. / self.config.phys.scale,
                     ),
                     mass_properties: ColliderMassProps::Density(0.5),
@@ -152,10 +151,7 @@ impl Game for GameState {
                 RigidBodyBundle {
                     position: (position / self.config.phys.scale).into(),
                     activation: RigidBodyActivation::cannot_sleep(),
-                    damping: RigidBodyDamping {
-                        angular_damping: 20.,
-                        ..RigidBodyDamping::default()
-                    },
+                    mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
                     ccd: RigidBodyCcd {
                         ccd_enabled: true,
                         ..Default::default()
@@ -179,8 +175,7 @@ impl Game for GameState {
                         ),
                         ..ColliderFlags::from(ActiveHooks::FILTER_CONTACT_PAIRS)
                     },
-                    mass_properties: ColliderMassProps::Density(0.3),
-                    material: ColliderMaterial::new(0.0, 0.0),
+                    material: ColliderMaterial::new(10.0, 0.0),
                     ..Default::default()
                 },
             )
@@ -263,7 +258,12 @@ impl Game for GameState {
 
         game::systems::primitive_movement(&mut self.world);
         game::systems::force_movement(&mut self.world, &self.config);
-        game::systems::soldier_movement(&mut self.world, (mouse_x, mouse_y));
+        game::systems::soldier_movement(
+            &mut self.world,
+            &self.resources,
+            &self.config,
+            (mouse_x, mouse_y),
+        );
 
         self.step_physics(eng.delta);
 
