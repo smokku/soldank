@@ -83,8 +83,17 @@ impl Game for GameState {
                 ..Default::default()
             },
             render::components::Position(position),
-            game::systems::ForceMovement,
             game::physics::PreviousPhysics::default(),
+            Soldier::new(
+                &crate::MapSpawnpoint {
+                    active: false,
+                    x: position.x as i32,
+                    y: position.y as i32,
+                    team: 0,
+                },
+                0.,
+            ),
+            game::systems::ForceMovement,
         ));
         self.world.make_active_camera(player).unwrap();
         self.world
@@ -252,21 +261,17 @@ impl Game for GameState {
             &mut self.world,
         );
 
-        game::systems::update_soldiers(
-            &mut self.world,
-            &self.resources,
-            &self.config,
-            (mouse_x, mouse_y),
-        );
-
         game::systems::primitive_movement(&mut self.world);
         game::systems::force_movement(&mut self.world, &self.config);
+        game::systems::soldier_movement(&mut self.world, (mouse_x, mouse_y));
 
         self.step_physics(eng.delta);
 
         self.config_update();
 
         game::physics::update_previous_physics(&mut self.world);
+        game::systems::follow_camera(&mut self.world, &self.config);
+        game::systems::update_soldiers(&mut self.world, &self.resources, &self.config);
 
         self.world.clear_trackers();
         // self.resources.get_mut::<AppEventsQueue>().unwrap().clear();

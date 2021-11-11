@@ -137,14 +137,14 @@ pub fn debug_render(
 
     if state.render_position {
         for (_entity, pos) in world.query::<&components::Position>().iter() {
-            graphics.draw_debug_disk(**pos, 1.5, 0.0, rgb(255, 128, 32), rgb(255, 128, 32));
-            graphics.draw_debug_disk(**pos, 0.75, 0.0, rgb(0, 0, 0), rgb(0, 0, 0));
+            graphics.draw_debug_disk(**pos, 2.0 * zoom, 0.0, rgb(255, 128, 32), rgb(255, 128, 32));
+            graphics.draw_debug_disk(**pos, 0.75 * zoom, 0.0, rgb(0, 0, 0), rgb(0, 0, 0));
         }
         let (camera, camera_position) = world.get_camera_and_camera_position();
         for (_entity, pos) in world.query::<&components::Cursor>().iter() {
             let cam = camera.mouse_to_world(*camera_position, pos.x, pos.y);
-            graphics.draw_debug_disk(cam, 1.5, 0.0, rgb(255, 128, 32), rgb(128, 128, 32));
-            graphics.draw_debug_disk(cam, 0.75, 0.0, rgb(0, 0, 0), rgb(0, 0, 0));
+            graphics.draw_debug_disk(cam, 2.0 * zoom, 0.0, rgb(255, 128, 32), rgb(128, 128, 32));
+            graphics.draw_debug_disk(cam, 0.75 * zoom, 0.0, rgb(0, 0, 0), rgb(0, 0, 0));
         }
     }
 
@@ -156,25 +156,29 @@ pub fn debug_render(
 pub fn physics(
     graphics: &mut GameGraphics,
     world: &World,
-    resources: &Resources,
+    _resources: &Resources,
     zoom: f32,
     scale: f32,
 ) {
     use rapier2d::prelude::*;
+    let cl = rgb(0, 255, 0);
+    let th = 0.5 * zoom;
 
     for (_entity, rb) in world
         .query::<crate::physics::RigidBodyComponentsQuery>()
         .iter()
     {
-        let tr = rb.position.position.translation;
-        let center = Vec2::new(tr.x * scale, tr.y * scale);
-
-        graphics.draw_debug_disk(center, 1.5, 0.0, rgb(255, 255, 0), rgb(255, 255, 0));
-        graphics.draw_debug_disk(center, 0.75, 0.0, rgb(0, 0, 0), rgb(0, 0, 0));
+        let cl = rgb(255, 255, 0);
+        let Isometry {
+            translation: tr,
+            rotation: rot,
+        } = rb.position.position;
+        let center = Vec2::new(tr.x, tr.y) * scale;
+        let line = center + Vec2::new(rot.re, rot.im).normalize() * (10. * zoom).clamp(2., 10.);
+        graphics.draw_debug_line(center, cl, line, cl, th);
+        graphics.draw_debug_disk(center, 2.0 * zoom, rot.angle(), cl, cl);
+        graphics.draw_debug_disk(center, 0.75 * zoom, rot.angle(), rgb(0, 0, 0), rgb(0, 0, 0));
     }
-
-    let cl = rgb(0, 255, 0);
-    let th = 0.5 * zoom;
 
     for (_entity, coll) in world
         .query::<crate::physics::ColliderComponentsQuery>()
@@ -185,10 +189,10 @@ pub fn physics(
             rotation: rot,
         } = coll.position.0;
         let center = Vec2::new(tr.x, tr.y) * scale;
-        let line = center + Vec2::new(rot.re, rot.im).normalize() * (10. * zoom).clamp(2., 10.);
+        let line = center + Vec2::new(rot.re, rot.im).normalize() * (8. * zoom).clamp(2., 10.);
         graphics.draw_debug_line(center, cl, line, cl, th);
-        graphics.draw_debug_circle(center, 1.5, rot.angle(), cl, th);
-        graphics.draw_debug_disk(center, 0.75, rot.angle(), rgb(0, 0, 0), rgb(0, 0, 0));
+        graphics.draw_debug_circle(center, 2.0 * zoom, rot.angle(), cl, th);
+        graphics.draw_debug_disk(center, 0.75 * zoom, rot.angle(), rgb(0, 0, 0), rgb(0, 0, 0));
 
         match coll.shape.as_typed_shape() {
             TypedShape::Ball(ball) => {

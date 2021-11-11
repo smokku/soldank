@@ -1,6 +1,21 @@
 use super::*;
 use crate::{calc::*, cvars::Config, physics::*};
 
+pub fn follow_camera(world: &mut World, config: &Config) {
+    for (_, (pos, rb_pos)) in world
+        .query::<With<Camera, (Option<&mut Position>, Option<&RigidBodyPosition>)>>()
+        .iter()
+    {
+        if let Some(rb_pos) = rb_pos {
+            if let Some(mut pos) = pos {
+                let mut vec_pos = rb_pos.position.translation.into();
+                vec_pos *= config.phys.scale;
+                pos.0 = lerp(pos.0, vec_pos, 0.33);
+            }
+        }
+    }
+}
+
 pub fn kinetic_movement(world: &mut World) {
     for (_entity, mut body) in world.query::<&mut Particle>().iter() {
         if body.active {
@@ -44,7 +59,7 @@ pub fn force_movement(world: &mut World, config: &Config) {
     const RUNSPEEDUP: f32 = RUNSPEED / 6.0;
     const MAX_VELOCITY: f32 = 11.0;
 
-    for (_, (input, mut forces, mut velocity, mass_properties, pos, rb_pos)) in world
+    for (_, (input, mut forces, mut velocity, mass_properties)) in world
         .query::<With<
             ForceMovement,
             (
@@ -52,8 +67,6 @@ pub fn force_movement(world: &mut World, config: &Config) {
                 &mut RigidBodyForces,
                 &mut RigidBodyVelocity,
                 &RigidBodyMassProps,
-                Option<&mut Position>,
-                Option<&RigidBodyPosition>,
             ),
         >>()
         .iter()
@@ -80,13 +93,5 @@ pub fn force_movement(world: &mut World, config: &Config) {
         // }
 
         // println!("{:?}", forces);
-
-        if let Some(rb_pos) = rb_pos {
-            if let Some(mut pos) = pos {
-                let mut vec_pos = rb_pos.position.translation.into();
-                vec_pos *= config.phys.scale;
-                pos.0 = lerp(pos.0, vec_pos, 0.33);
-            }
-        }
     }
 }

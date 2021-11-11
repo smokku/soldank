@@ -6,29 +6,13 @@ use crate::{
 };
 use ::resources::Resources;
 
-pub fn update_soldiers(
-    world: &mut World,
-    resources: &Resources,
-    config: &Config,
-    mouse: (f32, f32),
-) {
+pub fn update_soldiers(world: &mut World, resources: &Resources, config: &Config) {
     let mut emitter = Vec::new();
 
-    let (camera, camera_position) = world.get_camera_and_camera_position();
-    let (x, y) = camera.mouse_to_world(*camera_position, mouse.0, mouse.1);
-
-    for (_entity, (mut soldier, input, pos, rb_pos)) in world
-        .query::<(
-            &mut Soldier,
-            Option<&Input>,
-            Option<&mut Position>,
-            Option<&mut RigidBodyPosition>,
-        )>()
+    for (_entity, (mut soldier, input, rb_pos)) in world
+        .query::<(&mut Soldier, Option<&Input>, Option<&RigidBodyPosition>)>()
         .iter()
     {
-        soldier.control.mouse_aim_x = x as i32;
-        soldier.control.mouse_aim_y = y as i32;
-
         if let Some(input) = input {
             soldier.control.left = input.state.contains(InputState::MoveLeft);
             soldier.control.right = input.state.contains(InputState::MoveRight);
@@ -47,13 +31,8 @@ pub fn update_soldiers(
 
         soldier.update(resources, &mut emitter, config);
 
-        if let Some(mut pos) = pos {
-            pos.x = soldier.particle.pos.x;
-            pos.y = soldier.particle.pos.y;
-        }
-
-        if let Some(mut pos) = rb_pos {
-            *pos = (soldier.particle.pos / config.phys.scale).into();
+        if let Some(rb_pos) = rb_pos {
+            soldier.particle.pos = Vec2::from(rb_pos.next_position.translation) * config.phys.scale;
         }
     }
 
@@ -61,5 +40,26 @@ pub fn update_soldiers(
         match item {
             EmitterItem::Bullet(_params) => {}
         };
+    }
+}
+
+pub fn soldier_movement(world: &mut World, mouse: (f32, f32)) {
+    for (_entity, (mut soldier, input, pawn, rb_vel)) in world
+        .query::<(&mut Soldier, &Input, Option<&Pawn>, &RigidBodyVelocity)>()
+        .iter()
+    {
+        if pawn.is_some() {
+            let (camera, camera_position) = world.get_camera_and_camera_position();
+            let (x, y) = camera.mouse_to_world(*camera_position, mouse.0, mouse.1);
+
+            soldier.control.mouse_aim_x = x as i32;
+            soldier.control.mouse_aim_y = y as i32;
+        }
+
+        // println!("{:?}", rb_vel);
+
+        if input.state.contains(InputState::MoveLeft)
+            && !input.state.contains(InputState::MoveRight)
+        {}
     }
 }
