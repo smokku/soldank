@@ -144,6 +144,7 @@ impl Game for GameState {
             components::Legs,
             Parent(player),
             game::physics::PreviousPhysics::default(),
+            game::physics::Contact::default(),
         ));
         self.world
             .insert(
@@ -272,7 +273,7 @@ impl Game for GameState {
         self.config_update();
 
         game::physics::update_previous_physics(&mut self.world);
-        game::physics::process_contact_events(&self.resources);
+        game::physics::process_contact_events(&mut self.world, &self.resources);
         game::systems::follow_camera(&mut self.world, &self.config);
         game::systems::update_soldiers(&mut self.world, &self.resources, &self.config);
 
