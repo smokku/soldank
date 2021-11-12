@@ -84,11 +84,21 @@ pub fn soldier_movement(
             const RUNSPEEDUP: f32 = RUNSPEED / 6.0;
             const MAX_VELOCITY: f32 = 11.0;
 
-            // if let Ok(contact) = world.get::<game::physics::Contact>(*legs) {
-            //     println!("{:?}", *contact);
-            // }
+            let mut ground_contact = false;
 
-            let radius = body_vel.linvel.x.abs().clamp(3.5, 7.5) / config.phys.scale;
+            if let Ok(contact) = world.get::<game::physics::Contact>(*legs) {
+                ground_contact |= contact.entity.is_some();
+            }
+            if let Ok(phys) = world.get::<game::physics::PreviousPhysics>(*legs) {
+                ground_contact |= phys.contact.is_some();
+            }
+
+            let radius = if ground_contact {
+                body_vel.linvel.x.abs().clamp(3.5, 6.5)
+            } else {
+                3.5
+            } / config.phys.scale;
+
             if let Ok(mut shape) = world.get_mut::<ColliderShape>(*legs) {
                 if let Some(ball) = shape.make_mut().as_ball_mut() {
                     ball.radius = radius;

@@ -121,7 +121,7 @@ impl Game for GameState {
                 ColliderBundle {
                     shape: ColliderShape::capsule(
                         Vec2::new(0., -9. / self.config.phys.scale).into(),
-                        Vec2::new(0., 7. / self.config.phys.scale).into(),
+                        Vec2::new(0., 5. / self.config.phys.scale).into(),
                         3. / self.config.phys.scale,
                     ),
                     mass_properties: ColliderMassProps::Density(0.5),

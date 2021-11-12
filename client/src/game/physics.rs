@@ -80,7 +80,7 @@ impl EventHandler for PhysicsEventHandler {
 
 #[derive(Default, Debug)]
 pub struct Contact {
-    entity: Option<Entity>,
+    pub entity: Option<Entity>, // FIXME: should be Vec<Entity>
 }
 
 pub fn process_contact_events(world: &mut World, resources: &Resources) {
