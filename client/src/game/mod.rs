@@ -1,9 +1,4 @@
-use crate::{
-    cvars::Config,
-    engine::{Engine, Game},
-    physics::*,
-    render::{self as render, GameGraphics},
-};
+use crate::{cvars::Config, physics::*, render::GameGraphics};
 use ::resources::Resources;
 use gvfs::filesystem::Filesystem;
 use hecs::World;
@@ -77,7 +72,10 @@ impl GameState {
         let mut joint_set = self.resources.get_mut::<JointSet>().unwrap();
         let mut joints_entity_map = self.resources.get_mut::<JointsEntityMap>().unwrap();
         const PHYSICS_HOOKS: physics::SameParentFilter = physics::SameParentFilter {};
-        let event_handler = ();
+        let event_handler = self
+            .resources
+            .get::<physics::PhysicsEventHandler>()
+            .unwrap();
 
         // TODO: make all preparations before looping necessary number of steps
         attach_bodies_and_colliders(&mut self.world);
@@ -99,7 +97,7 @@ impl GameState {
             &mut joints_entity_map,
             &mut ccd_solver,
             &PHYSICS_HOOKS,
-            &event_handler,
+            &*event_handler,
         );
 
         despawn_outliers(&mut self.world, 2500., self.config.phys.scale);

@@ -2,8 +2,10 @@ use crate::{cvars::Config, MapFile, PolyType};
 use ::resources::Resources;
 use enumflags2::{bitflags, BitFlags};
 use hecs::World;
+use multiqueue2::{BroadcastReceiver, BroadcastSender};
 pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
+use std::sync::{Arc, Mutex};
 
 #[bitflags]
 #[repr(u32)]
@@ -54,6 +56,37 @@ impl PhysicsHooksWithWorld for SameParentFilter {
     }
 }
 
+pub struct PhysicsEventHandler {
+    event_sender: Arc<Mutex<BroadcastSender<ContactEvent>>>,
+}
+
+impl PhysicsEventHandler {
+    pub fn new(event_sender: BroadcastSender<ContactEvent>) -> Self {
+        PhysicsEventHandler {
+            event_sender: Arc::new(Mutex::new(event_sender)),
+        }
+    }
+}
+
+impl EventHandler for PhysicsEventHandler {
+    fn handle_intersection_event(&self, _event: IntersectionEvent) {}
+
+    fn handle_contact_event(&self, event: ContactEvent, _contact_pair: &ContactPair) {
+        if let Err(err) = self.event_sender.lock().unwrap().try_send(event) {
+            log::error!("Cannot send ContactEvent: {}", err);
+        }
+    }
+}
+
+pub fn process_contact_events(resources: &Resources) {
+    let event_recv = resources
+        .get_mut::<Arc<Mutex<BroadcastReceiver<ContactEvent>>>>()
+        .unwrap();
+    for event in event_recv.lock().unwrap().try_iter() {
+        log::debug!("Received contact event: {:?}", event);
+    }
+}
+
 #[derive(Debug)]
 pub struct PreviousPhysics {
     pub position: Isometry<Real>,
@@ -101,7 +134,7 @@ pub fn update_previous_physics(world: &mut World) {
 
 impl From<PolyType> for InteractionGroups {
     fn from(polytype: PolyType) -> Self {
-        let mut memberships = BitFlags::<InteractionFlag>::all();
+        let memberships = BitFlags::<InteractionFlag>::all();
         let mut filter = BitFlags::<InteractionFlag>::all();
 
         match polytype {

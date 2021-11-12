@@ -173,7 +173,9 @@ impl Game for GameState {
                             .bits(),
                             BitFlags::<physics::InteractionFlag>::all().bits(),
                         ),
-                        ..ColliderFlags::from(ActiveHooks::FILTER_CONTACT_PAIRS)
+                        active_events: ActiveEvents::CONTACT_EVENTS,
+                        active_hooks: ActiveHooks::FILTER_CONTACT_PAIRS,
+                        ..Default::default()
                     },
                     material: ColliderMaterial::new(10.0, 0.0),
                     ..Default::default()
@@ -270,11 +272,11 @@ impl Game for GameState {
         self.config_update();
 
         game::physics::update_previous_physics(&mut self.world);
+        game::physics::process_contact_events(&self.resources);
         game::systems::follow_camera(&mut self.world, &self.config);
         game::systems::update_soldiers(&mut self.world, &self.resources, &self.config);
 
         self.world.clear_trackers();
-        // self.resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 
     fn draw(&mut self, eng: Engine<'_>) {

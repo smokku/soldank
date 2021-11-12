@@ -131,7 +131,6 @@ impl Stepper for GameWorld {
         // physics::config_update(&resources);
 
         self.world.clear_trackers();
-        // resources.get_mut::<AppEventsQueue>().unwrap().clear();
     }
 }
 
