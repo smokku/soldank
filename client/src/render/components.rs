@@ -60,7 +60,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Camera {
         Camera {
-            offset: vec2(0.0, 0.0),
+            offset: Vec2::ZERO,
             centered: true,
             zoom: 0.0,
             is_active: false,

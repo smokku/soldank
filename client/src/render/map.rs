@@ -172,7 +172,7 @@ impl MapGraphics {
                         _ => None,
                     };
 
-                    SpriteInfo::new(fname, vec2(1.0, 1.0), color_key)
+                    SpriteInfo::new(fname, Vec2::ONE, color_key)
                 })
                 .collect();
 
@@ -205,10 +205,10 @@ impl MapGraphics {
             batch.add_quad(
                 None,
                 &[
-                    vertex(vec2(0.0, -d), vec2(0.0, 0.0), rgb(top.r, top.g, top.b)),
-                    vertex(vec2(1.0, -d), vec2(0.0, 0.0), rgb(top.r, top.g, top.b)),
-                    vertex(vec2(1.0, d), vec2(0.0, 0.0), rgb(btm.r, btm.g, btm.b)),
-                    vertex(vec2(0.0, d), vec2(0.0, 0.0), rgb(btm.r, btm.g, btm.b)),
+                    vertex(vec2(0.0, -d), Vec2::ZERO, rgb(top.r, top.g, top.b)),
+                    vertex(vec2(1.0, -d), Vec2::ZERO, rgb(top.r, top.g, top.b)),
+                    vertex(vec2(1.0, d), Vec2::ZERO, rgb(btm.r, btm.g, btm.b)),
+                    vertex(vec2(0.0, d), Vec2::ZERO, rgb(btm.r, btm.g, btm.b)),
                 ],
             );
 

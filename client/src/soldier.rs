@@ -663,8 +663,8 @@ impl Soldier {
                                 let mut perp =
                                     map.closest_perpendicular(poly as i32, pos, &mut d, &mut b);
 
-                                let mut p1 = vec2(0.0, 0.0);
-                                let mut p2 = vec2(0.0, 0.0);
+                                let mut p1 = Vec2::ZERO;
+                                let mut p2 = Vec2::ZERO;
                                 match b {
                                     1 => {
                                         p1 = vec2(

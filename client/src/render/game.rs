@@ -190,7 +190,7 @@ impl GameGraphics {
 
         let add_to = |v: &mut Vec<SpriteInfo>, fname: &str| {
             let fname = filename_override(fs, "", fname);
-            v.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
+            v.push(SpriteInfo::new(fname, Vec2::ONE, None));
         };
 
         for group in gfx::Group::values() {
@@ -318,7 +318,7 @@ impl GameGraphics {
                     .or_default()
                     .insert((*sprite).clone(), main.len());
                 let fname = filename_override(fs, "", fname);
-                main.push(SpriteInfo::new(fname, vec2(1.0, 1.0), None));
+                main.push(SpriteInfo::new(fname, Vec2::ONE, None));
             }
         }
 
@@ -426,10 +426,10 @@ impl GameGraphics {
             self.add_debug_geometry(
                 None,
                 &[
-                    vertex(point1 + d, vec2(0., 0.), color1),
-                    vertex(point1 - d, vec2(0., 0.), color1),
-                    vertex(point2 - d, vec2(0., 0.), color2),
-                    vertex(point2 + d, vec2(0., 0.), color2),
+                    vertex(point1 + d, Vec2::ZERO, color1),
+                    vertex(point1 - d, Vec2::ZERO, color1),
+                    vertex(point2 - d, Vec2::ZERO, color2),
+                    vertex(point2 + d, Vec2::ZERO, color2),
                 ],
             );
         }
@@ -507,7 +507,7 @@ impl GameGraphics {
         for step in 0..STEPS {
             let m = Transform::FromOrigin {
                 pos: center.into(),
-                scale: vec2(1.0, 1.0),
+                scale: Vec2::ONE,
                 rot: (
                     rotation + (2. * PI / STEPS as f32) * step as f32,
                     Vec2::ZERO,

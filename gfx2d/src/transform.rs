@@ -34,7 +34,7 @@ pub enum Transform {
 
 impl Transform {
     pub fn none() -> Transform {
-        Transform::Pos(vec2(0.0, 0.0))
+        Transform::Pos(Vec2::ZERO)
     }
 
     pub fn pos(x: f32, y: f32) -> Transform {

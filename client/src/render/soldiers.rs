@@ -123,7 +123,7 @@ pub fn render_soldier(
             let mut sprite_index: usize = 0;
             let cx = part.center.0;
             let mut cy = part.center.1;
-            let mut scale = vec2(1.0, 1.0);
+            let mut scale = Vec2::ONE;
             let (p0, p1) = part.point;
             let p0 = lerp(sk.old_pos(p0), sk.pos(p0), frame_percent);
             let p1 = lerp(sk.old_pos(p1), sk.pos(p1), frame_percent);
@@ -417,7 +417,7 @@ pub fn render_skeleton(soldier: &Soldier, batch: &mut DrawBatch, px: f32, frame_
 
         let m = Transform::WithPivot {
             pos: a,
-            pivot: vec2(0.0, 0.0),
+            pivot: Vec2::ZERO,
             scale: vec2(distance(a, b), 1.0),
             rot: vec2angle(b - a),
         }
