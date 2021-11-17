@@ -266,6 +266,7 @@ impl Game for GameState {
             &self.resources,
             &self.config,
             (mouse_x, mouse_y),
+            eng.now,
         );
 
         self.step_physics(eng.delta);
@@ -273,7 +274,7 @@ impl Game for GameState {
         self.config_update();
 
         game::physics::update_previous_physics(&mut self.world);
-        game::physics::process_contact_events(&mut self.world, &self.resources);
+        game::physics::process_contact_events(&mut self.world, &self.resources, eng.now);
         game::systems::follow_camera(&mut self.world, &self.config);
         game::systems::update_soldiers(&mut self.world, &self.resources, &self.config);
 

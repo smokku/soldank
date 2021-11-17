@@ -5,7 +5,10 @@ use hecs::{Entity, World};
 use multiqueue2::{BroadcastReceiver, BroadcastSender};
 pub use rapier2d::prelude::*;
 pub use soldank_shared::physics::*;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashSet,
+    sync::{Arc, Mutex},
+};
 
 #[bitflags]
 #[repr(u32)]
@@ -80,10 +83,11 @@ impl EventHandler for PhysicsEventHandler {
 
 #[derive(Default, Debug)]
 pub struct Contact {
-    pub entity: Option<Entity>, // FIXME: should be Vec<Entity>
+    pub timestamp: f64,
+    pub entities: HashSet<Entity>,
 }
 
-pub fn process_contact_events(world: &mut World, resources: &Resources) {
+pub fn process_contact_events(world: &mut World, resources: &Resources, now: f64) {
     let event_recv = resources
         .get_mut::<Arc<Mutex<BroadcastReceiver<ContactEvent>>>>()
         .unwrap();
@@ -94,28 +98,22 @@ pub fn process_contact_events(world: &mut World, resources: &Resources) {
                 let entity1: Entity = handle1.entity();
                 let entity2: Entity = handle2.entity();
                 if let Ok(mut contact) = world.get_mut::<Contact>(entity1) {
-                    contact.entity.replace(entity2);
+                    contact.timestamp = now;
+                    contact.entities.insert(entity2);
                 }
                 if let Ok(mut contact) = world.get_mut::<Contact>(entity2) {
-                    contact.entity.replace(entity1);
+                    contact.timestamp = now;
+                    contact.entities.insert(entity1);
                 }
             }
             ContactEvent::Stopped(handle1, handle2) => {
                 let entity1: Entity = handle1.entity();
                 let entity2: Entity = handle2.entity();
                 if let Ok(mut contact) = world.get_mut::<Contact>(entity1) {
-                    if let Some(contact_entity) = contact.entity {
-                        if contact_entity == entity2 {
-                            contact.entity.take();
-                        }
-                    }
+                    contact.entities.remove(&entity2);
                 }
                 if let Ok(mut contact) = world.get_mut::<Contact>(entity2) {
-                    if let Some(contact_entity) = contact.entity {
-                        if contact_entity == entity1 {
-                            contact.entity.take();
-                        }
-                    }
+                    contact.entities.remove(&entity1);
                 }
             }
         }
@@ -129,7 +127,7 @@ pub struct PreviousPhysics {
     pub angvel: AngVector<Real>,
     pub force: Vector<Real>,
     pub torque: AngVector<Real>,
-    pub contact: Option<Entity>,
+    pub last_contact: f64,
 }
 
 impl Default for PreviousPhysics {
@@ -140,7 +138,7 @@ impl Default for PreviousPhysics {
             angvel: Default::default(),
             force: Default::default(),
             torque: Default::default(),
-            contact: None,
+            last_contact: 0.,
         }
     }
 }
@@ -168,7 +166,7 @@ pub fn update_previous_physics(world: &mut World) {
             prev.torque = force.torque;
         }
         if let Some(contact) = cont {
-            prev.contact = contact.entity;
+            prev.last_contact = contact.timestamp;
         }
     }
 }

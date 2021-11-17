@@ -20,6 +20,7 @@ use frame_timer::DESIRED_FRAMETIME;
 const TIME_HISTORY_COUNT: usize = 4;
 
 pub struct Engine<'a> {
+    pub now: f64,
     pub delta: f64,
     pub fps: usize,
     pub overstep_percentage: f32,
@@ -42,13 +43,13 @@ pub struct Runner<G: Game> {
 
     // frame_timer
     resync: bool,
-    prev_frame_time: f64,
+    frame_time: f64,
     time_averager: AllocRingBuffer<f64>,
     frame_accumulator: f64,
 
     // renderer
     overstep_percentage: f32,
-    last_frame: f64,
+    render_time: f64,
     fps_second: f64,
     fps_count: usize,
     fps: AllocRingBuffer<usize>,
@@ -76,7 +77,10 @@ impl<G: Game> Runner<G> {
         let mut input = InputEngine::new();
         let mut script = ScriptEngine::new(event_sender.clone(), event_recv);
 
+        let now = mq::date::now();
+
         let eng = Engine {
+            now,
             delta: 0.,
             fps: 0,
             overstep_percentage: 0.,
@@ -94,13 +98,13 @@ impl<G: Game> Runner<G> {
 
             // frame_timer
             resync: true,
-            prev_frame_time: mq::date::now(),
+            frame_time: now,
             time_averager,
             frame_accumulator: 0.0,
             overstep_percentage: 1.0,
 
-            last_frame: mq::date::now(),
-            fps_second: mq::date::now().round(),
+            render_time: now,
+            fps_second: now.round(),
             fps_count: 0,
             fps: AllocRingBuffer::with_capacity(64),
 

@@ -25,8 +25,8 @@ impl<G: Game> Runner<G> {
     pub(crate) fn frame_timer(&mut self, ctx: &mut mq::Context) -> f64 {
         //frame timer
         let current_frame_time: f64 = mq::date::now();
-        let mut delta_time = current_frame_time - self.prev_frame_time;
-        self.prev_frame_time = current_frame_time;
+        let mut delta_time = current_frame_time - self.frame_time;
+        self.frame_time = current_frame_time;
 
         //handle unexpected timer anomalies (overflow, extra slow frames, etc)
         if delta_time > DESIRED_FRAMETIME * 8. {
@@ -70,6 +70,7 @@ impl<G: Game> Runner<G> {
             if consumed_delta_time > DESIRED_FRAMETIME {
                 //cap variable update's dt to not be larger than fixed update
                 let eng = Engine {
+                    now: current_frame_time,
                     delta: FIXED_DELTATIME,
                     fps: self.fps(),
                     overstep_percentage: self.overstep_percentage,
@@ -87,6 +88,7 @@ impl<G: Game> Runner<G> {
         }
 
         let eng = Engine {
+            now: current_frame_time,
             delta: consumed_delta_time,
             fps: self.fps(),
             overstep_percentage: self.overstep_percentage,

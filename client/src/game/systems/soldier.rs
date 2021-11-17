@@ -51,6 +51,7 @@ pub fn soldier_movement(
     resources: &Resources,
     config: &Config,
     mouse: (f32, f32),
+    now: f64,
 ) {
     let mut legs_parents = HashMap::new();
     for (entity, parent) in world
@@ -83,14 +84,15 @@ pub fn soldier_movement(
             const RUNSPEED: f32 = 0.118;
             const RUNSPEEDUP: f32 = RUNSPEED / 6.0;
             const MAX_VELOCITY: f32 = 11.0;
+            const COYOTE_TIME: f64 = 0.3;
 
             let mut ground_contact = false;
 
             if let Ok(contact) = world.get::<game::physics::Contact>(*legs) {
-                ground_contact |= contact.entity.is_some();
+                ground_contact |= !contact.entities.is_empty();
             }
             if let Ok(phys) = world.get::<game::physics::PreviousPhysics>(*legs) {
-                ground_contact |= phys.contact.is_some();
+                ground_contact |= (now - phys.last_contact) < COYOTE_TIME;
             }
 
             let radius = if ground_contact {
