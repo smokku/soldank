@@ -13,14 +13,12 @@ publish = false
 [dependencies]
 soldank-shared = { path = "../shared" }
 gfx2d = { path = "../gfx2d" }
-orb = { path = "../orb" }
 gvfs = "0.1"
 zip = { version = "0.5", features = [
     # enable deflate support in gvfs
     "deflate"
 ] }
 byteorder = "1.4"
-instant = { version = "0.1", default-features = false, features = ["now"] }
 rust-ini = "0.17"
 hocon = { version = "0.5", default-features = false }
 bit-array = "0.4"

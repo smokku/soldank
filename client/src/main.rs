@@ -15,7 +15,6 @@ mod debug;
 mod engine;
 mod game;
 mod mapfile;
-mod networking;
 mod particles;
 mod render;
 mod soldier;
@@ -27,13 +26,12 @@ use calc::*;
 use constants::*;
 use control::*;
 use mapfile::*;
-use networking::*;
 use particles::*;
 use render::*;
 use soldier::*;
 use weapons::*;
 
-use cvars::{set_cli_cvars, Config, NetConfig};
+use cvars::{set_cli_cvars, Config};
 use gfx2d::{math, mq};
 use gvfs::filesystem::{File, Filesystem};
 use hecs::World;
@@ -139,15 +137,6 @@ fn main() {
             }
         }
     }
-    // filesystem.print_all();
-
-    // let mut networking = Networking::new(cmd.value_of("connect"));
-    // if let Some(key) = cmd.value_of("key") {
-    //     networking.connection_key = key.to_string();
-    // }
-    // if let Some(nick) = cmd.value_of("nick") {
-    //     networking.nick_name = nick.to_string();
-    // }
 
     let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
     map_name.push_str(".pms");
@@ -155,16 +144,7 @@ fn main() {
     let map = MapFile::load_map_file(&mut filesystem, map_name.as_str());
     log::info!("Using map: {}", map.mapname);
 
-    let mut config = Config {
-        net: NetConfig {
-            orb: Arc::new(RwLock::new(orb::Config {
-                timestep_seconds: TIMESTEP_RATE,
-                ..Default::default()
-            })),
-            ..Default::default()
-        },
-        ..Default::default()
-    };
+    let mut config = Config::default();
     config.debug.visible = cmd.is_present("debug");
     set_cli_cvars(&mut config, &cmd);
 
@@ -175,8 +155,6 @@ fn main() {
         .iter()
         .map(|k| Weapon::new(*k, false))
         .collect();
-
-    // let client = orb::client::Client::<GameWorld>::new(mq::date::now(), config.net.orb.clone());
 
     let mut world = World::new();
 
@@ -217,49 +195,3 @@ fn main() {
         )
     });
 }
-
-// fn update(&mut self, _ctx: &mut mq::Context) {
-//     self.networking.tick += 1;
-//     self.networking.update();
-
-//     while self.timeacc >= TIMESTEP_RATE {
-//         self.timeacc -= TIMESTEP_RATE;
-
-//         // remove inactive bullets
-//         let mut i = 0;
-//         while i < self.bullets.len() {
-//             if !self.bullets[i].active {
-//                 self.bullets.swap_remove(i);
-//             } else {
-//                 i += 1;
-//             }
-//         }
-
-//         // // update soldiers
-
-//         // update bullets
-//         for bullet in self.bullets.iter_mut() {
-//             bullet.update(&self.resources);
-//         }
-
-//         // // create emitted objects
-//         // for item in self.emitter.drain(..) {
-//         //     match item {
-//         //         EmitterItem::Bullet(params) => self.bullets.push(Bullet::new(
-//         //             &params,
-//         //             &*self.resources.get::<Config>().unwrap(),
-//         //         )),
-//         //     };
-//         // }
-//     }
-
-//     self.networking.set_input_state(&self.soldier.control);
-
-//     self.networking.process(&self.resources, &mut self.client);
-//     self.client.update(self.timeacc, self.last_frame);
-//     if let Some(state) = self.client.display_state() {
-//         log::trace!("client_display_state: {}", state.display_state().len());
-//     }
-//     self.networking
-//         .post_process(&*self.resources.get::<Config>().unwrap());
-// }
