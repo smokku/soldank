@@ -19,6 +19,7 @@ use crate::{
 use soldank_shared::{messages::NetworkMessage, networking::GameWorld};
 
 mod cheat;
+mod cli;
 mod constants;
 mod cvars;
 mod networking;
@@ -36,44 +37,7 @@ fn main() -> Result<()> {
     env_logger::init();
 
     smol::block_on(async {
-        let cmd = clap::app_from_crate!()
-            .arg(
-                clap::Arg::with_name("bind")
-                    .value_name("address:port")
-                    .help("IP address and port to bind")
-                    .short("b")
-                    .long("bind")
-                    .takes_value(true)
-                    .env("SOLDANK_SERVER_BIND"),
-            )
-            .arg(
-                clap::Arg::with_name("map")
-                    .value_name("map name")
-                    .help("name of map to load")
-                    .short("m")
-                    .long("map")
-                    .takes_value(true)
-                    .default_value(DEFAULT_MAP)
-                    .env("SOLDANK_USE_MAP"),
-            )
-            .arg(
-                clap::Arg::with_name("key")
-                    .help("server connection key")
-                    .short("k")
-                    .long("key")
-                    .takes_value(true)
-                    .env("SOLDANK_SERVER_KEY"),
-            )
-            .arg(
-                clap::Arg::with_name("set")
-                    .help("set cvar value [multiple]")
-                    .long("set")
-                    .takes_value(true)
-                    .multiple(true)
-                    .number_of_values(2)
-                    .value_names(&["cvar", "value"]),
-            )
-            .get_matches();
+        let cmd = cli::parse_cli_args();
 
         let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
         map_name.push_str(".pms");
