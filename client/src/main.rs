@@ -32,18 +32,15 @@ use render::*;
 use soldier::*;
 use weapons::*;
 
+pub use soldank_shared::physics;
+
 use cvars::{set_cli_cvars, Config};
 use gfx2d::{math, mq};
 use gvfs::filesystem::{File, Filesystem};
 use hecs::World;
-use multiqueue2::broadcast_queue;
 use quad_rand as rand;
 use resources::Resources;
-use soldank_shared::physics;
-use std::{
-    env, path,
-    sync::{Arc, Mutex},
-};
+use std::{env, path};
 
 use crate::game::components::{EmitterItem, Team};
 
@@ -118,18 +115,7 @@ fn main() {
     resources.insert(map);
     resources.insert(weapons);
 
-    resources.insert(physics::PhysicsPipeline::new());
-    resources.insert(physics::IntegrationParameters::default());
-    resources.insert(physics::BroadPhase::new());
-    resources.insert(physics::NarrowPhase::new());
-    resources.insert(physics::IslandManager::new());
-    resources.insert(physics::JointSet::new());
-    resources.insert(physics::CCDSolver::new());
-    resources.insert(physics::JointsEntityMap::default());
-    resources.insert(physics::ModificationTracker::default());
-    let (event_sender, event_recv) = broadcast_queue(64);
-    resources.insert(game::physics::PhysicsEventHandler::new(event_sender));
-    resources.insert(Arc::new(Mutex::new(event_recv)));
+    create_physics_resources(&mut resources);
     game::physics::create_map_colliders(&mut world, &resources, &config);
 
     let conf = mq::conf::Conf {
@@ -149,4 +135,22 @@ fn main() {
             ctx,
         )
     });
+}
+
+pub fn create_physics_resources(resources: &mut Resources) {
+    use multiqueue2::broadcast_queue;
+    use std::sync::{Arc, Mutex};
+
+    resources.insert(physics::PhysicsPipeline::new());
+    resources.insert(physics::IntegrationParameters::default());
+    resources.insert(physics::BroadPhase::new());
+    resources.insert(physics::NarrowPhase::new());
+    resources.insert(physics::IslandManager::new());
+    resources.insert(physics::JointSet::new());
+    resources.insert(physics::CCDSolver::new());
+    resources.insert(physics::JointsEntityMap::default());
+    resources.insert(physics::ModificationTracker::default());
+    let (event_sender, event_recv) = broadcast_queue(64);
+    resources.insert(game::physics::PhysicsEventHandler::new(event_sender));
+    resources.insert(Arc::new(Mutex::new(event_recv)));
 }
