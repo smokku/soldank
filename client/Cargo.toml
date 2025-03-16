@@ -14,7 +14,7 @@ publish = false
 soldank-shared = { path = "../shared" }
 gfx2d = { path = "../gfx2d" }
 gvfs = "0.1"
-zip = { version = "0.5", features = [
+zip = { version = "2.3", features = [
     # enable deflate support in gvfs
     "deflate"
 ] }
