@@ -28,40 +28,38 @@ impl IVisit for CliState {
 }
 
 impl CliState {
-    pub fn build_ui(&mut self, eng: &Engine<'_>) {
+    pub fn build_ui(&mut self, egui_ctx: &egui::Context, eng: &Engine<'_>) {
         if !self.visible {
             return;
         }
 
-        let egui_ctx = eng.egui_ctx;
         let mut visible = self.visible;
         egui::Window::new("Command Line Interface")
             .open(&mut visible)
             .resizable(true)
             .show(egui_ctx, |ui| {
-                let scroll_height = ui.fonts()[egui::TextStyle::Monospace].row_height() * 25.;
-                egui::ScrollArea::from_max_height(scroll_height)
+                let scroll_height = ui.text_style_height(&egui::TextStyle::Monospace) * 25.;
+                egui::ScrollArea::new([true, true])
+                    .max_height(scroll_height)
                     // .always_show_scroll(true)
                     .show(ui, |ui| {
                         for (level, _time, line) in Logger::get_log().read().unwrap().iter() {
-                            ui.add(
-                                egui::Label::new(line)
-                                    .text_style(egui::TextStyle::Monospace)
-                                    .text_color(match level {
-                                        log::Level::Info => egui::Color32::WHITE,
-                                        log::Level::Warn => egui::Color32::YELLOW,
-                                        log::Level::Error => egui::Color32::RED,
-                                        log::Level::Debug | log::Level::Trace => {
-                                            // should not really happen
-                                            egui::Color32::BLACK
-                                        }
-                                    }),
-                            );
+                            ui.add(egui::Label::new(
+                                egui::RichText::new(line).monospace().color(match level {
+                                    log::Level::Info => egui::Color32::WHITE,
+                                    log::Level::Warn => egui::Color32::YELLOW,
+                                    log::Level::Error => egui::Color32::RED,
+                                    log::Level::Debug | log::Level::Trace => {
+                                        // should not really happen
+                                        egui::Color32::BLACK
+                                    }
+                                }),
+                            ));
                         }
 
                         if self.auto_scroll {
                             self.auto_scroll = false;
-                            ui.scroll_to_cursor(egui::Align::BOTTOM);
+                            ui.scroll_to_cursor(Some(egui::Align::Max));
                         }
                     });
 
@@ -75,7 +73,7 @@ impl CliState {
                     edit.request_focus();
                 }
 
-                if edit.lost_focus() && ui.input().key_pressed(egui::Key::Enter) {
+                if edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                     let input = self.input.trim();
                     if !input.is_empty() {
                         if let Err(err) =

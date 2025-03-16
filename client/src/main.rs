@@ -125,15 +125,15 @@ fn main() {
         window_height: WINDOW_HEIGHT as _,
         ..Default::default()
     };
-    mq::start(conf, |mut ctx| {
-        let context = gfx2d::Gfx2dContext::new(&mut ctx);
-        mq::UserData::owning(
-            engine::Runner::new(
-                &mut ctx,
-                game::GameState::new(context, world, resources, filesystem, config),
-            ),
+    mq::start(conf, || {
+        let mut ctx = mq::window::new_rendering_backend();
+        let context = gfx2d::Gfx2dContext::new(&mut *ctx);
+        let runner = engine::Runner::new(
             ctx,
-        )
+            game::GameState::new(context, world, resources, filesystem, config),
+        );
+
+        Box::new(runner)
     });
 }
 

@@ -13,7 +13,7 @@ impl IVisit for EntitiesState {
 }
 
 impl EntitiesState {
-    pub fn build_ui(&mut self, egui_ctx: &egui::CtxRef, world: &mut World) {
+    pub fn build_ui(&mut self, egui_ctx: &egui::Context, world: &mut World) {
         if self.visible {
             let mut visible = self.visible;
 

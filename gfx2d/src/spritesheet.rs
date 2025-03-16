@@ -11,7 +11,7 @@ pub struct Sprite {
     pub height: f32,
     pub texcoords_x: (f32, f32),
     pub texcoords_y: (f32, f32),
-    pub texture: Option<Texture>,
+    pub texture: Option<TextureId>,
 }
 
 #[derive(Debug)]
@@ -33,7 +33,7 @@ impl SpriteInfo {
 
 #[derive(Debug)]
 pub struct Spritesheet {
-    pub textures: Vec<Texture>,
+    pub textures: Vec<TextureId>,
     pub sprites: Vec<Sprite>,
 }
 
@@ -43,24 +43,25 @@ impl Sprite {
         height: f32,
         tx: (f32, f32),
         ty: (f32, f32),
-        texture: Option<&Texture>,
+        texture: Option<TextureId>,
     ) -> Sprite {
         Sprite {
             width,
             height,
             texcoords_x: tx,
             texcoords_y: ty,
-            texture: texture.cloned(),
+            texture,
         }
     }
 
-    pub fn from_texture(texture: &Texture, pixel_ratio: Vec2) -> Sprite {
+    pub fn from_texture(ctx: &Context, texture: TextureId, pixel_ratio: Vec2) -> Sprite {
+        let (texture_width, texture_height) = ctx.texture_size(texture);
         Sprite {
-            width: texture.width as f32 / pixel_ratio.x,
-            height: texture.height as f32 / pixel_ratio.y,
+            width: texture_width as f32 / pixel_ratio.x,
+            height: texture_height as f32 / pixel_ratio.y,
             texcoords_x: (0.0, 1.0),
             texcoords_y: (0.0, 1.0),
-            texture: Some(*texture),
+            texture: Some(texture),
         }
     }
 }
@@ -148,18 +149,19 @@ impl Spritesheet {
                 .expect("Cannot copy image.");
         }
 
-        let textures: Vec<Texture> = sheets
+        let textures: Vec<TextureId> = sheets
             .drain(..)
             .map(|ref img| {
-                Texture::from_data_and_format(
-                    ctx,
+                ctx.new_texture_from_data_and_format(
                     img,
                     TextureParams {
                         width: img.width(),
                         height: img.height(),
                         format: TextureFormat::RGBA8,
-                        filter,
+                        min_filter: filter,
+                        mag_filter: filter,
                         wrap: TextureWrap::Clamp,
+                        ..Default::default()
                     },
                 )
             })
@@ -173,8 +175,9 @@ impl Spritesheet {
             let (y0, y1) = (rc.top() as f32, (rc.bottom() - padding) as f32);
 
             sprite.texture = Some(*texture);
-            sprite.texcoords_x = (x0 / texture.width as f32, x1 / texture.width as f32);
-            sprite.texcoords_y = (y0 / texture.height as f32, y1 / texture.height as f32);
+            let (texture_width, texture_height) = ctx.texture_size(*texture);
+            sprite.texcoords_x = (x0 / texture_width as f32, x1 / texture_width as f32);
+            sprite.texcoords_y = (y0 / texture_height as f32, y1 / texture_height as f32);
         }
 
         Spritesheet { textures, sprites }

@@ -24,8 +24,6 @@ pub struct Engine<'a> {
     pub delta: f64,
     pub fps: usize,
     pub overstep_percentage: f32,
-    pub quad_ctx: &'a mut mq::Context,
-    pub egui_ctx: &'a egui::CtxRef,
     pub mouse_over_ui: bool,
     pub input: &'a mut InputEngine,
     pub script: &'a mut ScriptEngine,
@@ -33,12 +31,15 @@ pub struct Engine<'a> {
 }
 
 pub trait Game {
-    fn initialize(&mut self, _eng: Engine<'_>) {}
+    fn initialize(&mut self, _quad_ctx: &mut mq::Context, _eng: Engine<'_>) {}
     fn update(&mut self, _eng: Engine<'_>) {}
-    fn draw(&mut self, _eng: Engine<'_>) {}
+    fn draw(&mut self, _quad_ctx: &mut mq::Context, _eng: Engine<'_>) {}
+    fn draw_debug(&mut self, _egui_ctx: &egui::Context, _eng: Engine<'_>) {}
 }
 
 pub struct Runner<G: Game> {
+    ctx: Box<mq::Context>,
+
     game: G,
 
     // frame_timer
@@ -67,13 +68,13 @@ pub struct Runner<G: Game> {
 }
 
 impl<G: Game> Runner<G> {
-    pub fn new(ctx: &mut mq::Context, mut game: G) -> Self {
+    pub fn new(mut ctx: Box<mq::Context>, mut game: G) -> Self {
         let mut time_averager = AllocRingBuffer::with_capacity(TIME_HISTORY_COUNT);
         time_averager.fill(DESIRED_FRAMETIME);
 
         let (event_sender, event_recv) = broadcast_queue(64);
 
-        let egui_mq = egui_miniquad::EguiMq::new(ctx);
+        let egui_mq = egui_miniquad::EguiMq::new(&mut *ctx);
         let mut input = InputEngine::new();
         let mut script = ScriptEngine::new(event_sender.clone(), event_recv);
 
@@ -84,16 +85,15 @@ impl<G: Game> Runner<G> {
             delta: 0.,
             fps: 0,
             overstep_percentage: 0.,
-            quad_ctx: ctx,
-            egui_ctx: egui_mq.egui_ctx(),
             mouse_over_ui: false,
             input: &mut input,
             script: &mut script,
             event_sender: &event_sender,
         };
-        game.initialize(eng);
+        game.initialize(&mut *ctx, eng);
 
         Runner {
+            ctx,
             game,
 
             // frame_timer

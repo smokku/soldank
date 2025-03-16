@@ -1,16 +1,18 @@
+use miniquad::BufferSource;
+
 use super::*;
 use std::ops::Range;
 
-fn batch_command(texture: Option<&Texture>, vertex_range: Range<usize>) -> BatchCommand {
+fn batch_command(texture: Option<TextureId>, vertex_range: Range<usize>) -> BatchCommand {
     BatchCommand {
-        texture: texture.cloned(),
+        texture,
         vertex_range,
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct BatchCommand {
-    pub texture: Option<Texture>,
+    pub texture: Option<TextureId>,
     pub vertex_range: Range<usize>,
 }
 
@@ -22,7 +24,7 @@ enum BatchUsage {
 
 #[derive(Debug, Clone)]
 pub struct DrawBatch {
-    vbuf: Option<VertexBuffer>,
+    vbuf: Option<BufferId>,
     buf: Vec<Vertex>,
     cmds: Vec<BatchCommand>,
     split_start: usize,
@@ -37,7 +39,7 @@ pub struct DrawSlice<'a> {
 }
 
 impl<'a> DrawSlice<'a> {
-    pub fn buffer(&self) -> VertexBuffer {
+    pub fn buffer(&self) -> BufferId {
         self.batch.buffer()
     }
 
@@ -79,7 +81,7 @@ impl DrawBatch {
         self.cmds.clear();
     }
 
-    pub fn add(&mut self, texture: Option<&Texture>, vertices: &[Vertex; 3]) {
+    pub fn add(&mut self, texture: Option<TextureId>, vertices: &[Vertex; 3]) {
         let i = self.buf.len();
         let n = vertices.len();
         let m = self.cmds.len();
@@ -91,9 +93,7 @@ impl DrawBatch {
             || m == self.split_start
             || (m > 0
                 && (texture.is_none() != self.last_texture().is_none()
-                    || texture.is_some()
-                        && texture.unwrap().gl_internal_id()
-                            == self.last_texture().unwrap().gl_internal_id()))
+                    || texture.is_some() && texture.unwrap() == self.last_texture().unwrap()))
         {
             self.cmds.push(batch_command(texture, i..i + n));
         } else {
@@ -101,14 +101,14 @@ impl DrawBatch {
         }
     }
 
-    fn last_texture(&self) -> Option<&Texture> {
+    fn last_texture(&self) -> Option<TextureId> {
         match self.cmds.last() {
             None => None,
-            Some(cmd) => cmd.texture.as_ref(),
+            Some(cmd) => cmd.texture,
         }
     }
 
-    pub fn add_quad(&mut self, texture: Option<&Texture>, vertices: &[Vertex; 4]) {
+    pub fn add_quad(&mut self, texture: Option<TextureId>, vertices: &[Vertex; 4]) {
         self.add(texture, &[vertices[0], vertices[1], vertices[2]]);
         self.add(texture, &[vertices[2], vertices[3], vertices[0]]);
     }
@@ -128,7 +128,7 @@ impl DrawBatch {
         };
 
         self.add_quad(
-            sprite.texture.as_ref(),
+            sprite.texture,
             &[
                 vertex(p0, vec2(tx0, ty0), color),
                 vertex(p1, vec2(tx1, ty0), color),
@@ -165,22 +165,26 @@ impl DrawBatch {
                 BatchUsage::Dynamic => {
                     let n = self.buf.len().next_power_of_two();
                     let size = n * std::mem::size_of::<Vertex>();
-                    if self.vbuf.is_none() || self.vbuf.as_ref().unwrap().size() < size {
-                        let vbuf = mq::Buffer::stream(ctx, mq::BufferType::VertexBuffer, size);
+                    if self.vbuf.is_none() || ctx.buffer_size(self.vbuf.unwrap()) < size {
+                        let vbuf = ctx.new_buffer(
+                            mq::BufferType::VertexBuffer,
+                            mq::BufferUsage::Stream,
+                            mq::BufferSource::empty::<u32>(size),
+                        );
                         if let Some(old_vbuf) = self.vbuf.replace(vbuf) {
-                            old_vbuf.delete();
+                            ctx.delete_buffer(old_vbuf);
                         };
                     }
 
                     let vbuf = self.vbuf.as_ref().unwrap();
-                    vbuf.update(ctx, &self.buf);
+                    ctx.buffer_update(*vbuf, BufferSource::slice(&self.buf));
                     self.updated = true;
                 }
                 BatchUsage::Static => {
-                    self.vbuf = Some(mq::Buffer::immutable(
-                        ctx,
+                    self.vbuf = Some(ctx.new_buffer(
                         mq::BufferType::VertexBuffer,
-                        &self.buf,
+                        mq::BufferUsage::Immutable,
+                        mq::BufferSource::slice(&self.buf),
                     ));
                     self.updated = true;
                 }
@@ -188,7 +192,7 @@ impl DrawBatch {
         }
     }
 
-    pub fn buffer(&self) -> VertexBuffer {
+    pub fn buffer(&self) -> BufferId {
         self.vbuf.unwrap()
     }
 

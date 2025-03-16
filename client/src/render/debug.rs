@@ -2,7 +2,6 @@ use super::*;
 use crate::engine::world::WorldCameraExt;
 
 pub fn debug_render(
-    ctx: &mut Context,
     graphics: &mut GameGraphics,
     world: &World,
     resources: &Resources,
@@ -11,7 +10,7 @@ pub fn debug_render(
     let state = &config.debug.render;
     let map = resources.get::<MapFile>().unwrap();
 
-    let screen_size = ctx.screen_size();
+    let screen_size = window::screen_size();
     let screen_scale = GAME_WIDTH / screen_size.0;
 
     let (camera, _pos) = world.get_camera_and_camera_position();

@@ -3,6 +3,7 @@ use crate::{
 };
 use cvar::{INode, IVisit};
 pub use gfx2d::math::*;
+pub use gfx2d::window;
 use hecs::World;
 
 mod cli;
@@ -37,7 +38,7 @@ impl IVisit for DebugState {
     }
 }
 
-pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
+pub fn build_ui(egui_ctx: &egui::Context, eng: &Engine<'_>, game: &mut GameState) {
     let gravity = game.config.phys.gravity;
     let debug = &mut game.config.debug;
 
@@ -56,7 +57,7 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
             .title_bar(false)
             .resizable(false)
             .collapsible(false)
-            .show(eng.egui_ctx, |ui| {
+            .show(egui_ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     if ui.selectable_label(debug.cli.visible, "CLI").clicked() {
                         debug.cli.visible = !debug.cli.visible;
@@ -79,7 +80,7 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
 
                     ui.horizontal_wrapped(|ui| {
                         if ui.button("\u{2196}").clicked() {
-                            eng.quad_ctx.set_cursor_grab(false);
+                            window::set_cursor_grab(false);
                         }
                         ui.label(format!(
                             "{:4} {:3} [{:.3} {:.3}]",
@@ -93,12 +94,12 @@ pub fn build_ui(eng: &Engine<'_>, game: &mut GameState) {
                 });
             });
 
-        debug.cli.build_ui(eng);
+        debug.cli.build_ui(egui_ctx, eng);
         debug
             .spawner
-            .build_ui(eng.egui_ctx, &mut game.world, x, y, scale, gravity);
-        debug.entities.build_ui(eng.egui_ctx, &mut game.world);
-        debug.render.build_ui(eng.egui_ctx);
+            .build_ui(egui_ctx, &mut game.world, x, y, scale, gravity);
+        debug.entities.build_ui(egui_ctx, &mut game.world);
+        debug.render.build_ui(egui_ctx);
     }
 }
 

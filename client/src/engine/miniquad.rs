@@ -1,11 +1,10 @@
 use super::*;
+use crate::debug;
 
 impl<G: Game> mq::EventHandler for Runner<G> {
-    fn update(&mut self, ctx: &mut mq::Context) {
-        self.egui_mq.begin_frame(ctx);
-
+    fn update(&mut self) {
         // spin the Game::update() needed number of frames
-        self.overstep_percentage = self.frame_timer(ctx) as f32;
+        self.overstep_percentage = self.frame_timer() as f32;
 
         self.script.drain_events();
 
@@ -16,7 +15,7 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         );
     }
 
-    fn draw(&mut self, ctx: &mut mq::Context) {
+    fn draw(&mut self) {
         self.render_time = mq::date::now();
         let last_second = self.render_time.round();
         if (self.fps_second - last_second).abs() > f64::EPSILON {
@@ -31,38 +30,53 @@ impl<G: Game> mq::EventHandler for Runner<G> {
             delta: 0.,
             fps: self.fps(),
             overstep_percentage: self.overstep_percentage,
-            quad_ctx: ctx,
-            egui_ctx: self.egui_mq.egui_ctx(),
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
             script: &mut self.script,
             event_sender: &self.event_sender,
         };
 
-        self.game.draw(eng);
+        self.game.draw(&mut *self.ctx, eng);
 
-        self.egui_mq.end_frame(ctx);
+        if cfg!(debug_assertions) {
+            let eng = Engine {
+                now: self.render_time,
+                delta: 0.,
+                fps: self.fps(),
+                overstep_percentage: self.overstep_percentage,
+                mouse_over_ui: self.mouse_over_ui,
+                input: &mut self.input,
+                script: &mut self.script,
+                event_sender: &self.event_sender,
+            };
+
+            let game = &mut self.game; // Borrow `self.game` separately for the closure
+            self.egui_mq.run(&mut *self.ctx, move |_mq_ctx, egui_ctx| {
+                game.draw_debug(egui_ctx, eng);
+            });
+        }
+
         {
             let mouse_over_ui = self.egui_mq.egui_ctx().wants_pointer_input();
             if self.mouse_over_ui != mouse_over_ui {
                 self.mouse_over_ui = mouse_over_ui;
-                ctx.show_mouse(self.mouse_over_ui);
+                mq::window::show_mouse(self.mouse_over_ui);
             }
         }
-        self.egui_mq.draw(ctx);
+        self.egui_mq.draw(&mut *self.ctx);
 
-        ctx.commit_frame();
+        self.ctx.commit_frame();
     }
 
-    fn resize_event(&mut self, _ctx: &mut mq::Context, _width: f32, _height: f32) {}
+    fn resize_event(&mut self, _width: f32, _height: f32) {}
 
-    fn mouse_motion_event(&mut self, ctx: &mut mq::Context, x: f32, y: f32) {
-        self.egui_mq.mouse_motion_event(ctx, x, y);
+    fn mouse_motion_event(&mut self, x: f32, y: f32) {
+        self.egui_mq.mouse_motion_event(x, y);
         self.input.set_mouse_position(x, y);
     }
 
-    fn mouse_wheel_event(&mut self, ctx: &mut mq::Context, dx: f32, dy: f32) {
-        self.egui_mq.mouse_wheel_event(ctx, dx, dy);
+    fn mouse_wheel_event(&mut self, dx: f32, dy: f32) {
+        self.egui_mq.mouse_wheel_event(dx, dy);
         if !self.mouse_over_ui {
             self.input.add_event(input::InputEvent::Wheel { dx, dy });
             if dx < 0. {
@@ -92,14 +106,8 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         }
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        ctx: &mut mq::Context,
-        button: mq::MouseButton,
-        x: f32,
-        y: f32,
-    ) {
-        self.egui_mq.mouse_button_down_event(ctx, button, x, y);
+    fn mouse_button_down_event(&mut self, button: mq::MouseButton, x: f32, y: f32) {
+        self.egui_mq.mouse_button_down_event(button, x, y);
         if !self.mouse_over_ui {
             self.input.add_event(input::InputEvent::Mouse {
                 down: true,
@@ -111,14 +119,8 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         }
     }
 
-    fn mouse_button_up_event(
-        &mut self,
-        ctx: &mut gfx2d::Context,
-        button: mq::MouseButton,
-        x: f32,
-        y: f32,
-    ) {
-        self.egui_mq.mouse_button_up_event(ctx, button, x, y);
+    fn mouse_button_up_event(&mut self, button: mq::MouseButton, x: f32, y: f32) {
+        self.egui_mq.mouse_button_up_event(button, x, y);
         if !self.mouse_over_ui {
             self.input.add_event(input::InputEvent::Mouse {
                 down: false,
@@ -130,26 +132,14 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         }
     }
 
-    fn char_event(
-        &mut self,
-        _ctx: &mut mq::Context,
-        character: char,
-        _keymods: mq::KeyMods,
-        _repeat: bool,
-    ) {
+    fn char_event(&mut self, character: char, _keymods: mq::KeyMods, _repeat: bool) {
         if self.mouse_over_ui || self.egui_mq.egui_ctx().wants_keyboard_input() {
             self.egui_mq.char_event(character);
         }
     }
 
-    fn key_down_event(
-        &mut self,
-        ctx: &mut mq::Context,
-        keycode: mq::KeyCode,
-        keymods: mq::KeyMods,
-        repeat: bool,
-    ) {
-        self.egui_mq.key_down_event(ctx, keycode, keymods);
+    fn key_down_event(&mut self, keycode: mq::KeyCode, keymods: mq::KeyMods, repeat: bool) {
+        self.egui_mq.key_down_event(keycode, keymods);
         if !self.egui_mq.egui_ctx().wants_keyboard_input() {
             self.input.add_event(input::InputEvent::Key {
                 down: true,
@@ -161,17 +151,12 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         }
 
         match keycode {
-            mq::KeyCode::Escape => ctx.request_quit(),
+            mq::KeyCode::Escape => mq::window::request_quit(),
             _ => {}
         }
     }
 
-    fn key_up_event(
-        &mut self,
-        ctx: &mut gfx2d::Context,
-        keycode: mq::KeyCode,
-        keymods: mq::KeyMods,
-    ) {
+    fn key_up_event(&mut self, keycode: mq::KeyCode, keymods: mq::KeyMods) {
         self.egui_mq.key_up_event(keycode, keymods);
         if !self.egui_mq.egui_ctx().wants_keyboard_input() {
             self.input.add_event(input::InputEvent::Key {
@@ -184,37 +169,30 @@ impl<G: Game> mq::EventHandler for Runner<G> {
         }
 
         match keycode {
-            mq::KeyCode::Escape => ctx.request_quit(),
+            mq::KeyCode::Escape => mq::window::request_quit(),
             _ => {}
         }
     }
 
-    fn touch_event(
-        &mut self,
-        ctx: &mut mq::Context,
-        phase: mq::TouchPhase,
-        _id: u64,
-        x: f32,
-        y: f32,
-    ) {
+    fn touch_event(&mut self, phase: mq::TouchPhase, _id: u64, x: f32, y: f32) {
         if phase == mq::TouchPhase::Started {
-            self.mouse_button_down_event(ctx, mq::MouseButton::Left, x, y);
+            self.mouse_button_down_event(mq::MouseButton::Left, x, y);
         }
 
         if phase == mq::TouchPhase::Ended {
-            self.mouse_button_up_event(ctx, mq::MouseButton::Left, x, y);
+            self.mouse_button_up_event(mq::MouseButton::Left, x, y);
         }
 
         if phase == mq::TouchPhase::Moved {
-            self.mouse_motion_event(ctx, x, y);
+            self.mouse_motion_event(x, y);
         }
     }
 
-    fn raw_mouse_motion(&mut self, _ctx: &mut mq::Context, _dx: f32, _dy: f32) {}
+    fn raw_mouse_motion(&mut self, _dx: f32, _dy: f32) {}
 
-    fn window_minimized_event(&mut self, _ctx: &mut mq::Context) {}
+    fn window_minimized_event(&mut self) {}
 
-    fn window_restored_event(&mut self, _ctx: &mut mq::Context) {}
+    fn window_restored_event(&mut self) {}
 
-    fn quit_requested_event(&mut self, _ctx: &mut mq::Context) {}
+    fn quit_requested_event(&mut self) {}
 }

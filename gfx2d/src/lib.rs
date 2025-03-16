@@ -17,7 +17,7 @@ pub use context::vertex;
 pub use context::Gfx2dContext;
 pub use context::Vertex;
 pub use miniquad::{
-    self as mq, Buffer as VertexBuffer, Context, FilterMode, Texture, TextureAccess, TextureFormat,
+    self as mq, window, BufferId, Context, FilterMode, TextureAccess, TextureFormat, TextureId,
     TextureParams, TextureWrap,
 };
 pub use spritesheet::Sprite;

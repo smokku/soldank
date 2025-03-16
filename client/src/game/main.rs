@@ -16,15 +16,14 @@ use enumflags2::BitFlags;
 use hecs::With;
 
 impl Game for GameState {
-    fn initialize(&mut self, eng: Engine<'_>) {
-        eng.quad_ctx.show_mouse(false);
-        eng.quad_ctx.set_cursor_grab(true);
+    fn initialize(&mut self, quad_ctx: &mut mq::Context, eng: Engine<'_>) {
+        mq::window::show_mouse(false);
+        mq::window::set_cursor_grab(true);
 
         let map = self.resources.get::<MapFile>().unwrap();
+        self.graphics.load_sprites(quad_ctx, &mut self.filesystem);
         self.graphics
-            .load_sprites(eng.quad_ctx, &mut self.filesystem);
-        self.graphics
-            .load_map(eng.quad_ctx, &mut self.filesystem, &*map);
+            .load_map(quad_ctx, &mut self.filesystem, &*map);
 
         // spawn cursor sprite
         self.world.spawn((
@@ -193,11 +192,7 @@ impl Game for GameState {
     }
 
     fn update(&mut self, eng: Engine<'_>) {
-        if cfg!(debug_assertions) {
-            debug::build_ui(&eng, self);
-        }
-
-        let screen_size = eng.quad_ctx.screen_size();
+        let screen_size = mq::window::screen_size();
         let mouse_x = eng.input.mouse_x * GAME_WIDTH / screen_size.0;
         let mouse_y = eng.input.mouse_y * GAME_HEIGHT / screen_size.1;
 
@@ -281,9 +276,8 @@ impl Game for GameState {
         self.world.clear_trackers();
     }
 
-    fn draw(&mut self, eng: Engine<'_>) {
+    fn draw(&mut self, quad_ctx: &mut mq::Context, eng: Engine<'_>) {
         render::debug::debug_render(
-            eng.quad_ctx,
             &mut self.graphics,
             &self.world,
             &self.resources,
@@ -292,12 +286,16 @@ impl Game for GameState {
 
         self.graphics.render_frame(
             &mut self.context,
-            eng.quad_ctx,
+            quad_ctx,
             &self.world,
             &self.resources,
             &self.config,
             // self.last_frame - TIMESTEP_RATE * (1.0 - p),
             eng.overstep_percentage,
         );
+    }
+
+    fn draw_debug(&mut self, egui_ctx: &egui::Context, eng: Engine<'_>) {
+        debug::build_ui(egui_ctx, &eng, self);
     }
 }

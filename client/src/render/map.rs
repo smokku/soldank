@@ -23,7 +23,7 @@ fn is_background_poly(poly: &MapPolygon) -> bool {
     )
 }
 
-fn add_poly(batch: &mut DrawBatch, poly: &MapPolygon, texture: &Texture) {
+fn add_poly(batch: &mut DrawBatch, poly: &MapPolygon, texture: TextureId) {
     let (a, b, c) = (&poly.vertices[0], &poly.vertices[1], &poly.vertices[2]);
 
     batch.add(
@@ -106,27 +106,25 @@ impl MapGraphics {
             let height = img.height();
             let bytes = img.into_raw();
 
-            Texture::from_data_and_format(
-                ctx,
+            ctx.new_texture_from_data_and_format(
                 &bytes[..],
                 TextureParams {
                     format: TextureFormat::RGBA8,
                     wrap: TextureWrap::Repeat,
-                    filter: FilterMode::Linear,
                     width,
                     height,
+                    ..Default::default()
                 },
             )
         } else {
-            Texture::from_data_and_format(
-                ctx,
+            ctx.new_texture_from_data_and_format(
                 &[255u8; 4],
                 TextureParams {
                     format: TextureFormat::RGBA8,
                     wrap: TextureWrap::Clamp,
-                    filter: FilterMode::Nearest,
                     width: 1,
                     height: 1,
+                    ..Default::default()
                 },
             )
         };
@@ -218,7 +216,7 @@ impl MapGraphics {
         map.polygons
             .iter()
             .filter(|&p| is_background_poly(p))
-            .for_each(|poly| add_poly(&mut batch, poly, &texture));
+            .for_each(|poly| add_poly(&mut batch, poly, texture));
         let polys_back = batch.split();
 
         props[0]
@@ -234,7 +232,7 @@ impl MapGraphics {
         map.polygons
             .iter()
             .filter(|&p| !is_background_poly(p))
-            .for_each(|poly| add_poly(&mut batch, poly, &texture));
+            .for_each(|poly| add_poly(&mut batch, poly, texture));
         let polys_front = batch.split();
 
         props[2]

@@ -145,7 +145,7 @@ impl GameGraphics {
             &mut self.batch,
             &mut self.debug_batch,
             frame_percent,
-            h / ctx.screen_size().1,
+            h / window::screen_size().1,
             debug_state.render.render_skeleton,
         );
         render::systems::render_sprites(world, &self.sprites, &mut self.batch, phys_scale);
@@ -390,7 +390,7 @@ impl GameGraphics {
         }
     }
 
-    pub fn add_debug_geometry(&mut self, texture: Option<&Texture>, vertices: &[Vertex]) {
+    pub fn add_debug_geometry(&mut self, texture: Option<TextureId>, vertices: &[Vertex]) {
         if vertices.len() % 4 == 0 {
             for chunk in vertices.chunks_exact(4) {
                 self.debug_batch
@@ -471,7 +471,7 @@ impl GameGraphics {
         };
 
         self.add_debug_geometry(
-            texture.as_ref(),
+            texture,
             &[
                 vertex(
                     vec2(x - hwidth, y - hheight),

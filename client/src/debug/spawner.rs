@@ -32,7 +32,7 @@ impl Default for SpawnEntity {
 impl SpawnerState {
     pub fn build_ui(
         &mut self,
-        egui_ctx: &egui::CtxRef,
+        egui_ctx: &egui::Context,
         world: &mut World,
         x: f32,
         y: f32,
@@ -58,7 +58,7 @@ impl SpawnerState {
             self.visible = visible;
         }
 
-        if egui_ctx.input().pointer.any_pressed() && !egui_ctx.wants_pointer_input() {
+        if egui_ctx.input(|i| i.pointer.any_pressed()) && !egui_ctx.wants_pointer_input() {
             let pos = vec2(x.round() as f32, y.round() as f32);
 
             match self.spawn_entity {

@@ -12,10 +12,7 @@ opt-level = "z"
 incremental = false
 
 [patch.crates-io]
-miniquad = { git = "https://github.com/not-fl3/miniquad.git" }
-# laminar = { git = "https://github.com/amethyst/laminar.git" }
 cvar = { git = "https://github.com/CasualX/cvar.git" }
 hecs = { git = "https://github.com/smokku/hecs.git" }
 hecs_rapier = { git = "https://github.com/smokku/hecs_rapier.git" }
-egui-miniquad = { git = "https://github.com/smokku/egui-miniquad.git" }
 gvfs = { git = "https://github.com/smokku/gvfs.git" }

@@ -124,7 +124,7 @@ impl IVisit for RenderState {
 }
 
 impl RenderState {
-    pub fn build_ui(&mut self, egui_ctx: &egui::CtxRef) {
+    pub fn build_ui(&mut self, egui_ctx: &egui::Context) {
         let mut visible = self.visible;
         egui::Window::new("Renderer")
             .open(&mut visible)

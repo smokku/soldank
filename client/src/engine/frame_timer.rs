@@ -22,7 +22,7 @@ const SNAP_FREQUENCIES: [f64; 5] = [
 ];
 
 impl<G: Game> Runner<G> {
-    pub(crate) fn frame_timer(&mut self, ctx: &mut mq::Context) -> f64 {
+    pub(crate) fn frame_timer(&mut self) -> f64 {
         //frame timer
         let current_frame_time: f64 = mq::date::now();
         let mut delta_time = current_frame_time - self.frame_time;
@@ -74,8 +74,6 @@ impl<G: Game> Runner<G> {
                     delta: FIXED_DELTATIME,
                     fps: self.fps(),
                     overstep_percentage: self.overstep_percentage,
-                    quad_ctx: ctx,
-                    egui_ctx: self.egui_mq.egui_ctx(),
                     mouse_over_ui: self.mouse_over_ui,
                     input: &mut self.input,
                     script: &mut self.script,
@@ -92,8 +90,6 @@ impl<G: Game> Runner<G> {
             delta: consumed_delta_time,
             fps: self.fps(),
             overstep_percentage: self.overstep_percentage,
-            quad_ctx: ctx,
-            egui_ctx: self.egui_mq.egui_ctx(),
             mouse_over_ui: self.mouse_over_ui,
             input: &mut self.input,
             script: &mut self.script,

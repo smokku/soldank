@@ -23,23 +23,24 @@ pub fn vertex(pos: glam::Vec2, uv: glam::Vec2, color: Color) -> Vertex {
 pub struct Gfx2dContext {
     pipeline: Pipeline,
     bindings: Bindings,
-    white_texture: Texture,
+    white_texture: TextureId,
 }
 
 impl Gfx2dContext {
     pub fn new(ctx: &mut Context) -> Gfx2dContext {
-        let white_texture = Texture::from_rgba8(ctx, 1, 1, &[255, 255, 255, 255]);
+        let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
 
-        let shader = Shader::new(
-            ctx,
-            pipeline::VERT_SOURCE,
-            pipeline::FRAG_SOURCE,
-            pipeline::meta(),
-        )
-        .unwrap();
+        let shader = ctx
+            .new_shader(
+                ShaderSource::Glsl {
+                    vertex: pipeline::VERT_SOURCE,
+                    fragment: pipeline::FRAG_SOURCE,
+                },
+                pipeline::meta(),
+            )
+            .unwrap();
 
-        let pipeline = Pipeline::with_params(
-            ctx,
+        let pipeline = ctx.new_pipeline(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_position", VertexFormat::Float2),
@@ -51,7 +52,11 @@ impl Gfx2dContext {
         );
         let bindings = Bindings {
             vertex_buffers: vec![],
-            index_buffer: Buffer::index_stream(ctx, IndexType::Int, 0),
+            index_buffer: ctx.new_buffer(
+                BufferType::IndexBuffer,
+                BufferUsage::Stream,
+                BufferSource::empty::<u32>(0),
+            ),
             images: vec![white_texture],
         };
 
@@ -77,9 +82,9 @@ impl Gfx2dContext {
                 [(transform.0).2, (transform.1).2, 0.0, 1.0],
             ]),
         };
-        ctx.apply_uniforms(&uniforms);
+        ctx.apply_uniforms(UniformsSource::table(&uniforms));
 
-        let mut draws: Vec<(Texture, Vec<u32>)> = Vec::new();
+        let mut draws: Vec<(TextureId, Vec<u32>)> = Vec::new();
         for cmd in slice.commands() {
             let indices = cmd
                 .vertex_range
@@ -90,10 +95,7 @@ impl Gfx2dContext {
                 None => self.white_texture,
                 Some(t) => t,
             };
-            if let Some(found) = draws
-                .iter_mut()
-                .find(|(tex, _)| tex.gl_internal_id() == texture.gl_internal_id())
-            {
+            if let Some(found) = draws.iter_mut().find(|(tex, _)| *tex == texture) {
                 found.1.extend(indices);
             } else {
                 draws.push((texture, indices));
@@ -103,18 +105,25 @@ impl Gfx2dContext {
         for (texture, indices) in draws.iter() {
             let size = indices.len() * mem::size_of::<u32>();
             let mut delete_buffer = None;
-            if self.bindings.index_buffer.size() < size {
+            if ctx.buffer_size(self.bindings.index_buffer) < size {
                 delete_buffer.replace(self.bindings.index_buffer);
-                self.bindings.index_buffer = Buffer::index_stream(ctx, IndexType::Int, size);
+                self.bindings.index_buffer = ctx.new_buffer(
+                    BufferType::IndexBuffer,
+                    BufferUsage::Stream,
+                    BufferSource::empty::<u32>(size),
+                );
             };
-            self.bindings.index_buffer.update(ctx, indices.as_slice());
+            ctx.buffer_update(
+                self.bindings.index_buffer,
+                BufferSource::slice(indices.as_slice()),
+            );
             self.bindings.images[0] = *texture;
 
             ctx.apply_bindings(&self.bindings);
             ctx.draw(0, indices.len() as i32, 1);
 
             if let Some(buffer) = delete_buffer {
-                buffer.delete();
+                ctx.delete_buffer(buffer);
             }
         }
     }

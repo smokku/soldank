@@ -10,8 +10,8 @@ license = "MIT"
 publish = false
 
 [dependencies]
-miniquad = "0.3.0-alpha.37"
-image = "0.23"
+miniquad = "0.4"
+image = "0.25"
 glam = "0.14"
 rgb = "0.8"
 gvfs = "0.1"
