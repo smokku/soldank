@@ -19,28 +19,28 @@ zip = { version = "0.5", features = [
     "deflate"
 ] }
 byteorder = "1.4"
-rust-ini = "0.17"
-hocon = { version = "0.5", default-features = false }
+rust-ini = "0.21"
+hocon = { version = "0.9", default-features = false }
 bit-array = "0.4"
 typenum = "1.12"
 clap = "2.33"
 naia-client-socket = "0.6"
 laminar = "0.5"
-smol = "1.2"
+smol = "2.0"
 hecs = { version = "0.6", features = ["macros"] }
 resources = "1.1"
 cvar = "0.3"
 log = { version = "0.4", features = ["release_max_level_info"] }
-env_logger = "0.9"
-color-eyre = "0.5"
-simple-error = "0.2"
+env_logger = "0.11"
+color-eyre = "0.6"
+simple-error = "0.3"
 rapier2d = { version = "0.11", features = ["simd-stable"] }
 nalgebra = { version = "0.29", features = ["convert-glam014"] }
 quad-rand = "0.2"
 egui = "0.15"
 egui-miniquad = "0.7"
 enumflags2 = "0.7"
-rhai = { version = "1.1", features = ["only_i32", "f32_float"] }
+rhai = { version = "1.21", features = ["only_i32", "f32_float"] }
 human-sort = "0.2"
 ringbuffer = "0.8"
 multiqueue2 = "0.1"
