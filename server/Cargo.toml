@@ -19,7 +19,7 @@ naia-server-socket = "0.5"
 log = "0.4"
 env_logger = "0.11"
 smol = "1.2"
-clap = "2.33"
+clap = { version = "4.5", features = ["env"] }
 laminar = "0.5"
 hecs = { version = "0.6", features = [] }
 bitflags = "1.2"

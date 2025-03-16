@@ -23,7 +23,7 @@ rust-ini = "0.21"
 hocon = { version = "0.9", default-features = false }
 bit-array = "0.4"
 typenum = "1.12"
-clap = "2.33"
+clap = { version = "4.5", features = ["env"] }
 naia-client-socket = "0.6"
 laminar = "0.5"
 smol = "2.0"

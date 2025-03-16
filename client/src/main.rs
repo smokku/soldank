@@ -50,7 +50,7 @@ fn main() {
 
     let cmd = cli::parse_cli_args();
 
-    let mut filesystem = Filesystem::new(clap::crate_name!(), "Soldat2k").unwrap();
+    let mut filesystem = Filesystem::new(env!("CARGO_PKG_NAME"), "Soldat2k").unwrap();
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
@@ -90,14 +90,17 @@ fn main() {
         }
     }
 
-    let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
+    let mut map_name = cmd
+        .get_one::<String>("map")
+        .map_or(DEFAULT_MAP, |s| s.as_ref())
+        .to_owned();
     map_name.push_str(".pms");
 
     let map = MapFile::load_map_file(&mut filesystem, map_name.as_str());
     log::info!("Using map: {}", map.mapname);
 
     let mut config = Config::default();
-    config.debug.visible = cmd.is_present("debug");
+    config.debug.visible = cmd.contains_id("debug");
     set_cli_cvars(&mut config, &cmd);
 
     AnimData::initialize(&mut filesystem);
@@ -120,7 +123,7 @@ fn main() {
 
     let conf = mq::conf::Conf {
         sample_count: 4,
-        window_title: clap::crate_name!().to_string(),
+        window_title: env!("CARGO_PKG_NAME").to_string(),
         window_width: WINDOW_WIDTH as _,
         window_height: WINDOW_HEIGHT as _,
         ..Default::default()

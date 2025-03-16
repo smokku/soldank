@@ -23,9 +23,9 @@ pub struct ServerInfo {
 fn default_motd() -> String {
     format!(
         "{} {} - {}",
-        clap::crate_name!(),
-        clap::crate_version!(),
-        clap::crate_description!()
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_DESCRIPTION")
     )
 }
 

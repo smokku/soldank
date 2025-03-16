@@ -1,41 +1,44 @@
 use crate::constants;
 
-pub fn parse_cli_args<'a>() -> clap::ArgMatches<'a> {
-    clap::app_from_crate!()
+pub fn parse_cli_args<'a>() -> clap::ArgMatches {
+    clap::Command::new(env!("CARGO_PKG_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .about(env!("CARGO_PKG_DESCRIPTION"))
         .arg(
-            clap::Arg::with_name("bind")
+            clap::Arg::new("bind")
                 .value_name("address:port")
                 .help("IP address and port to bind")
-                .short("b")
+                .short('b')
                 .long("bind")
-                .takes_value(true)
+                .num_args(1)
                 .env("SOLDANK_SERVER_BIND"),
         )
         .arg(
-            clap::Arg::with_name("map")
+            clap::Arg::new("map")
                 .value_name("map name")
                 .help("name of map to load")
-                .short("m")
+                .short('m')
                 .long("map")
-                .takes_value(true)
+                .num_args(1)
                 .default_value(constants::DEFAULT_MAP)
                 .env("SOLDANK_USE_MAP"),
         )
         .arg(
-            clap::Arg::with_name("key")
+            clap::Arg::new("key")
                 .help("server connection key")
-                .short("k")
+                .short('k')
                 .long("key")
-                .takes_value(true)
+                .num_args(1)
                 .env("SOLDANK_SERVER_KEY"),
         )
         .arg(
-            clap::Arg::with_name("set")
+            clap::Arg::new("set")
                 .help("set cvar value [multiple]")
                 .long("set")
-                .takes_value(true)
-                .multiple(true)
-                .number_of_values(2)
+                .num_args(2)
+                .allow_hyphen_values(true)
+                .action(clap::ArgAction::Append)
                 .value_names(&["cvar", "value"]),
         )
         .get_matches()

@@ -39,7 +39,10 @@ fn main() -> Result<()> {
     smol::block_on(async {
         let cmd = cli::parse_cli_args();
 
-        let mut map_name = cmd.value_of("map").unwrap_or(DEFAULT_MAP).to_owned();
+        let mut map_name = cmd
+            .get_one::<String>("map")
+            .map_or(DEFAULT_MAP, |s| s.as_ref())
+            .to_owned();
         map_name.push_str(".pms");
         log::info!("Using map: {}", map_name);
 
@@ -55,8 +58,9 @@ fn main() -> Result<()> {
         };
         set_cli_cvars(&mut config, &cmd);
 
-        let mut networking = Networking::new(cmd.value_of("bind")).await;
-        if let Some(key) = cmd.value_of("key") {
+        let mut networking =
+            Networking::new(cmd.get_one::<String>("bind").map(|s| s.as_ref())).await;
+        if let Some(key) = cmd.get_one::<String>("key") {
             networking.connection_key = key.to_string();
         }
 

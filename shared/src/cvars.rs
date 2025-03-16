@@ -5,7 +5,7 @@ use std::sync::{Arc, RwLock};
 pub use orb::Config as OrbConfig;
 
 pub fn set_cli_cvars(config: &mut dyn IVisit, cmd: &clap::ArgMatches) {
-    if let Some(values) = cmd.values_of("set") {
+    if let Some(values) = cmd.get_many::<String>("set") {
         for chunk in values.collect::<Vec<_>>().chunks_exact(2) {
             let cvar = chunk[0];
             let value = chunk[1];
