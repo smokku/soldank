@@ -9,7 +9,6 @@ use enum_primitive_derive::Primitive;
 use hecs::Entity;
 use nanoserde::{DeBin, SerBin};
 use num_traits::{FromPrimitive, ToPrimitive};
-use orb::timestamp::{Timestamp, Timestamped};
 use std::{collections::HashMap, convert::TryFrom, mem::size_of, process::abort};
 
 const NET_PROTOCOL_VERSION: u8 = 0x01;
@@ -49,8 +48,8 @@ pub enum NetworkMessage {
         tick: usize,
         entities: HashMap<Entity, Vec<ComponentValue>>,
     },
-    Snapshot(Timestamped<NetSnapshot>),
-    Command(Timestamped<NetCommand>),
+    // Snapshot(Timestamped<NetSnapshot>),
+    // Command(Timestamped<NetCommand>),
 }
 
 #[repr(u8)]
@@ -133,25 +132,25 @@ pub fn encode_message(msg: NetworkMessage) -> Bytes {
             }
 
             msg.into()
-        }
-        NetworkMessage::Snapshot(snapshot) => {
-            let mut msg = vec![OperationCode::STT_SNAPSHOT as u8];
-            let pkt = SnapshotPacket {
-                timestamp: snapshot.timestamp().to_i16(),
-                snapshot: snapshot.inner().clone(),
-            };
-            msg.extend(SerBin::serialize_bin(&pkt));
-            msg.into()
-        }
-        NetworkMessage::Command(command) => {
-            let mut msg = vec![OperationCode::STT_COMMAND as u8];
-            let pkt = CommandPacket {
-                timestamp: command.timestamp().to_i16(),
-                command: command.inner().clone(),
-            };
-            msg.extend(SerBin::serialize_bin(&pkt));
-            msg.into()
-        }
+        } //
+          // NetworkMessage::Snapshot(snapshot) => {
+          //     let mut msg = vec![OperationCode::STT_SNAPSHOT as u8];
+          //     let pkt = SnapshotPacket {
+          //         timestamp: snapshot.timestamp().to_i16(),
+          //         snapshot: snapshot.inner().clone(),
+          //     };
+          //     msg.extend(SerBin::serialize_bin(&pkt));
+          //     msg.into()
+          // }
+          // NetworkMessage::Command(command) => {
+          //     let mut msg = vec![OperationCode::STT_COMMAND as u8];
+          //     let pkt = CommandPacket {
+          //         timestamp: command.timestamp().to_i16(),
+          //         command: command.inner().clone(),
+          //     };
+          //     msg.extend(SerBin::serialize_bin(&pkt));
+          //     msg.into()
+          // }
     }
 }
 
@@ -326,19 +325,21 @@ pub fn decode_message(data: &[u8]) -> Option<NetworkMessage> {
                     snapshot,
                 }) = DeBin::deserialize_bin(&data[1..])
                 {
-                    return Some(NetworkMessage::Snapshot(Timestamped::<NetSnapshot>::new(
-                        snapshot,
-                        Timestamp::from_i16(timestamp),
-                    )));
+                    return None;
+                    // return Some(NetworkMessage::Snapshot(Timestamped::<NetSnapshot>::new(
+                    //     snapshot,
+                    //     Timestamp::from_i16(timestamp),
+                    // )));
                 }
             }
             OperationCode::STT_COMMAND => {
                 if let Ok(CommandPacket { timestamp, command }) = DeBin::deserialize_bin(&data[1..])
                 {
-                    return Some(NetworkMessage::Command(Timestamped::<NetCommand>::new(
-                        command,
-                        Timestamp::from_i16(timestamp),
-                    )));
+                    return None;
+                    // return Some(NetworkMessage::Command(Timestamped::<NetCommand>::new(
+                    //     command,
+                    //     Timestamp::from_i16(timestamp),
+                    // )));
                 }
             }
         }

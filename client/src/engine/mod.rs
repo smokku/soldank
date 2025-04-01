@@ -1,7 +1,7 @@
 // Based on https://github.com/Bombfuse/emerald/blob/master/src/core/engine.rs
 use crate::mq;
 use multiqueue2::{broadcast_queue, BroadcastReceiver, BroadcastSender};
-use ringbuffer::{AllocRingBuffer, RingBuffer, RingBufferExt, RingBufferWrite};
+use ringbuffer::{AllocRingBuffer, RingBuffer};
 
 pub mod events;
 mod frame_timer;
@@ -69,7 +69,7 @@ pub struct Runner<G: Game> {
 
 impl<G: Game> Runner<G> {
     pub fn new(mut ctx: Box<mq::Context>, mut game: G) -> Self {
-        let mut time_averager = AllocRingBuffer::with_capacity(TIME_HISTORY_COUNT);
+        let mut time_averager = AllocRingBuffer::new(TIME_HISTORY_COUNT);
         time_averager.fill(DESIRED_FRAMETIME);
 
         let (event_sender, event_recv) = broadcast_queue(64);
@@ -106,7 +106,7 @@ impl<G: Game> Runner<G> {
             render_time: now,
             fps_second: now.round(),
             fps_count: 0,
-            fps: AllocRingBuffer::with_capacity(64),
+            fps: AllocRingBuffer::new(64),
 
             input,
             script,
@@ -119,6 +119,6 @@ impl<G: Game> Runner<G> {
     }
 
     pub fn fps(&self) -> usize {
-        *self.fps.get(-1).unwrap_or(&0)
+        *self.fps.back().unwrap_or(&0)
     }
 }

@@ -2,8 +2,6 @@ use crate::constants::*;
 use cvar::{INode, IVisit};
 use std::sync::{Arc, RwLock};
 
-pub use orb::Config as OrbConfig;
-
 pub fn set_cli_cvars(config: &mut dyn IVisit, cmd: &clap::ArgMatches) {
     if let Some(values) = cmd.get_many::<String>("set") {
         for chunk in values.collect::<Vec<_>>().chunks_exact(2) {
@@ -59,7 +57,6 @@ impl IVisit for Physics {
 
 #[derive(Default)]
 pub struct NetConfig {
-    pub orb: Arc<RwLock<OrbConfig>>,
     pub send_keepalive: u32,    // millis
     pub keepalive_timeout: u32, // millis
 }

@@ -1,5 +1,5 @@
 [workspace]
-members = ["client", "gfx2d", "server", "shared", "orb"]
+members = ["client", "gfx2d", "server", "shared"]
 resolver = "2"
 
 [profile.dev.package."*"]
